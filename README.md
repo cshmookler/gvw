@@ -1,7 +1,7 @@
-# Vulkan Template
-A template for future vulkan projects. Uses GLFW as a window manager. Started development on November 24th, 2022.
-## TODO
- * [ ] Build the project with cmake
+# **Vulkan Template**
+A template for future Vulkan and GLFW projects. Started development on November 24th, 2022.
+## **TODO**
+ * [X] Build the project with cmake
  * [ ] Create a window using GLFW
  * [ ] Create the necessary infrastructure to draw a triangle
  * [ ] (optional) Save space in the code by loading settings from a file
@@ -13,8 +13,34 @@ A template for future vulkan projects. Uses GLFW as a window manager. Started de
  * [ ] Create a simple 2D platformer
  * [ ] Draw a 3D cube
  * [ ] Rotate the cube
-## Build this project
-1. Open a terminal window in the root directory of this project
-2. Start the Python virtual environment
-&nbsp&nbsp&nbsp&nbsp ```source .venv/bin/activate```
-3. _coming soon_...
+## **Build this project**
+1. Install the required packages for vulkan and glfw.
+```bash
+$ sudo apt install g++ vulkan-sdk libglfw3-dev libglm-dev libxxf86vm-dev libxi-dev
+```
+2. Open a terminal window in the root directory of this project.
+3. Create and enter the build directory.
+```bash
+$ mkdir build
+$ cd build
+```
+4. Generate Conan information for the build system.
+```bash
+$ conan install ..
+```
+5. (For Release builds) Generate CMake information for the build system.
+```bash
+$ cmake -DCMAKE_BUILD_TYPE=Release ..
+```
+6. (For Debug builds) Generate CMake information for the build system.
+```bash
+$ cmake -DCMAKE_BUILD_TYPE=Debug ..
+```
+7. Finally, build the project.
+```bash
+$ make
+```
+8. Run the generated executable.
+```bash
+$ ./bin/vulkan_template
+```
