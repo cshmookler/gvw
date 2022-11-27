@@ -5,7 +5,7 @@
 
 namespace utils {
 
-void print_command_line_arguments(int argc, char** argv)
+void PrintCommandLineArguments(int argc, char** argv)
 {
     for (int i = 0; i < argc; i++) {
         std::cout << argv[i] << std::endl;

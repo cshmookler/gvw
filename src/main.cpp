@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <iostream>
 
-// Local includes
+// External includes
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #define GLM_FORCE_RADIANS
@@ -15,19 +15,26 @@
 // Clang-Tidy will incorrectly mark these as errors.
 #include <boost/static_string.hpp>
 
+// Local includes
 #include "utils.hpp"
+#include "vgw/vgw.hpp"
 
 int main(int argc, char** argv)
 {
-    utils::print_command_line_arguments(argc, argv);
-
-    boost::basic_string_view test = "example";
+    utils::PrintCommandLineArguments(argc, argv);
 
 #ifdef _DEBUG
     std::cout << "Running in Debug mode" << std::endl;
 #else
     std::cout << "Running in Release mode" << std::endl;
 #endif
+
+    // Initialize GLFW
+    vgw::Glfw glfw;
+    std::cout << "glfw.Init() returned with: " << glfw.Init() << std::endl;
+
+    // Create the window
+    vgw::Window window;
 
     return 0;
 }

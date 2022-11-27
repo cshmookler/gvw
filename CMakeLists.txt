@@ -10,6 +10,8 @@ conan_basic_setup()
 
 add_executable(
     vulkan_template
+    src/vgw/glfw/glfw.cpp
+    src/vgw/glfw/window.cpp
     src/utils.cpp
     src/main.cpp
 )
