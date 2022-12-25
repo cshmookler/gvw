@@ -1,5 +1,5 @@
 [requires]
-boost/1.80.0
+glm/cci.20220420
 
 [generators]
 cmake

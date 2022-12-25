@@ -1,2 +1,8 @@
-build
+# Visual Studio Code
 .vscode
+
+# Python Virtual Environments
+.venv
+
+# Build directory
+build

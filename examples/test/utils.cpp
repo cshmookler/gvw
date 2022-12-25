@@ -5,10 +5,10 @@
 
 namespace utils {
 
-void PrintCommandLineArguments(int argc, char** argv)
+void PrintCommandLineArguments(int argc, char** argv, char prefix)
 {
     for (int i = 0; i < argc; i++) {
-        std::cout << argv[i] << std::endl;
+        std::cout << prefix << argv[i] << std::endl;
     }
 }
 
