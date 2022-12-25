@@ -2,7 +2,8 @@
 A template for future Vulkan and GLFW projects. Started development on November 24th, 2022.
 ## **TODO**
  * [X] Build the project with cmake
- * [ ] Create a window using GLFW
+ * [X] Create a window using GLFW
+ * [ ] Finish GLFW infrastructure
  * [ ] Create the necessary infrastructure to draw a triangle
  * [ ] (optional) Save space in the code by loading settings from a file
  * [ ] Make the triangle move
