@@ -1,5 +1,5 @@
-# **Vulkan Template**
-A template for future Vulkan and GLFW projects. Started development on November 24th, 2022.
+# **GLFW and Vulkan wrapper**
+A thick wrapper for GLFW and Vulkan. Started development on November 24th, 2022.
 ## **TODO**
  * [X] Build the project with cmake
  * [X] Create a window using GLFW
