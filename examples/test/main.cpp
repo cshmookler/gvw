@@ -51,17 +51,30 @@ int main(int argc, char** argv)
     primaryMonitor.AssertInitialization();
     std::cout << "monitor name: " << primaryMonitor.Name() << std::endl;
 
-    std::chrono::time_point<std::chrono::steady_clock> start;
-    std::chrono::time_point<std::chrono::steady_clock> now;
-    std::chrono::milliseconds duration;
-
-    start = std::chrono::steady_clock::now();
-
     window.SetIcon("../../examples/test/icon.png");
 
     std::vector<const char*> iconPaths;
     iconPaths.push_back("../../examples/test/icon.png");
     window.SetIcon(iconPaths);
+
+    window.Undecorate();
+    std::cout << "Undecorated" << std::endl;
+    glfw::PollEvents();
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    window.Decorate();
+    std::cout << "Decorated" << std::endl;
+    glfw::PollEvents();
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    window.Undecorate();
+    std::cout << "Undecorated" << std::endl;
+    glfw::PollEvents();
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
+    std::chrono::time_point<std::chrono::steady_clock> start;
+    std::chrono::time_point<std::chrono::steady_clock> now;
+    std::chrono::milliseconds duration;
+
+    start = std::chrono::steady_clock::now();
 
     // Window main loop
     while (!window.ShouldClose()) {
@@ -80,6 +93,19 @@ int main(int argc, char** argv)
     window.FullScreen(primaryMonitor);
     std::this_thread::sleep_for(std::chrono::seconds(2));
     window.ExitFullScreen();
+    window.Restore();
+    window.Focus();
+    window.Undecorate();
+    glfw::PollEvents();
+    std::cout << "Undecorated and focused" << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    window.Decorate();
+    glfw::PollEvents();
+    std::cout << "Decorated" << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    window.Focus();
+    std::cout << "Focused" << std::endl;
+    glfw::PollEvents();
     std::this_thread::sleep_for(std::chrono::seconds(2));
 
     auto pixels = window.GetSize();
@@ -97,12 +123,14 @@ int main(int argc, char** argv)
     screenCoordinate.x = screenCoordinates.width;
     screenCoordinate.y = screenCoordinates.height;
 
-    glfw::ScreenCoordinateToPixel(primaryMonitor, window, screenCoordinate);
+    glfw::ScreenCoordinateToPixel(window, screenCoordinate);
 
     std::cout << "pixels width: " << screenCoordinate.x
               << ", pixels height: " << screenCoordinate.y << std::endl;
 
     window.Destroy();
+
+    window.SetOpacity(0.5);
 
     // These function should fail because the window doesn't exist anymore
     window.FullScreen(primaryMonitor);

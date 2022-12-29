@@ -20,7 +20,9 @@ const int MIN_WINDOW_HEIGHT = 1;
 // Window display modes
 const int NOT_CREATED = 0;
 const int WINDOWED = 1;
-const int FULL_SCREEN = 2;
+const int ICONIFIED = 2;
+const int MAXIMIZED = 3;
+const int FULL_SCREEN = 4;
 
 // Monitor specific constants
 GLFWmonitor* const MONITOR_ID_NULL = nullptr;

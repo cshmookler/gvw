@@ -112,6 +112,21 @@ void window::Create_(int windowWidth,
     this->defaultSizeInScreenCoordinates_ = this->GetSizeInScreenCoordinates();
 }
 
+int window::GetWindowAttribute_(int attribute)
+{
+    if (this->AssertCreation() == ASSERT_FAILURE) {
+        return GLFW_DONT_CARE;
+    }
+    return glfwGetWindowAttrib(this->windowId_, attribute);
+}
+
+void window::SetWindowAttribute_(int attribute, int value)
+{
+    if (this->AssertCreation() == ASSERT_SUCCESS) {
+        return glfwSetWindowAttrib(this->windowId_, attribute, value);
+    }
+}
+
 window::window() = default;
 
 void window::Destroy()
@@ -206,6 +221,30 @@ GLFWwindow* window::Id()
     return this->windowId_;
 }
 
+bool window::ShouldClose()
+{
+    if (this->AssertCreation() == ASSERT_FAILURE) {
+        return GLFW_FALSE;
+    }
+    return bool(glfwWindowShouldClose(this->windowId_));
+}
+
+void window::Close()
+{
+    if (this->AssertCreation() == ASSERT_FAILURE) {
+        return;
+    }
+    glfwSetWindowShouldClose(this->windowId_, GLFW_TRUE);
+}
+
+void window::CancelClose()
+{
+    if (this->AssertCreation() == ASSERT_FAILURE) {
+        return;
+    }
+    glfwSetWindowShouldClose(this->windowId_, GLFW_FALSE);
+}
+
 size<int> window::GetSizeInScreenCoordinates()
 {
     size<int> windowSize = { -1, -1 };
@@ -231,8 +270,7 @@ void window::SetSize(size<int> windowSize)
     if (this->AssertCreation() == ASSERT_FAILURE) {
         return;
     }
-    monitor associatedMonitor(glfwGetWindowMonitor(this->windowId_));
-    windowSize = PixelToScreenCoordinate(associatedMonitor, *this, windowSize);
+    windowSize = PixelToScreenCoordinate(*this, windowSize);
     glfwSetWindowSize(this->windowId_, windowSize.width, windowSize.height);
 }
 
@@ -241,20 +279,8 @@ void window::SetSize(int width, int height)
     if (this->AssertCreation() == ASSERT_FAILURE) {
         return;
     }
-    monitor associatedMonitor(glfwGetWindowMonitor(this->windowId_));
-    PixelToScreenCoordinate(
-        associatedMonitor, *this, width, height, width, height);
+    PixelToScreenCoordinate(*this, width, height, width, height);
     glfwSetWindowSize(this->windowId_, width, height);
-}
-
-coordinate<float> window::GetContentScale()
-{
-    coordinate<float> contentScale = { -1.0f, -1.0f };
-    if (this->AssertCreation() == ASSERT_SUCCESS) {
-        glfwGetWindowContentScale(
-            this->windowId_, &contentScale.x, &contentScale.y);
-    }
-    return contentScale;
 }
 
 coordinate<int> window::GetPositionInScreenCoordinates()
@@ -271,9 +297,7 @@ coordinate<int> window::GetPosition()
     coordinate<int> windowPosition = { -1, -1 };
     if (this->AssertCreation() == ASSERT_SUCCESS) {
         glfwGetWindowPos(this->windowId_, &windowPosition.x, &windowPosition.y);
-        monitor associatedMonitor(glfwGetWindowMonitor(this->windowId_));
-        windowPosition =
-            ScreenCoordinateToPixel(associatedMonitor, *this, windowPosition);
+        windowPosition = ScreenCoordinateToPixel(*this, windowPosition);
     }
     return windowPosition;
 }
@@ -283,9 +307,7 @@ void window::SetPosition(coordinate<int> windowPosition)
     if (this->AssertCreation() == ASSERT_FAILURE) {
         return;
     }
-    monitor associatedMonitor(glfwGetWindowMonitor(this->windowId_));
-    windowPosition =
-        PixelToScreenCoordinate(associatedMonitor, *this, windowPosition);
+    windowPosition = PixelToScreenCoordinate(*this, windowPosition);
     glfwSetWindowPos(this->windowId_, windowPosition.x, windowPosition.y);
 }
 
@@ -294,9 +316,45 @@ void window::SetPosition(int xPos, int yPos)
     if (this->AssertCreation() == ASSERT_FAILURE) {
         return;
     }
-    monitor associatedMonitor(glfwGetWindowMonitor(this->windowId_));
-    PixelToScreenCoordinate(associatedMonitor, *this, xPos, yPos, xPos, yPos);
+    PixelToScreenCoordinate(*this, xPos, yPos, xPos, yPos);
     glfwSetWindowPos(this->windowId_, xPos, yPos);
+}
+
+coordinate<float> window::GetContentScale()
+{
+    coordinate<float> contentScale = { -1.0f, -1.0f };
+    if (this->AssertCreation() == ASSERT_SUCCESS) {
+        glfwGetWindowContentScale(
+            this->windowId_, &contentScale.x, &contentScale.y);
+    }
+    return contentScale;
+}
+
+void window::SetMinimumAndMaximumSize(int minimumWidth,
+                                      int minimumHeight,
+                                      int maximumWidth,
+                                      int maximumHeight)
+{
+    if (this->AssertCreation() == ASSERT_FAILURE) {
+        return;
+    }
+    PixelToScreenCoordinate(
+        *this, minimumWidth, minimumHeight, minimumWidth, minimumHeight);
+    PixelToScreenCoordinate(
+        *this, maximumWidth, maximumHeight, maximumWidth, maximumHeight);
+    glfwSetWindowSizeLimits(this->windowId_,
+                            minimumWidth,
+                            minimumHeight,
+                            maximumWidth,
+                            maximumHeight);
+}
+
+void window::SetAspectRatio(int numerator, int denominator)
+{
+    if (this->AssertCreation() == ASSERT_FAILURE) {
+        return;
+    }
+    glfwSetWindowAspectRatio(this->windowId_, numerator, denominator);
 }
 
 void window::FullScreen(monitor& fullScreenMonitor)
@@ -325,7 +383,7 @@ void window::FullScreen(monitor& fullScreenMonitor)
 void window::ExitFullScreen()
 {
     if ((this->AssertCreation() == ASSERT_FAILURE) ||
-        (this->displayMode_ == WINDOWED)) {
+        (this->displayMode_ != FULL_SCREEN)) {
         return;
     }
 
@@ -342,14 +400,11 @@ void window::ExitFullScreen()
 void window::ExitFullScreen(int xPos, int yPos, int width, int height)
 {
     if ((this->AssertCreation() == ASSERT_FAILURE) ||
-        (this->displayMode_ == WINDOWED)) {
+        (this->displayMode_ != FULL_SCREEN)) {
         return;
     }
-
-    monitor associatedMonitor(glfwGetWindowMonitor(this->windowId_));
-    PixelToScreenCoordinate(associatedMonitor, *this, xPos, yPos, xPos, yPos);
-    PixelToScreenCoordinate(
-        associatedMonitor, *this, width, height, width, height);
+    PixelToScreenCoordinate(*this, xPos, yPos, xPos, yPos);
+    PixelToScreenCoordinate(*this, width, height, width, height);
 
     this->displayMode_ = WINDOWED;
     glfwSetWindowMonitor(
@@ -395,28 +450,74 @@ void window::SetIcon(std::vector<const char*> candidateIconImagePaths)
     }
 }
 
-bool window::ShouldClose()
-{
-    if (this->AssertCreation() == ASSERT_FAILURE) {
-        return GLFW_FALSE;
-    }
-    return bool(glfwWindowShouldClose(this->windowId_));
-}
-
-void window::Close()
+void window::Minimize()
 {
     if (this->AssertCreation() == ASSERT_FAILURE) {
         return;
     }
-    glfwSetWindowShouldClose(this->windowId_, GLFW_TRUE);
+    glfwIconifyWindow(this->windowId_);
+    this->displayMode_ = ICONIFIED;
 }
 
-void window::CancelClose()
+void window::Maximize()
 {
     if (this->AssertCreation() == ASSERT_FAILURE) {
         return;
     }
-    glfwSetWindowShouldClose(this->windowId_, GLFW_FALSE);
+    glfwMaximizeWindow(this->windowId_);
+    this->displayMode_ = MAXIMIZED;
+}
+
+void window::Restore()
+{
+    if (this->AssertCreation() == ASSERT_FAILURE) {
+        return;
+    }
+    glfwRestoreWindow(this->windowId_);
+    if (this->displayMode_ == FULL_SCREEN) {
+        this->ExitFullScreen();
+    }
+    this->displayMode_ = WINDOWED;
+}
+
+void window::Hide()
+{
+    if (this->AssertCreation() == ASSERT_FAILURE) {
+        return;
+    }
+    glfwHideWindow(this->windowId_);
+}
+
+void window::Show()
+{
+    if (this->AssertCreation() == ASSERT_FAILURE) {
+        return;
+    }
+    glfwShowWindow(this->windowId_);
+}
+
+void window::Focus()
+{
+    if (this->AssertCreation() == ASSERT_FAILURE) {
+        return;
+    }
+    glfwFocusWindow(this->windowId_);
+}
+
+void window::RequestFocus()
+{
+    if (this->AssertCreation() == ASSERT_FAILURE) {
+        return;
+    }
+    glfwRequestWindowAttention(this->windowId_);
+}
+
+void window::SetOpacity(float opacity)
+{
+    if (this->AssertCreation() == ASSERT_FAILURE) {
+        return;
+    }
+    glfwSetWindowOpacity(this->windowId_, opacity);
 }
 
 void window::SwapBuffers()

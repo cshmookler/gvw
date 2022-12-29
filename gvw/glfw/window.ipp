@@ -61,21 +61,152 @@ inline void window::Create(int windowWidth,
                  contextShareWindow);
 }
 
+inline void window::SetMinimumAndMaximumSize(size<int> minimumSize,
+                                             size<int> maximumSize)
+{
+    this->SetMinimumAndMaximumSize(minimumSize.width,
+                                   minimumSize.height,
+                                   maximumSize.width,
+                                   maximumSize.height);
+}
+
+inline void window::SetMinimumSize(int minimumWidth, int minimumHeight)
+{
+    this->SetMinimumAndMaximumSize(
+        minimumWidth, minimumHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
+}
+
+inline void window::SetMinimumSize(size<int> minimumSize)
+{
+    this->SetMinimumAndMaximumSize(
+        minimumSize.width, minimumSize.height, GLFW_DONT_CARE, GLFW_DONT_CARE);
+}
+
+inline void window::SetMaximumSize(int maximumWidth, int maximumHeight)
+{
+    this->SetMinimumAndMaximumSize(
+        GLFW_DONT_CARE, GLFW_DONT_CARE, maximumWidth, maximumHeight);
+}
+
+inline void window::SetMaximumSize(size<int> maximumSize)
+{
+    this->SetMinimumAndMaximumSize(
+        GLFW_DONT_CARE, GLFW_DONT_CARE, maximumSize.width, maximumSize.height);
+}
+
 inline void window::ExitFullScreen(coordinate<int> position, size<int> size)
 {
     ExitFullScreen(position.x, position.y, size.width, size.height);
 }
 
+inline bool window::IsCursorHovering()
+{
+    return this->GetWindowAttribute_(GLFW_HOVERED);
+}
+
+inline bool window::IsResizable()
+{
+    return this->GetWindowAttribute_(GLFW_RESIZABLE);
+}
+
+inline void window::Decorate()
+{
+    this->SetWindowAttribute_(GLFW_DECORATED, GLFW_TRUE);
+}
+
+inline void window::Undecorate()
+{
+    this->SetWindowAttribute_(GLFW_DECORATED, GLFW_FALSE);
+}
+
+inline bool window::IsDecorated()
+{
+    return this->GetWindowAttribute_(GLFW_DECORATED);
+}
+
+inline void window::MinimizeOnFocusLoss()
+{
+    this->SetWindowAttribute_(GLFW_AUTO_ICONIFY, GLFW_TRUE);
+}
+
+inline void window::DontMinimizeOnFocusLoss()
+{
+    this->SetWindowAttribute_(GLFW_AUTO_ICONIFY, GLFW_FALSE);
+}
+
+inline bool window::IsMinimizedOnFocusLoss()
+{
+    return this->GetWindowAttribute_(GLFW_AUTO_ICONIFY);
+}
+
+inline void window::AlwaysOnTop()
+{
+    this->SetWindowAttribute_(GLFW_FLOATING, GLFW_TRUE);
+}
+
+inline void window::NotAlwaysOnTop()
+{
+    this->SetWindowAttribute_(GLFW_FLOATING, GLFW_FALSE);
+}
+
+inline bool window::IsAlwaysOnTop()
+{
+    return this->GetWindowAttribute_(GLFW_FLOATING);
+}
+
+inline bool window::IsMinimized()
+{
+    return this->GetWindowAttribute_(GLFW_ICONIFIED);
+}
+
+inline bool window::IsMaximized()
+{
+    return this->GetWindowAttribute_(GLFW_MAXIMIZED);
+}
+
+inline bool window::IsVisible()
+{
+    return this->GetWindowAttribute_(GLFW_VISIBLE);
+}
+
+bool window::IsFocused()
+{
+    return this->GetWindowAttribute_(GLFW_FOCUSED);
+}
+
+inline void window::FocusOnShow()
+{
+    this->SetWindowAttribute_(GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
+}
+
+inline void window::DontFocusOnShow()
+{
+    this->SetWindowAttribute_(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
+}
+
+inline bool window::IsFocusedOnShow()
+{
+    return this->GetWindowAttribute_(GLFW_FOCUS_ON_SHOW);
+}
+
+inline bool window::IsTransparent()
+{
+    return this->GetWindowAttribute_(GLFW_TRANSPARENT_FRAMEBUFFER);
+}
+
+inline void SetSwapInterval(int interval)
+{
+    glfwSwapInterval(interval);
+}
+
 template<typename type>
-void ScreenCoordinateToPixel(monitor& associatedMonitor,
-                             window& referenceWindow,
+void ScreenCoordinateToPixel(window& referenceWindow,
                              type screenCoordinateX,
                              type screenCoordinateY,
                              type& pixelX,
                              type& pixelY)
 {
-    if ((associatedMonitor.AssertInitialization() == ASSERT_FAILURE) ||
-        (referenceWindow.AssertCreation() == ASSERT_FAILURE)) {
+    if (referenceWindow.AssertCreation() == ASSERT_FAILURE) {
         return;
     }
 
@@ -101,13 +232,11 @@ void ScreenCoordinateToPixel(monitor& associatedMonitor,
 }
 
 template<typename type>
-coordinate<type> ScreenCoordinateToPixel(monitor& associatedMonitor,
-                                         window& referenceWindow,
+coordinate<type> ScreenCoordinateToPixel(window& referenceWindow,
                                          coordinate<type> screenCoordinate)
 {
     coordinate<type> pixel;
-    ScreenCoordinateToPixel(associatedMonitor,
-                            referenceWindow,
+    ScreenCoordinateToPixel(referenceWindow,
                             screenCoordinate.x,
                             screenCoordinate.y,
                             pixel.x,
@@ -116,13 +245,11 @@ coordinate<type> ScreenCoordinateToPixel(monitor& associatedMonitor,
 }
 
 template<typename type>
-size<type> ScreenCoordinateToPixel(monitor& associatedMonitor,
-                                   window& referenceWindow,
+size<type> ScreenCoordinateToPixel(window& referenceWindow,
                                    size<type> screenCoordinate)
 {
     size<type> pixel;
-    ScreenCoordinateToPixel(associatedMonitor,
-                            referenceWindow,
+    ScreenCoordinateToPixel(referenceWindow,
                             screenCoordinate.width,
                             screenCoordinate.height,
                             pixel.width,
@@ -131,15 +258,13 @@ size<type> ScreenCoordinateToPixel(monitor& associatedMonitor,
 }
 
 template<typename type>
-void PixelToScreenCoordinate(monitor& associatedMonitor,
-                             window& referenceWindow,
+void PixelToScreenCoordinate(window& referenceWindow,
                              type pixelX,
                              type pixelY,
                              type& screenCoordinateX,
                              type& screenCoordinateY)
 {
-    if ((associatedMonitor.AssertInitialization() == ASSERT_FAILURE) ||
-        (referenceWindow.AssertCreation() == ASSERT_FAILURE)) {
+    if (referenceWindow.AssertCreation() == ASSERT_FAILURE) {
         return;
     }
 
@@ -165,13 +290,11 @@ void PixelToScreenCoordinate(monitor& associatedMonitor,
 }
 
 template<typename type>
-coordinate<type> PixelToScreenCoordinate(monitor& associatedMonitor,
-                                         window& referenceWindow,
+coordinate<type> PixelToScreenCoordinate(window& referenceWindow,
                                          coordinate<type> pixel)
 {
     coordinate<type> screenCoordinate;
-    PixelToScreenCoordinate(associatedMonitor,
-                            referenceWindow,
+    PixelToScreenCoordinate(referenceWindow,
                             pixel.x,
                             pixel.y,
                             screenCoordinate.x,
@@ -180,13 +303,10 @@ coordinate<type> PixelToScreenCoordinate(monitor& associatedMonitor,
 }
 
 template<typename type>
-size<type> PixelToScreenCoordinate(monitor& associatedMonitor,
-                                   window& referenceWindow,
-                                   size<type> pixel)
+size<type> PixelToScreenCoordinate(window& referenceWindow, size<type> pixel)
 {
     size<type> screenCoordinate;
-    PixelToScreenCoordinate(associatedMonitor,
-                            referenceWindow,
+    PixelToScreenCoordinate(referenceWindow,
                             pixel.width,
                             pixel.height,
                             screenCoordinate.width,

@@ -42,8 +42,7 @@ const GLFWvidmode* monitor::VideoModeInScreenCoordinates()
 GLFWvidmode* monitor::VideoMode(window& associatedWindow)
 {
     this->videoMode_ = *this->VideoModeInScreenCoordinates();
-    ScreenCoordinateToPixel(*this,
-                            associatedWindow,
+    ScreenCoordinateToPixel(associatedWindow,
                             this->videoMode_.width,
                             this->videoMode_.height,
                             this->videoMode_.width,
@@ -86,8 +85,7 @@ coordinate<int> monitor::VirtualPosition(window& associatedWindow)
     }
 
     glfwGetMonitorPos(this->monitorId_, &virtualPosition.x, &virtualPosition.y);
-    ScreenCoordinateToPixel(*this,
-                            associatedWindow,
+    ScreenCoordinateToPixel(associatedWindow,
                             virtualPosition.x,
                             virtualPosition.y,
                             virtualPosition.x,
@@ -108,8 +106,7 @@ coordinate<int> monitor::WorkAreaPosition(window& associatedWindow)
                            &workAreaPosition.y,
                            nullptr,
                            nullptr);
-    ScreenCoordinateToPixel(*this,
-                            associatedWindow,
+    ScreenCoordinateToPixel(associatedWindow,
                             workAreaPosition.x,
                             workAreaPosition.y,
                             workAreaPosition.x,
@@ -130,8 +127,7 @@ size<int> monitor::WorkAreaSize(window& associatedWindow)
                            nullptr,
                            &workAreaSize.width,
                            &workAreaSize.height);
-    ScreenCoordinateToPixel(*this,
-                            associatedWindow,
+    ScreenCoordinateToPixel(associatedWindow,
                             workAreaSize.width,
                             workAreaSize.height,
                             workAreaSize.width,
