@@ -11,10 +11,10 @@ conan_basic_setup()
 add_executable(
     vulkan_template
 
-    vgw/glfw/glfw.cpp
-    vgw/glfw/monitor.cpp
-    vgw/glfw/window.cpp
-    vgw/vulkan/vulkan.cpp
+    gvw/glfw/glfw.cpp
+    gvw/glfw/monitor.cpp
+    gvw/glfw/window.cpp
+    gvw/vulkan/vulkan.cpp
     examples/test/utils.cpp
     examples/test/main.cpp
 )

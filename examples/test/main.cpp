@@ -13,7 +13,7 @@
 #include <glm/vec4.hpp>
 
 // Local includes
-#include "../../vgw/vgw.hpp"
+#include "../../gvw/gvw.hpp"
 #include "utils.hpp"
 
 void ErrorTestCallback(int errorCode, const char* description)
@@ -114,8 +114,7 @@ int main(int argc, char** argv)
     glfw::window thing;
     thing.Create(39,
                  2903,
-                 "THIDHFSDIUFHDSFJHUDFHSFJDHFJKDSFHDJKSFHDKJFHSDJFHSDKFHS"
-                 "DJKFHDDJKFHSFDFJHFSDK",
+                 "THIDHFSDIUFHDSFJHUDFHSFJDHFJKDSFHDJKSFHDKJFHSDJFHSDKFH",
                  window);
     glfw::size<int> windowSize = window.GetSize();
     std::cout << "window.GetSize(): x=" << windowSize.width
