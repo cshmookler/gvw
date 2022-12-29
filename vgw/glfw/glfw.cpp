@@ -1,4 +1,4 @@
-#include "glfw.hpp"
+#include "glfw.ipp"
 
 // Standard includes
 #include <iostream>
@@ -9,35 +9,39 @@
 
 namespace glfw {
 
+const bool THROW_ON_GLFW_ERROR = GLFW_FALSE;
+GLFWerrorfun ERROR_CALLBACK = nullptr;
+
 void ErrorCallback(int errorCode, const char* description)
 {
     if (errorCode != GLFW_NO_ERROR) {
-        if (THROW_ON_GLFW_ERROR == true) {
+        if (THROW_ON_GLFW_ERROR) {
             throw std::runtime_error(description);
-        } else {
-            std::cout << "GLFW runtime error: " << description << std::endl;
         }
+
+        std::cout << "GLFW runtime error: " << description << std::endl;
     }
 }
 
-Version RuntimeVersion()
+version RuntimeVersion()
 {
-    Version version;
+    version version;
     glfwGetVersion(&version.major, &version.minor, &version.revision);
     return version;
 }
 
-int Init()
+int Init(GLFWerrorfun errorCallback)
 {
     // Set the GLFW error callback
-    glfwSetErrorCallback(ErrorCallback);
+    glfwSetErrorCallback(errorCallback);
+    ERROR_CALLBACK = errorCallback;
 
 #ifdef _DEBUG
     // Print compiletime version and other information
     std::cout << "GLFW " << glfwGetVersionString() << " ";
 
     // Print runtime version
-    Version runtimeVersion = RuntimeVersion();
+    version runtimeVersion = RuntimeVersion();
     std::cout << "(runtime version: " << runtimeVersion.major << "."
               << runtimeVersion.minor << "." << runtimeVersion.revision << ")"
               << std::endl;

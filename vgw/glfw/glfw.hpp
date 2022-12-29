@@ -6,24 +6,49 @@
 
 namespace glfw {
 
+// Global variables
+extern const bool THROW_ON_GLFW_ERROR;
+extern GLFWerrorfun ERROR_CALLBACK;
+
 // Structure for storing version information
-struct Version
+struct version
 {
     int major;
     int minor;
     int revision;
 };
 
+template<typename type>
+struct size;
+
+template<typename type>
+struct coordinate
+{
+    type x;
+    type y;
+    coordinate<type>& operator=(const coordinate<type>& coordinate);
+    coordinate<type>& operator=(const size<type>& area);
+};
+
+template<typename type>
+struct size
+{
+    type width;
+    type height;
+    size<type>& operator=(const size<type>& area);
+    size<type>& operator=(const coordinate<type>& coordinate);
+};
+
 // Handle GLFW errors
 void ErrorCallback(int errorCode, const char* description);
 
 // Return version information
-Version RuntimeVersion();
+version RuntimeVersion();
 
-// Initialize GLFW (must only be called from the main thread)
-int Init();
+// Initialize GLFW
+int Init(GLFWerrorfun errorCallback = ErrorCallback);
 
-// Free resources (calls the destructor)
+// Terminate GLFW
 void Destroy();
 
 } // namespace glfw

@@ -1,18 +1,29 @@
 #pragma once
 
+// Standard includes
+#include <vector>
+
 // External includes
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 // Local includes
+#include "glfw.hpp"
 #include "monitor.hpp"
 
 namespace glfw {
 
-class Window
+inline void PollEvents()
 {
-    // Window ID
-    GLFWwindow* windowId_ = GLFW_FALSE;
+    glfwPollEvents();
+}
+
+class window
+{
+    GLFWwindow* windowId_ = WINDOW_ID_NULL;
+    coordinate<int> defaultPositionInScreenCoordinates_;
+    size<int> defaultSizeInScreenCoordinates_;
+    int displayMode_ = NOT_CREATED;
 
     // Create the window
     void Create_(int windowWidth,
@@ -24,122 +35,128 @@ class Window
 
   public:
     // Constructors
-    Window();
-    inline Window(int windowWidth,
+    window();
+    inline window(int windowWidth,
                   int windowHeight,
                   const char* windowTitle,
                   const char* windowClassName,
                   GLFWmonitor* fullScreenMonitor,
-                  GLFWwindow* contextShareWindow)
-    {
-        this->Create_(windowWidth,
-                      windowHeight,
-                      windowTitle,
-                      windowClassName,
-                      fullScreenMonitor,
-                      contextShareWindow);
-    }
+                  GLFWwindow* contextShareWindow);
 
     // Immediately closes the window
     void Destroy();
 
     // Destructor (calls the 'Destroy' function)
-    ~Window();
+    ~window();
 
     // Delete the copy constructor and copy assignment operators
     // It should not be possible to copy this object
-    Window(const Window&) = delete;
-    Window& operator=(const Window&) = delete;
+    window(const window&) = delete;
+    window& operator=(const window&) = delete;
 
     // Checks if the window has been created.
     // If it has not, an error is sent to the GLFW error callback.
-    void AssertCreation();
+    bool AssertCreation(
+        int errorCode = ERROR_WINDOW_NOT_CREATED_BEFORE_OPERATION,
+        const char* errorMessage =
+            ERROR_MESSAGE_WINDOW_NOT_CREATED_BEFORE_OPERATION);
 
     inline void Create(int windowWidth,
                        int windowHeight,
                        const char* windowTitle,
-                       const char* windowClassName = "")
-    {
-        this->Create_(windowWidth,
-                      windowHeight,
-                      windowTitle,
-                      windowClassName,
-                      NULL,
-                      NULL);
-    }
+                       const char* windowClassName = "");
 
     void Create(int windowWidth,
                 int windowHeight,
                 const char* windowTitle,
                 const char* windowClassName,
-                Monitor& fullScreenMonitor);
-
+                monitor& fullScreenMonitor);
     void Create(int windowWidth,
                 int windowHeight,
                 const char* windowTitle,
                 const char* windowClassName,
-                Window& contextShareWindow);
-
+                window& contextShareWindow);
     void Create(int windowWidth,
                 int windowHeight,
                 const char* windowTitle,
                 const char* windowClassName,
-                Monitor& fullScreenMonitor,
-                Window& contextShareWindow);
-
+                monitor& fullScreenMonitor,
+                window& contextShareWindow);
     inline void Create(int windowWidth,
                        int windowHeight,
                        const char* windowTitle,
-                       Monitor& fullScreenMonitor)
-    {
-        this->Create(
-            windowWidth, windowHeight, windowTitle, "", fullScreenMonitor);
-    }
-
+                       monitor& fullScreenMonitor);
     inline void Create(int windowWidth,
                        int windowHeight,
                        const char* windowTitle,
-                       Window& contextShareWindow)
-    {
-        this->Create(
-            windowWidth, windowHeight, windowTitle, "", contextShareWindow);
-    }
-
+                       window& contextShareWindow);
     inline void Create(int windowWidth,
                        int windowHeight,
                        const char* windowTitle,
-                       Monitor& fullScreenMonitor,
-                       Window& contextShareWindow)
-    {
-        this->Create(windowWidth,
-                     windowHeight,
-                     windowTitle,
-                     "",
-                     fullScreenMonitor,
-                     contextShareWindow);
-    }
+                       monitor& fullScreenMonitor,
+                       window& contextShareWindow);
 
-    // // Enters full screen on a specific monitor
-    // void FullScreen(Monitor& fullScreenMonitor);
+    GLFWwindow* Id();
 
-    // // Exits full screen
-    // void ExitFullScreen();
+    size<int> GetSizeInScreenCoordinates();
+    size<int> GetSize();
+    void SetSize(size<int> windowSize);
+    void SetSize(int width, int height);
 
-    // Returns the state of the 'close' flag
-    inline bool ShouldClose() { return glfwWindowShouldClose(this->windowId_); }
+    coordinate<float> GetContentScale();
 
-    // Set the 'close' flag to true
-    // Note: The window does NOT immediately close
-    inline void Close() { glfwSetWindowShouldClose(this->windowId_, true); }
+    coordinate<int> GetPositionInScreenCoordinates();
+    coordinate<int> GetPosition();
+    void SetPosition(coordinate<int> windowPosition);
+    void SetPosition(int xPos, int yPos);
 
-    // Set the 'close' flag to false
-    inline void CancelClose()
-    {
-        glfwSetWindowShouldClose(this->windowId_, false);
-    }
+    void FullScreen(monitor& fullScreenMonitor);
+    void ExitFullScreen();
+    void ExitFullScreen(int xPos, int yPos, int width, int height);
+    inline void ExitFullScreen(coordinate<int> position, size<int> size);
 
-    // Poll window Events
-    inline void PollEvents() { glfwPollEvents(); }
+    void SetTitle(const char* title);
+
+    void SetIcon(const char* iconImagePath);
+    void SetIcon(std::vector<const char*> candidateIconImagePaths);
+
+    bool ShouldClose(); // Returns the state of the 'close' flag
+    void Close();       // Set the 'close' flag to true
+    void CancelClose(); // Set the 'close' flag to false
+
+    void SwapBuffers();
 };
+
+template<typename type>
+void ScreenCoordinateToPixel(monitor& associatedMonitor,
+                             window& referenceWindow,
+                             type screenCoordinateX,
+                             type screenCoordinateY,
+                             type& pixelX,
+                             type& pixelY);
+template<typename type>
+coordinate<type> ScreenCoordinateToPixel(monitor& associatedMonitor,
+                                         window& referenceWindow,
+                                         coordinate<type> screenCoordinate);
+template<typename type>
+size<type> ScreenCoordinateToPixel(monitor& associatedMonitor,
+                                   window& referenceWindow,
+                                   size<type> screenCoordinate);
+
+template<typename type>
+void PixelToScreenCoordinate(monitor& associatedMonitor,
+                             window& referenceWindow,
+                             type pixelX,
+                             type pixelY,
+                             type& screenCoordinateX,
+                             type& screenCoordinateY);
+template<typename type>
+coordinate<type> PixelToScreenCoordinate(monitor& associatedMonitor,
+                                         window& referenceWindow,
+                                         coordinate<type> pixel);
+template<typename type>
+size<type> PixelToScreenCoordinate(monitor& associatedMonitor,
+                                   window& referenceWindow,
+                                   size<type> pixel);
 
 } // namespace glfw

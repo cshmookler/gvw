@@ -1,54 +1,172 @@
-#include "monitor.hpp"
+#include "monitor.ipp"
 
 namespace glfw {
 
-Monitor::Monitor() {}
+monitor::monitor() = default;
 
-Monitor::Monitor(GLFWmonitor* monitorId)
+monitor::monitor(GLFWmonitor* monitorId)
 {
     this->Init(monitorId);
 }
 
-Monitor::~Monitor() {}
+monitor::~monitor() = default;
 
-void Monitor::AssertInitialization()
+bool monitor::AssertInitialization()
 {
-    if (this->monitorId_ == MONITOR_ID_DEFAULT) {
-        ErrorCallback(ERROR_MONITOR_ID_NOT_INITIALIZED,
-                      ERROR_MESSAGE_MONITOR_ID_NOT_INITIALIZED);
-        return;
-    }
-}
-
-void Monitor::Init(GLFWmonitor* monitor)
-{
-    this->monitorId_ = monitor;
-    if (this->monitorId_ == GLFW_FALSE) {
-        ErrorCallback(ERROR_MONITOR_ID_NOT_INITIALIZED,
-                      ERROR_MESSAGE_MONITOR_ID_NOT_INITIALIZED);
-        return;
+    if (this->monitorId_ == MONITOR_ID_NULL) {
+        ERROR_CALLBACK(ERROR_MONITOR_ID_NOT_INITIALIZED,
+                       ERROR_MESSAGE_MONITOR_ID_NOT_INITIALIZED);
+        return ASSERT_FAILURE;
     }
 
-    this->GetVideoMode_();
-    this->GetPhysicalSize_();
-    this->GetContentScale_();
-    this->GetVirtualPosition_();
-    this->GetWorkArea_();
-    this->GetName_();
-    this->GetGammaRamp_();
+    return ASSERT_SUCCESS;
 }
 
-Monitor PrimaryMonitor()
+GLFWmonitor* monitor::Id()
 {
-    Monitor monitor(glfwGetPrimaryMonitor());
+    if (this->AssertInitialization() == ASSERT_FAILURE) {
+        return nullptr;
+    }
+    return this->monitorId_;
+}
+
+const GLFWvidmode* monitor::VideoModeInScreenCoordinates()
+{
+    if (this->AssertInitialization() == ASSERT_FAILURE) {
+        return nullptr;
+    }
+
+    return glfwGetVideoMode(this->monitorId_);
+}
+
+GLFWvidmode* monitor::VideoMode(window& associatedWindow)
+{
+    this->videoMode_ = *this->VideoModeInScreenCoordinates();
+    ScreenCoordinateToPixel(*this,
+                            associatedWindow,
+                            this->videoMode_.width,
+                            this->videoMode_.height,
+                            this->videoMode_.width,
+                            this->videoMode_.height);
+
+    return &this->videoMode_;
+}
+
+size<int> monitor::PhysicalSize()
+{
+    size<int> physicalSize = { -1, -1 };
+    if (this->AssertInitialization() == ASSERT_FAILURE) {
+        return physicalSize;
+    }
+
+    glfwGetMonitorPhysicalSize(
+        this->monitorId_, &physicalSize.width, &physicalSize.height);
+
+    return physicalSize;
+}
+
+coordinate<float> monitor::ContentScale()
+{
+    coordinate<float> contentScale = { -1.0F, -1.0F };
+    if (this->AssertInitialization() == ASSERT_FAILURE) {
+        return contentScale;
+    }
+
+    glfwGetMonitorContentScale(
+        this->monitorId_, &contentScale.x, &contentScale.y);
+
+    return contentScale;
+}
+
+coordinate<int> monitor::VirtualPosition(window& associatedWindow)
+{
+    coordinate<int> virtualPosition = { -1, -1 };
+    if (this->AssertInitialization() == ASSERT_FAILURE) {
+        return virtualPosition;
+    }
+
+    glfwGetMonitorPos(this->monitorId_, &virtualPosition.x, &virtualPosition.y);
+    ScreenCoordinateToPixel(*this,
+                            associatedWindow,
+                            virtualPosition.x,
+                            virtualPosition.y,
+                            virtualPosition.x,
+                            virtualPosition.y);
+
+    return virtualPosition;
+}
+
+coordinate<int> monitor::WorkAreaPosition(window& associatedWindow)
+{
+    coordinate<int> workAreaPosition;
+    if (this->AssertInitialization() == ASSERT_FAILURE) {
+        return workAreaPosition;
+    }
+
+    glfwGetMonitorWorkarea(this->monitorId_,
+                           &workAreaPosition.x,
+                           &workAreaPosition.y,
+                           nullptr,
+                           nullptr);
+    ScreenCoordinateToPixel(*this,
+                            associatedWindow,
+                            workAreaPosition.x,
+                            workAreaPosition.y,
+                            workAreaPosition.x,
+                            workAreaPosition.y);
+
+    return workAreaPosition;
+}
+
+size<int> monitor::WorkAreaSize(window& associatedWindow)
+{
+    size<int> workAreaSize;
+    if (this->AssertInitialization() == ASSERT_FAILURE) {
+        return workAreaSize;
+    }
+
+    glfwGetMonitorWorkarea(this->monitorId_,
+                           nullptr,
+                           nullptr,
+                           &workAreaSize.width,
+                           &workAreaSize.height);
+    ScreenCoordinateToPixel(*this,
+                            associatedWindow,
+                            workAreaSize.width,
+                            workAreaSize.height,
+                            workAreaSize.width,
+                            workAreaSize.height);
+
+    return workAreaSize;
+}
+
+const char* monitor::Name()
+{
+    if (this->AssertInitialization() == ASSERT_FAILURE) {
+        return nullptr;
+    }
+    return glfwGetMonitorName(this->monitorId_);
+}
+
+const GLFWgammaramp* monitor::GammaRamp()
+{
+    if (this->AssertInitialization() == ASSERT_FAILURE) {
+        return nullptr;
+    }
+    return glfwGetGammaRamp(this->monitorId_);
+}
+
+monitor PrimaryMonitor()
+{
+    monitor monitor(glfwGetPrimaryMonitor());
     return monitor;
 }
 
-std::vector<Monitor> Monitors()
+std::vector<monitor> Monitors()
 {
     int count;
     GLFWmonitor** monitors = glfwGetMonitors(&count);
-    std::vector<Monitor> result(count);
+    std::vector<monitor> result(count);
     for (int index = 0; index < count; index++) {
         result[index].Init(monitors[index]);
     }

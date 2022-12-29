@@ -15,9 +15,9 @@ A template for future Vulkan and GLFW projects. Started development on November 
  * [ ] Draw a 3D cube
  * [ ] Rotate the cube
 ## **Build this project**
-1. Install the required packages for c++, glfw, and vulkan.
+1. Install the required packages for c++, glfw, and vulkan. You will also need to install conan and cmake.
 ```bash
-$ sudo apt install g++ libglfw3-dev vulkan-sdk
+$ sudo apt install g++ libglfw3-dev libstb-dev vulkan-sdk
 ```
 2. Open a terminal window in the root directory of this project.
 3. Create and enter the build directory.
