@@ -15,7 +15,7 @@ A thick wrapper for GLFW and Vulkan. Started development on November 24th, 2022.
  * [ ] Draw a 3D cube
  * [ ] Rotate the cube
 ## **Build this project**
-1. Install the required packages for c++, glfw, and vulkan. You will also need to install conan and cmake.
+1. Install the required packages for C++, GLFW, and Vulkan. You will also need to install conan and cmake.
 ```bash
 $ sudo apt install g++ libglfw3-dev libstb-dev vulkan-sdk
 ```
