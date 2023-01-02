@@ -29,19 +29,31 @@ $ cd build
 ```bash
 $ conan install ..
 ```
-5. (For Release builds) Generate CMake information for the build system.
+5. Generate CMake information for the build system. By default, this project is built in release mode as a static library with a few example programs.
 ```bash
-$ cmake -DCMAKE_BUILD_TYPE=Release ..
+$ cmake ..
 ```
-6. (For Debug builds) Generate CMake information for the build system.
+For building a shared (dynamic) library instead of a static one, set the GVW_BUILD_SHARED_LIBS flag to ON.
+```bash
+$ cmake -DGVW_BUILD_SHARED_LIBS=ON ..
+```
+For debug builds, set the CMAKE_BUILD_TYPE flag to Debug.
 ```bash
 $ cmake -DCMAKE_BUILD_TYPE=Debug ..
 ```
-7. Finally, build the project.
+For not building the example programs, set the GVW_BUILD_EXAMPLES flag to OFF.
+```bash
+$ cmake -DGVW_BUILD_EXAMPLES=OFF ..
+```
+Any of the above flags can be combined into one command. For example, the below command generates CMake info for compiling a shared library in debug mode without example programs.
+```bash
+$ cmake -DGVW_BUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Debug -DGVW_BUILD_EXAMPLES=OFF ..
+```
+6. Finally, build the project.
 ```bash
 $ make
 ```
-8. Run the generated executable.
+To install the library after compilation, use 'sudo make install' instead.
 ```bash
-$ ./bin/vulkan_template
+$ sudo make install
 ```

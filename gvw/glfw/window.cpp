@@ -426,7 +426,12 @@ void window::SetIcon(const char* iconImagePath)
     }
     std::array<GLFWimage, 1> icon;
     icon[0].pixels =
-        stbi_load(iconImagePath, &icon[0].width, &icon[0].height, 0, 4);
+        stbi_load(iconImagePath, &icon[0].width, &icon[0].height, nullptr, 4);
+    if (icon[0].pixels == NULL) {
+        ERROR_CALLBACK(ERROR_ICON_FAILED_TO_LOAD,
+                       ERROR_MESSAGE_ICON_FAILED_TO_LOAD);
+        return;
+    }
     glfwSetWindowIcon(this->windowId_, icon.size(), icon.data());
     stbi_image_free(icon[0].pixels);
 }
@@ -441,8 +446,13 @@ void window::SetIcon(std::vector<const char*> candidateIconImagePaths)
         icons[iconIndex].pixels = stbi_load(candidateIconImagePaths[iconIndex],
                                             &icons[iconIndex].width,
                                             &icons[iconIndex].height,
-                                            0,
+                                            nullptr,
                                             4);
+        if (icons[iconIndex].pixels == NULL) {
+            ERROR_CALLBACK(ERROR_ICON_FAILED_TO_LOAD,
+                           ERROR_MESSAGE_ICON_FAILED_TO_LOAD);
+            return;
+        }
     }
     glfwSetWindowIcon(this->windowId_, icons.size(), icons.data());
     for (size_t iconIndex = 0; iconIndex < icons.size(); iconIndex++) {

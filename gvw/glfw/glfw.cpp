@@ -4,6 +4,9 @@
 #include <iostream>
 #include <stdexcept>
 
+// External includes
+#include <boost/dll.hpp>
+
 // Local includes
 #include "glfw_constants.hpp"
 
@@ -35,6 +38,13 @@ int Init(GLFWerrorfun errorCallback)
     // Set the GLFW error callback
     glfwSetErrorCallback(errorCallback);
     ERROR_CALLBACK = errorCallback;
+
+    // Set the working directory to the executable directory
+    boost::filesystem::path absolutePathToBinary =
+        boost::dll::program_location();
+    std::cout << absolutePathToBinary << std::endl;
+    absolutePathToBinary.remove_filename();
+    boost::filesystem::current_path(absolutePathToBinary);
 
 #ifdef _DEBUG
     // Print compiletime version and other information

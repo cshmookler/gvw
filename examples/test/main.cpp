@@ -51,11 +51,18 @@ int main(int argc, char** argv)
     primaryMonitor.AssertInitialization();
     std::cout << "monitor name: " << primaryMonitor.Name() << std::endl;
 
-    window.SetIcon("../../examples/test/icon.png");
+    std::string iconPath;
+    while (!window.ShouldClose()) {
+        std::cout << "Set icon path: ";
+        std::cin >> iconPath;
+        window.SetIcon(iconPath.c_str());
+        glfw::PollEvents();
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
 
-    std::vector<const char*> iconPaths;
-    iconPaths.push_back("../../examples/test/icon.png");
-    window.SetIcon(iconPaths);
+    // std::vector<const char*> iconPaths;
+    // iconPaths.push_back("../../examples/icon.png");
+    // window.SetIcon(iconPaths);
 
     window.Undecorate();
     std::cout << "Undecorated" << std::endl;
