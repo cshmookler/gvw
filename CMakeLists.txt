@@ -11,8 +11,10 @@ option(GVW_BUILD_EXAMPLES "build example programs" ON)
 # set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi")
 set(GVW_SOURCE_FILES
 
-    gvw/glfw/glfw.cpp
+    gvw/glfw/types.cpp
+    gvw/glfw/init.cpp
     gvw/glfw/monitor.cpp
+    gvw/glfw/input.cpp
     gvw/glfw/window.cpp
     gvw/vulkan/vulkan.cpp
 )

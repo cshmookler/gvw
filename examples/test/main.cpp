@@ -5,28 +5,34 @@
 #include <thread>
 
 // External includes
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/mat4x4.hpp>
-#include <glm/vec4.hpp>
+// #define GLFW_INCLUDE_VULKAN
+// #include <GLFW/glfw3.h>
+// #define GLM_FORCE_RADIANS
+// #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+// #include <glm/mat4x4.hpp>
+// #include <glm/vec4.hpp>
 
 // Local includes
 #include "../../gvw/gvw.hpp"
 #include "utils.hpp"
 
+#ifdef _DEBUG
 void ErrorTestCallback(int errorCode, const char* description)
 {
     if (errorCode != GLFW_NO_ERROR) {
         std::cout << "GLFW error: " << description << std::endl;
     }
 }
+#endif
+
+void CursorEnterCallback(GLFWwindow* window, int entered)
+{
+    std::cout << "window handle: " << window << ", entered state: " << entered
+              << std::endl;
+}
 
 int main(int argc, char** argv)
 {
-    int returnCode;
-
 #ifdef _DEBUG
     std::cout << "Running in Debug mode\n" << std::endl;
     std::cout << "Command line arguments:\n";
@@ -36,9 +42,11 @@ int main(int argc, char** argv)
 #endif
 
     // Initialize GLFW
-    returnCode = glfw::Init(ErrorTestCallback);
 #ifdef _DEBUG
+    int returnCode = glfw::Init(ErrorTestCallback);
     std::cout << "glfw::Init() returned with: " << returnCode << std::endl;
+#else
+    glfw::Init();
 #endif
 
     // Create the window
@@ -51,6 +59,8 @@ int main(int argc, char** argv)
     primaryMonitor.AssertInitialization();
     std::cout << "monitor name: " << primaryMonitor.Name() << std::endl;
 
+    window.AlwaysOnTop();
+
     std::string iconPath;
     while (!window.ShouldClose()) {
         std::cout << "Set icon path: ";
@@ -60,12 +70,41 @@ int main(int argc, char** argv)
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
-    // std::vector<const char*> iconPaths;
-    // iconPaths.push_back("../../examples/icon.png");
-    // window.SetIcon(iconPaths);
+    window.CancelClose();
+
+    window.SetupCursorEnterInputBuffer();
+
+    while (!window.ShouldClose()) {
+        glfw::PollEvents();
+
+        std::vector<glfw::cursor_enter_event> cursorEnterEvents =
+            window.GetCursorEnterEvents();
+        for (auto& element : cursorEnterEvents) {
+            std::cout << "Cursor enter event: " << element << std::endl;
+        }
+
+        window.ClearInputBuffers();
+    }
+
+    glfwSetCursorEnterCallback(window.Id(), CursorEnterCallback);
+
+    std::string dummyVariable;
+    while (!window.ShouldClose()) {
+        std::cout << "Enter anything to print cursor enter information: "
+                  << std::endl;
+        std::cin >> dummyVariable;
+
+        glfw::PollEvents();
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+
+    std::vector<const char*> iconPaths;
+    iconPaths.push_back("../../examples/icon.png");
+    window.SetIcon(iconPaths);
 
     window.Undecorate();
-    std::cout << "Undecorated" << std::endl;
+    window.NotAlwaysOnTop();
+    std::cout << "Undecorated and not always on top" << std::endl;
     glfw::PollEvents();
     std::this_thread::sleep_for(std::chrono::seconds(2));
     window.Decorate();
@@ -130,7 +169,7 @@ int main(int argc, char** argv)
     screenCoordinate.x = screenCoordinates.width;
     screenCoordinate.y = screenCoordinates.height;
 
-    glfw::ScreenCoordinateToPixel(window, screenCoordinate);
+    screenCoordinate = window.ScreenCoordinateToPixel(screenCoordinate);
 
     std::cout << "pixels width: " << screenCoordinate.x
               << ", pixels height: " << screenCoordinate.y << std::endl;
@@ -154,6 +193,8 @@ int main(int argc, char** argv)
     glfw::size<int> windowSize = window.GetSize();
     std::cout << "window.GetSize(): x=" << windowSize.width
               << ", y=" << windowSize.height << std::endl;
+
+    window.Destroy();
 
     glfw::Destroy();
 }

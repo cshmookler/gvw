@@ -1,4 +1,9 @@
-#include "monitor.ipp"
+#include "monitor.tpp"
+
+// Local includes
+#include "init.tpp"
+#include "window.hpp"
+#include "window.tpp"
 
 namespace glfw {
 
@@ -10,6 +15,11 @@ monitor::monitor(GLFWmonitor* monitorId)
 }
 
 monitor::~monitor() = default;
+
+void monitor::Init(GLFWmonitor* monitorId)
+{
+    this->monitorId_ = monitorId;
+}
 
 bool monitor::AssertInitialization()
 {
@@ -42,11 +52,10 @@ const GLFWvidmode* monitor::VideoModeInScreenCoordinates()
 GLFWvidmode* monitor::VideoMode(window& associatedWindow)
 {
     this->videoMode_ = *this->VideoModeInScreenCoordinates();
-    ScreenCoordinateToPixel(associatedWindow,
-                            this->videoMode_.width,
-                            this->videoMode_.height,
-                            this->videoMode_.width,
-                            this->videoMode_.height);
+    associatedWindow.ScreenCoordinateToPixel(this->videoMode_.width,
+                                             this->videoMode_.height,
+                                             this->videoMode_.width,
+                                             this->videoMode_.height);
 
     return &this->videoMode_;
 }
@@ -85,11 +94,10 @@ coordinate<int> monitor::VirtualPosition(window& associatedWindow)
     }
 
     glfwGetMonitorPos(this->monitorId_, &virtualPosition.x, &virtualPosition.y);
-    ScreenCoordinateToPixel(associatedWindow,
-                            virtualPosition.x,
-                            virtualPosition.y,
-                            virtualPosition.x,
-                            virtualPosition.y);
+    associatedWindow.ScreenCoordinateToPixel(virtualPosition.x,
+                                             virtualPosition.y,
+                                             virtualPosition.x,
+                                             virtualPosition.y);
 
     return virtualPosition;
 }
@@ -106,11 +114,10 @@ coordinate<int> monitor::WorkAreaPosition(window& associatedWindow)
                            &workAreaPosition.y,
                            nullptr,
                            nullptr);
-    ScreenCoordinateToPixel(associatedWindow,
-                            workAreaPosition.x,
-                            workAreaPosition.y,
-                            workAreaPosition.x,
-                            workAreaPosition.y);
+    associatedWindow.ScreenCoordinateToPixel(workAreaPosition.x,
+                                             workAreaPosition.y,
+                                             workAreaPosition.x,
+                                             workAreaPosition.y);
 
     return workAreaPosition;
 }
@@ -127,11 +134,10 @@ size<int> monitor::WorkAreaSize(window& associatedWindow)
                            nullptr,
                            &workAreaSize.width,
                            &workAreaSize.height);
-    ScreenCoordinateToPixel(associatedWindow,
-                            workAreaSize.width,
-                            workAreaSize.height,
-                            workAreaSize.width,
-                            workAreaSize.height);
+    associatedWindow.ScreenCoordinateToPixel(workAreaSize.width,
+                                             workAreaSize.height,
+                                             workAreaSize.width,
+                                             workAreaSize.height);
 
     return workAreaSize;
 }
@@ -150,6 +156,16 @@ const GLFWgammaramp* monitor::GammaRamp()
         return nullptr;
     }
     return glfwGetGammaRamp(this->monitorId_);
+}
+
+void monitor::SetGammaRamp(const GLFWgammaramp& gammaRamp)
+{
+    glfwSetGammaRamp(this->monitorId_, &gammaRamp);
+}
+
+void monitor::ResetGammaRamp()
+{
+    glfwSetGamma(this->monitorId_, GAMMA_DEFAULT);
 }
 
 monitor PrimaryMonitor()

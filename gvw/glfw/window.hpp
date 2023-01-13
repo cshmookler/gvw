@@ -8,19 +8,18 @@
 #include <GLFW/glfw3.h>
 
 // Local includes
-#include "glfw.hpp"
-#include "monitor.hpp"
+#include "const.hpp"
+#include "init.hpp"
+#include "types.hpp"
 
 namespace glfw {
 
-inline void PollEvents()
-{
-    glfwPollEvents();
-}
+class monitor;
 
 class window
 {
     GLFWwindow* windowId_ = WINDOW_ID_NULL;
+    VkSurfaceKHR surface_ = VK_NULL_HANDLE;
     coordinate<int> defaultPositionInScreenCoordinates_;
     size<int> defaultSizeInScreenCoordinates_;
     int displayMode_ = NOT_CREATED;
@@ -37,14 +36,31 @@ class window
     void SetWindowAttribute_(int attribute, int value);
 
   public:
+    // Input buffers
+    std::vector<key_event> keyEvents;
+    std::vector<character_event> characterEvents;
+    std::vector<cursor_position_event> cursorPositionEvents;
+    std::vector<cursor_enter_event> cursorEnterEvents;
+    std::vector<mouse_button_event> mouseButtonEvents;
+    std::vector<scroll_event> scrollEvents;
+    std::vector<file_drop_event> fileDropEvents;
+
+    size_t storedKeyEvents = 0;
+    size_t storedCharacterEvents = 0;
+    size_t storedCursorPositionEvents = 0;
+    size_t storedCursorEnterEvents = 0;
+    size_t storedMouseButtonEvents = 0;
+    size_t storedScrollEvents = 0;
+    size_t storedFileDropEvents = 0;
+
     // Constructors
     window();
-    inline window(int windowWidth,
-                  int windowHeight,
-                  const char* windowTitle,
-                  const char* windowClassName,
-                  GLFWmonitor* fullScreenMonitor,
-                  GLFWwindow* contextShareWindow);
+    window(int windowWidth,
+           int windowHeight,
+           const char* windowTitle,
+           const char* windowClassName,
+           GLFWmonitor* fullScreenMonitor,
+           GLFWwindow* contextShareWindow);
 
     // Immediately closes the window
     void Destroy();
@@ -64,10 +80,10 @@ class window
         const char* errorMessage =
             ERROR_MESSAGE_WINDOW_NOT_CREATED_BEFORE_OPERATION);
 
-    inline void Create(int windowWidth,
-                       int windowHeight,
-                       const char* windowTitle,
-                       const char* windowClassName = "");
+    void Create(int windowWidth,
+                int windowHeight,
+                const char* windowTitle,
+                const char* windowClassName = "");
 
     void Create(int windowWidth,
                 int windowHeight,
@@ -85,19 +101,52 @@ class window
                 const char* windowClassName,
                 monitor& fullScreenMonitor,
                 window& contextShareWindow);
-    inline void Create(int windowWidth,
-                       int windowHeight,
-                       const char* windowTitle,
-                       monitor& fullScreenMonitor);
-    inline void Create(int windowWidth,
-                       int windowHeight,
-                       const char* windowTitle,
-                       window& contextShareWindow);
-    inline void Create(int windowWidth,
-                       int windowHeight,
-                       const char* windowTitle,
-                       monitor& fullScreenMonitor,
-                       window& contextShareWindow);
+    void Create(int windowWidth,
+                int windowHeight,
+                const char* windowTitle,
+                monitor& fullScreenMonitor);
+    void Create(int windowWidth,
+                int windowHeight,
+                const char* windowTitle,
+                window& contextShareWindow);
+    void Create(int windowWidth,
+                int windowHeight,
+                const char* windowTitle,
+                monitor& fullScreenMonitor,
+                window& contextShareWindow);
+
+    template<typename type>
+    void ScreenCoordinateToPixel(type screenCoordinateX,
+                                 type screenCoordinateY,
+                                 type& pixelX,
+                                 type& pixelY);
+    template<typename type>
+    coordinate<type> ScreenCoordinateToPixel(
+        coordinate<type>& screenCoordinate);
+    template<typename type>
+    size<type> ScreenCoordinateToPixel(size<type>& screenCoordinate);
+
+    template<typename type>
+    void PixelToScreenCoordinate(type pixelX,
+                                 type pixelY,
+                                 type& screenCoordinateX,
+                                 type& screenCoordinateY);
+    template<typename type>
+    coordinate<type> PixelToScreenCoordinate(coordinate<type>& pixel);
+    template<typename type>
+    size<type> PixelToScreenCoordinate(size<type>& pixel);
+
+    // Setup input buffers and event callbacks
+    void SetupKeyInputBuffer();
+    void SetupCharacterInputBuffer();
+    void SetupCursorPositionInputBuffer();
+    void SetupCursorEnterInputBuffer();
+    void SetupMouseButtonInputBuffer();
+    void SetupScrollInputBuffer();
+    void SetupFileDropInputBuffer();
+
+    // Clear input buffers
+    void ClearInputBuffers();
 
     GLFWwindow* Id();
 
@@ -132,78 +181,62 @@ class window
     void FullScreen(monitor& fullScreenMonitor);
     void ExitFullScreen();
     void ExitFullScreen(int xPos, int yPos, int width, int height);
-    inline void ExitFullScreen(coordinate<int> position, size<int> size);
+    void ExitFullScreen(coordinate<int> position, size<int> size);
 
     void SetTitle(const char* title);
 
     void SetIcon(const char* iconImagePath);
     void SetIcon(std::vector<const char*> candidateIconImagePaths);
 
-    inline bool IsCursorHovering();
-    inline bool IsResizable();
+    bool IsCursorHovering();
+    bool IsResizable();
 
-    inline void Decorate();
-    inline void Undecorate();
-    inline bool IsDecorated();
+    void Decorate();
+    void Undecorate();
+    bool IsDecorated();
 
-    inline void MinimizeOnFocusLoss();
-    inline void DontMinimizeOnFocusLoss();
-    inline bool IsMinimizedOnFocusLoss();
+    void MinimizeOnFocusLoss();
+    void DontMinimizeOnFocusLoss();
+    bool IsMinimizedOnFocusLoss();
 
-    inline void AlwaysOnTop();
-    inline void NotAlwaysOnTop();
-    inline bool IsAlwaysOnTop();
+    void AlwaysOnTop();
+    void NotAlwaysOnTop();
+    bool IsAlwaysOnTop();
 
     void Minimize();
     void Maximize();
     void Restore();
-    inline bool IsMinimized();
-    inline bool IsMaximized();
+    bool IsMinimized();
+    bool IsMaximized();
 
     void Hide();
     void Show();
-    inline bool IsVisible();
+    bool IsVisible();
 
     void Focus();
-    inline bool IsFocused();
+    bool IsFocused();
 
     void RequestFocus();
 
-    inline void FocusOnShow();
-    inline void DontFocusOnShow();
-    inline bool IsFocusedOnShow();
+    void FocusOnShow();
+    void DontFocusOnShow();
+    bool IsFocusedOnShow();
 
     void SetOpacity(float opacity);
-    inline bool IsTransparent();
+    bool IsTransparent();
 
     void SwapBuffers();
+
+    VkResult CreateSurface(VkInstance instance,
+                           const VkAllocationCallbacks* allocator);
+
+    std::vector<key_event> GetKeyEvents();
+    std::vector<character_event> GetCharacterEvents();
+    std::vector<cursor_position_event> GetCursorPositionEvents();
+    std::vector<cursor_enter_event> GetCursorEnterEvents();
+    std::vector<mouse_button_event> GetMouseButtonEvents();
+    std::vector<scroll_event> GetScrollOffsetEvents();
+    std::vector<file_drop_event> GetFileDropEvents();
 };
-
-inline void SetSwapInterval(int interval);
-
-template<typename type>
-void ScreenCoordinateToPixel(window& referenceWindow,
-                             type screenCoordinateX,
-                             type screenCoordinateY,
-                             type& pixelX,
-                             type& pixelY);
-template<typename type>
-coordinate<type> ScreenCoordinateToPixel(window& referenceWindow,
-                                         coordinate<type> screenCoordinate);
-template<typename type>
-size<type> ScreenCoordinateToPixel(window& referenceWindow,
-                                   size<type> screenCoordinate);
-
-template<typename type>
-void PixelToScreenCoordinate(window& referenceWindow,
-                             type pixelX,
-                             type pixelY,
-                             type& screenCoordinateX,
-                             type& screenCoordinateY);
-template<typename type>
-coordinate<type> PixelToScreenCoordinate(window& referenceWindow,
-                                         coordinate<type> pixel);
-template<typename type>
-size<type> PixelToScreenCoordinate(window& referenceWindow, size<type> pixel);
 
 } // namespace glfw

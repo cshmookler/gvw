@@ -1,16 +1,7 @@
 #pragma once
 
-// External includes
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
 namespace glfw {
 
-// Global variables
-extern const bool THROW_ON_GLFW_ERROR;
-extern GLFWerrorfun ERROR_CALLBACK;
-
-// Structure for storing version information
 struct version
 {
     int major;
@@ -39,16 +30,32 @@ struct size
     size<type>& operator=(const coordinate<type>& coordinate);
 };
 
-// Handle GLFW errors
-void ErrorCallback(int errorCode, const char* description);
-
-// Return version information
-version RuntimeVersion();
-
-// Initialize GLFW
-int Init(GLFWerrorfun errorCallback = ErrorCallback);
-
-// Terminate GLFW
-void Destroy();
+struct key_event
+{
+    int key;
+    int scancode;
+    int action;
+    int mods;
+};
+using character_event = unsigned int;
+using cursor_position_event = coordinate<double>;
+using cursor_enter_event = int;
+struct mouse_button_event
+{
+    int button;
+    int action;
+    int mods;
+};
+using scroll_event = coordinate<double>;
+struct joystick_event
+{
+    int jid;
+    int event;
+};
+struct file_drop_event
+{
+    int count;
+    const char** paths;
+};
 
 } // namespace glfw

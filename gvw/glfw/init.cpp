@@ -1,4 +1,4 @@
-#include "glfw.ipp"
+#include "init.tpp"
 
 // Standard includes
 #include <iostream>
@@ -8,7 +8,7 @@
 #include <boost/dll.hpp>
 
 // Local includes
-#include "glfw_constants.hpp"
+#include "const.hpp"
 
 namespace glfw {
 
@@ -67,12 +67,47 @@ int Init(GLFWerrorfun errorCallback)
 #endif
 
     // Initialize the GLFW library
-    return glfwInit();
+    int initialized = glfwInit();
+
+    // Check Vulkan support
+    if (glfwVulkanSupported() != GLFW_TRUE) {
+        ERROR_CALLBACK(ERROR_VULKAN_LOADER_NOT_FOUND,
+                       ERROR_MESSAGE_VULKAN_LOADER_NOT_FOUND);
+    }
+
+    return initialized;
 }
 
 void Destroy()
 {
     glfwTerminate();
+}
+
+GLFWvkproc GetInstanceProcessAddress(VkInstance vulkanInstance,
+                                     const char* processName)
+{
+    return glfwGetInstanceProcAddress(vulkanInstance, processName);
+}
+
+std::vector<const char*> GetRequiredInstanceExtensions()
+{
+    uint32_t extensionCount;
+    const char** extensions =
+        glfwGetRequiredInstanceExtensions(&extensionCount);
+    std::vector<const char*> requiredInstanceExtensions(extensionCount);
+    for (size_t extensionIndex = 0; extensionIndex < extensionCount;
+         extensionIndex++) {
+        requiredInstanceExtensions[extensionIndex] = extensions[extensionCount];
+    }
+    return requiredInstanceExtensions;
+}
+
+bool PhysicalDeviceHasPresentationSupport(VkInstance instance,
+                                          VkPhysicalDevice physicalDevice,
+                                          uint32_t queueFamily)
+{
+    return bool(glfwGetPhysicalDevicePresentationSupport(
+        instance, physicalDevice, queueFamily));
 }
 
 } // namespace glfw

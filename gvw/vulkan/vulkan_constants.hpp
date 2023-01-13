@@ -5,4 +5,4 @@
 
 namespace vk {
 
-} // namespace vk
+} // namespace vulkan

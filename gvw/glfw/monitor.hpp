@@ -9,13 +9,10 @@
 #include <GLFW/glfw3.h>
 
 // Local includes
-#include "glfw.hpp"
-#include "glfw_constants.hpp"
+#include "const.hpp"
+#include "init.hpp"
 
 namespace glfw {
-
-// Forward declaration of the 'window' class
-class window;
 
 class monitor
 {
@@ -48,10 +45,10 @@ class monitor
     const GLFWgammaramp* GammaRamp();
 
     // Set gamma ramp
-    inline void SetGammaRamp(const GLFWgammaramp& gammaRamp);
+    void SetGammaRamp(const GLFWgammaramp& gammaRamp);
 
     // Reset gamma ramp with a default value
-    inline void ResetGammaRamp();
+    void ResetGammaRamp();
 };
 
 // Returns a 'Monitor' object for the primary monitor

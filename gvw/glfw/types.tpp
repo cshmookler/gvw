@@ -1,4 +1,6 @@
-#include "glfw.hpp"
+#pragma once
+
+#include "types.hpp"
 
 namespace glfw {
 
