@@ -11,12 +11,15 @@ option(GVW_BUILD_EXAMPLES "build example programs" ON)
 # set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi")
 set(GVW_SOURCE_FILES
 
-    gvw/glfw/types.cpp
+    gvw/common/global.cpp
+    gvw/common/file.cpp
+    gvw/common/types.cpp
+    gvw/common/image.cpp
+
     gvw/glfw/init.cpp
     gvw/glfw/monitor.cpp
     gvw/glfw/input.cpp
     gvw/glfw/window.cpp
-    gvw/vulkan/vulkan.cpp
 )
 
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
@@ -42,6 +45,6 @@ if(GVW_BUILD_EXAMPLES)
     target_link_directories(test PRIVATE ${CMAKE_BINARY_DIR})
     target_link_libraries(test gvw)
 
-    file(COPY examples/test/icon.png DESTINATION ${CMAKE_BINARY_DIR}/bin)
+    file(COPY examples/test/icon.png examples/test/icon_no_transparency.png DESTINATION ${CMAKE_BINARY_DIR}/bin)
 endif()
 # --------------------------------- #

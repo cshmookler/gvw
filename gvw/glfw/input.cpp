@@ -1,10 +1,13 @@
 #include "input.tpp"
 
+// Standard includes
+#include <iostream>
+
 // Local includes
-#include "types.tpp"
+#include "../common/types.tpp"
 #include "window.hpp"
 
-namespace glfw {
+namespace gvw {
 
 std::vector<window*> WINDOWS_RECIEVING_INPUT;
 std::vector<joystick_event> JOYSTICK_EVENTS;
@@ -219,4 +222,4 @@ std::vector<joystick_event> GetJoystickEvents()
     return truncatedJoystickEvents;
 }
 
-} // namespace glfw
+} // namespace gvw

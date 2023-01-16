@@ -1,6 +1,4 @@
-#pragma once
-
-#include "init.hpp"
+#include "file.tpp"
 
 namespace gvw {
 

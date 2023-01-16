@@ -7,16 +7,16 @@
 // External includes
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb/stb_image.h>
 
 // Local includes
+#include "../common/global.hpp"
+#include "../common/image.hpp"
+#include "../common/types.tpp"
 #include "init.tpp"
 #include "input.hpp"
 #include "monitor.hpp"
-#include "types.tpp"
 
-namespace glfw {
+namespace gvw {
 
 void window::Create_(int windowWidth,
                      int windowHeight,
@@ -611,16 +611,13 @@ void window::SetIcon(const char* iconImagePath)
     if (this->AssertCreation() == ASSERT_FAILURE) {
         return;
     }
-    std::array<GLFWimage, 1> icon;
-    icon[0].pixels =
-        stbi_load(iconImagePath, &icon[0].width, &icon[0].height, nullptr, 4);
-    if (icon[0].pixels == NULL) {
-        ERROR_CALLBACK(ERROR_ICON_FAILED_TO_LOAD,
-                       ERROR_MESSAGE_ICON_FAILED_TO_LOAD);
+    image icon = LoadRGBAImage(iconImagePath);
+    std::array<GLFWimage, 1> glfwIcon;
+    glfwIcon[0] = icon;
+    if (glfwIcon[0].pixels == nullptr) {
         return;
     }
-    glfwSetWindowIcon(this->windowId_, icon.size(), icon.data());
-    stbi_image_free(icon[0].pixels);
+    glfwSetWindowIcon(this->windowId_, glfwIcon.size(), glfwIcon.data());
 }
 
 void window::SetIcon(std::vector<const char*> candidateIconImagePaths)
@@ -628,23 +625,23 @@ void window::SetIcon(std::vector<const char*> candidateIconImagePaths)
     if (this->AssertCreation() == ASSERT_FAILURE) {
         return;
     }
-    std::vector<GLFWimage> icons(candidateIconImagePaths.size());
-    for (size_t iconIndex = 0; iconIndex < icons.size(); iconIndex++) {
-        icons[iconIndex].pixels = stbi_load(candidateIconImagePaths[iconIndex],
-                                            &icons[iconIndex].width,
-                                            &icons[iconIndex].height,
-                                            nullptr,
-                                            4);
-        if (icons[iconIndex].pixels == NULL) {
-            ERROR_CALLBACK(ERROR_ICON_FAILED_TO_LOAD,
-                           ERROR_MESSAGE_ICON_FAILED_TO_LOAD);
-            return;
+    std::vector<GLFWimage> glfwIcons(candidateIconImagePaths.size());
+    std::vector<image> icons(candidateIconImagePaths.size());
+    size_t iconIndex = 0;
+    for (size_t candidateIconIndex = 0;
+         candidateIconIndex < candidateIconImagePaths.size();
+         candidateIconIndex++) {
+        icons[iconIndex] = LoadRGBAImage(candidateIconImagePaths[iconIndex]);
+        if (icons[iconIndex].pixelData.data() == nullptr) {
+            icons[iconIndex].pixelData.clear();
+            continue;
         }
+        glfwIcons[iconIndex] = icons[iconIndex];
+        iconIndex++;
     }
-    glfwSetWindowIcon(this->windowId_, icons.size(), icons.data());
-    for (size_t iconIndex = 0; iconIndex < icons.size(); iconIndex++) {
-        stbi_image_free(icons[iconIndex].pixels);
-    }
+    glfwIcons.resize(iconIndex);
+    icons.resize(iconIndex);
+    glfwSetWindowIcon(this->windowId_, glfwIcons.size(), glfwIcons.data());
 }
 
 bool window::IsCursorHovering()
@@ -888,4 +885,4 @@ std::vector<file_drop_event> window::GetFileDropEvents()
     return truncatedFileDropEvents;
 }
 
-} // namespace glfw
+} // namespace gvw

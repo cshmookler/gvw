@@ -43,18 +43,18 @@ int main(int argc, char** argv)
 
     // Initialize GLFW
 #ifdef _DEBUG
-    int returnCode = glfw::Init(ErrorTestCallback);
-    std::cout << "glfw::Init() returned with: " << returnCode << std::endl;
+    int returnCode = gvw::Init(ErrorTestCallback);
+    std::cout << "gvw::Init() returned with: " << returnCode << std::endl;
 #else
-    glfw::Init();
+    gvw::Init();
 #endif
 
     // Create the window
-    glfw::window window;
+    gvw::window window;
     window.Create(600, 450, "This is the window title");
 
-    glfw::monitor primaryMonitor = glfw::PrimaryMonitor();
-    std::vector<glfw::monitor> monitors = glfw::Monitors();
+    gvw::monitor primaryMonitor = gvw::PrimaryMonitor();
+    std::vector<gvw::monitor> monitors = gvw::Monitors();
     std::cout << "monitor count: " << monitors.size() << std::endl;
     primaryMonitor.AssertInitialization();
     std::cout << "monitor name: " << primaryMonitor.Name() << std::endl;
@@ -66,7 +66,7 @@ int main(int argc, char** argv)
         std::cout << "Set icon path: ";
         std::cin >> iconPath;
         window.SetIcon(iconPath.c_str());
-        glfw::PollEvents();
+        gvw::PollEvents();
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
@@ -75,9 +75,13 @@ int main(int argc, char** argv)
     window.SetupCursorEnterInputBuffer();
 
     while (!window.ShouldClose()) {
-        glfw::PollEvents();
+        std::cout << "Enter anything to print cursor enter information: ";
+        std::cin >> iconPath;
+        std::this_thread::sleep_for(std::chrono::seconds(1));
 
-        std::vector<glfw::cursor_enter_event> cursorEnterEvents =
+        gvw::PollEvents();
+
+        std::vector<gvw::cursor_enter_event> cursorEnterEvents =
             window.GetCursorEnterEvents();
         for (auto& element : cursorEnterEvents) {
             std::cout << "Cursor enter event: " << element << std::endl;
@@ -85,6 +89,8 @@ int main(int argc, char** argv)
 
         window.ClearInputBuffers();
     }
+
+    window.CancelClose();
 
     glfwSetCursorEnterCallback(window.Id(), CursorEnterCallback);
 
@@ -94,26 +100,28 @@ int main(int argc, char** argv)
                   << std::endl;
         std::cin >> dummyVariable;
 
-        glfw::PollEvents();
+        gvw::PollEvents();
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
-    std::vector<const char*> iconPaths;
-    iconPaths.push_back("../../examples/icon.png");
+    std::vector<const char*> iconPaths(3);
+    iconPaths.at(0) = "icon.png";
+    iconPaths.at(1) = "icon_no_transparency.png";
+    iconPaths.at(2) = "dffdshfuicrenu.png";
     window.SetIcon(iconPaths);
 
     window.Undecorate();
     window.NotAlwaysOnTop();
     std::cout << "Undecorated and not always on top" << std::endl;
-    glfw::PollEvents();
+    gvw::PollEvents();
     std::this_thread::sleep_for(std::chrono::seconds(2));
     window.Decorate();
     std::cout << "Decorated" << std::endl;
-    glfw::PollEvents();
+    gvw::PollEvents();
     std::this_thread::sleep_for(std::chrono::seconds(2));
     window.Undecorate();
     std::cout << "Undecorated" << std::endl;
-    glfw::PollEvents();
+    gvw::PollEvents();
     std::this_thread::sleep_for(std::chrono::seconds(2));
 
     std::chrono::time_point<std::chrono::steady_clock> start;
@@ -133,7 +141,7 @@ int main(int argc, char** argv)
             window.Close();
         }
 
-        glfw::PollEvents();
+        gvw::PollEvents();
     }
 
     window.FullScreen(primaryMonitor);
@@ -142,16 +150,16 @@ int main(int argc, char** argv)
     window.Restore();
     window.Focus();
     window.Undecorate();
-    glfw::PollEvents();
+    gvw::PollEvents();
     std::cout << "Undecorated and focused" << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(2));
     window.Decorate();
-    glfw::PollEvents();
+    gvw::PollEvents();
     std::cout << "Decorated" << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(2));
     window.Focus();
     std::cout << "Focused" << std::endl;
-    glfw::PollEvents();
+    gvw::PollEvents();
     std::this_thread::sleep_for(std::chrono::seconds(2));
 
     auto pixels = window.GetSize();
@@ -165,7 +173,7 @@ int main(int argc, char** argv)
     std::cout << "content scale x: " << contentScale.x
               << ", content scale y: " << contentScale.y << std::endl;
 
-    glfw::coordinate<int> screenCoordinate;
+    gvw::coordinate<int> screenCoordinate;
     screenCoordinate.x = screenCoordinates.width;
     screenCoordinate.y = screenCoordinates.height;
 
@@ -185,16 +193,16 @@ int main(int argc, char** argv)
     window.ExitFullScreen();
     window.Id();
     window.SetPosition(0, 1);
-    glfw::window thing;
+    gvw::window thing;
     thing.Create(39,
                  2903,
                  "THIDHFSDIUFHDSFJHUDFHSFJDHFJKDSFHDJKSFHDKJFHSDJFHSDKFH",
                  window);
-    glfw::size<int> windowSize = window.GetSize();
+    gvw::size<int> windowSize = window.GetSize();
     std::cout << "window.GetSize(): x=" << windowSize.width
               << ", y=" << windowSize.height << std::endl;
 
     window.Destroy();
 
-    glfw::Destroy();
+    gvw::Destroy();
 }

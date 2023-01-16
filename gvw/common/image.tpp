@@ -1,6 +1,6 @@
 #pragma once
 
-#include "init.hpp"
+#include "image.hpp"
 
 namespace gvw {
 

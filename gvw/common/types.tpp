@@ -2,7 +2,7 @@
 
 #include "types.hpp"
 
-namespace glfw {
+namespace gvw {
 
 template<typename type>
 coordinate<type>& coordinate<type>::operator=(
@@ -41,4 +41,4 @@ size<type>& size<type>::operator=(const coordinate<type>& coordinate)
     return *this;
 }
 
-} // namespace glfw
+} // namespace gvw

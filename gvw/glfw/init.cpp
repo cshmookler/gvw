@@ -8,12 +8,10 @@
 #include <boost/dll.hpp>
 
 // Local includes
-#include "const.hpp"
+#include "../common/const.hpp"
+#include "../common/global.hpp"
 
-namespace glfw {
-
-const bool THROW_ON_GLFW_ERROR = GLFW_FALSE;
-GLFWerrorfun ERROR_CALLBACK = nullptr;
+namespace gvw {
 
 void ErrorCallback(int errorCode, const char* description)
 {
@@ -110,4 +108,4 @@ bool PhysicalDeviceHasPresentationSupport(VkInstance instance,
         instance, physicalDevice, queueFamily));
 }
 
-} // namespace glfw
+} // namespace gvw

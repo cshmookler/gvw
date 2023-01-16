@@ -2,7 +2,7 @@
 
 #include "window.hpp"
 
-namespace glfw {
+namespace gvw {
 
 template<typename type>
 void window::ScreenCoordinateToPixel(type screenCoordinateX,
@@ -105,4 +105,4 @@ size<type> window::PixelToScreenCoordinate(size<type>& pixel)
     return screenCoordinate;
 }
 
-} // namespace glfw
+} // namespace gvw

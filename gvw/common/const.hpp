@@ -7,7 +7,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-namespace glfw {
+namespace gvw {
 
 // General constants
 const bool ASSERT_SUCCESS = GLFW_FALSE;
@@ -65,4 +65,4 @@ const char* const ERROR_MESSAGE_MONITOR_ID_NOT_INITIALIZED =
     "A monitor object must first be initialized before accessing or setting "
     "its members";
 
-} // namespace glfw
+} // namespace gvw

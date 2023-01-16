@@ -6,7 +6,7 @@
 // Local includes
 #include "init.hpp"
 
-namespace glfw {
+namespace gvw {
 
 extern std::vector<window*> WINDOWS_RECIEVING_INPUT;
 extern std::vector<joystick_event> JOYSTICK_EVENTS;
@@ -51,4 +51,4 @@ void ClearJoystickInputBuffer();
 
 std::vector<joystick_event> GetJoystickEvents();
 
-} // namespace glfw
+} // namespace gvw

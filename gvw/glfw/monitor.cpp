@@ -1,11 +1,12 @@
 #include "monitor.tpp"
 
 // Local includes
+#include "../common/global.hpp"
 #include "init.tpp"
 #include "window.hpp"
 #include "window.tpp"
 
-namespace glfw {
+namespace gvw {
 
 monitor::monitor() = default;
 
@@ -185,4 +186,4 @@ std::vector<monitor> Monitors()
     return result;
 }
 
-} // namespace glfw
+} // namespace gvw

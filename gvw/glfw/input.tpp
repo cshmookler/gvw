@@ -2,6 +2,6 @@
 
 #include "input.hpp"
 
-namespace glfw {
+namespace gvw {
 
-} // namespace glfw
+} // namespace gvw

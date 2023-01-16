@@ -1,6 +1,14 @@
 #pragma once
 
-namespace glfw {
+// Standard includes
+#include <cstdint>
+#include <vector>
+
+// External includes
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+
+namespace gvw {
 
 struct version
 {
@@ -58,4 +66,13 @@ struct file_drop_event
     const char** paths;
 };
 
-} // namespace glfw
+struct image
+{
+    int width;
+    int height;
+    int componentsPerPixel;
+    std::vector<uint8_t> pixelData;
+    operator GLFWimage();
+};
+
+} // namespace gvw

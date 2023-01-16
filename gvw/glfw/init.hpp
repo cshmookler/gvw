@@ -8,12 +8,9 @@
 #include <GLFW/glfw3.h>
 
 // Local includes
-#include "types.hpp"
+#include "../common/types.hpp"
 
-namespace glfw {
-
-extern const bool THROW_ON_GLFW_ERROR;
-extern GLFWerrorfun ERROR_CALLBACK;
+namespace gvw {
 
 // Forward declaration of the 'window' class
 class window;
@@ -40,4 +37,4 @@ bool PhysicalDeviceHasPresentationSupport(VkInstance instance,
 
 void SetSwapInterval(int interval);
 
-} // namespace glfw
+} // namespace gvw

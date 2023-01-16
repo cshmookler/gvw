@@ -8,11 +8,11 @@
 #include <GLFW/glfw3.h>
 
 // Local includes
-#include "const.hpp"
+#include "../common/const.hpp"
+#include "../common/types.hpp"
 #include "init.hpp"
-#include "types.hpp"
 
-namespace glfw {
+namespace gvw {
 
 class monitor;
 
@@ -239,4 +239,4 @@ class window
     std::vector<file_drop_event> GetFileDropEvents();
 };
 
-} // namespace glfw
+} // namespace gvw

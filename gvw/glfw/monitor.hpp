@@ -9,10 +9,10 @@
 #include <GLFW/glfw3.h>
 
 // Local includes
-#include "const.hpp"
+#include "../common/const.hpp"
 #include "init.hpp"
 
-namespace glfw {
+namespace gvw {
 
 class monitor
 {
@@ -57,4 +57,4 @@ monitor PrimaryMonitor();
 // Returns a vector containing a 'Monitor' object for each physical monitor
 std::vector<monitor> Monitors();
 
-} // namespace glfw
+} // namespace gvw
