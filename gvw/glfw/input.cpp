@@ -69,6 +69,7 @@ void KeyCallback(GLFWwindow* associatedWindow,
                                          INPUT_BUFFER_INCREMENT_SIZE);
     }
     windowReference.keyEvents.at(windowReference.storedKeyEvents) = keyEvent;
+    windowReference.storedCursorEnterEvents++;
 }
 
 void CharacterCallback(GLFWwindow* associatedWindow, unsigned int codePoint)
@@ -88,6 +89,7 @@ void CharacterCallback(GLFWwindow* associatedWindow, unsigned int codePoint)
     }
     windowReference.characterEvents.at(windowReference.storedCharacterEvents) =
         character_event(codePoint);
+    windowReference.storedCursorEnterEvents++;
 }
 
 void CursorPositionCallback(GLFWwindow* associatedWindow,
@@ -110,6 +112,7 @@ void CursorPositionCallback(GLFWwindow* associatedWindow,
     }
     windowReference.cursorPositionEvents.at(
         windowReference.storedCursorPositionEvents) = cursorPosition;
+    windowReference.storedCursorEnterEvents++;
 }
 
 void CursorEnterCallback(GLFWwindow* associatedWindow, int entered)
@@ -129,6 +132,7 @@ void CursorEnterCallback(GLFWwindow* associatedWindow, int entered)
     }
     windowReference.cursorEnterEvents.at(
         windowReference.storedCursorEnterEvents) = cursor_enter_event(entered);
+    windowReference.storedCursorEnterEvents++;
 }
 
 void MouseButtonCallback(GLFWwindow* associatedWindow,
@@ -153,6 +157,7 @@ void MouseButtonCallback(GLFWwindow* associatedWindow,
     }
     windowReference.mouseButtonEvents.at(
         windowReference.storedMouseButtonEvents) = mouseButtonEvent;
+    windowReference.storedCursorEnterEvents++;
 }
 
 void ScrollCallback(GLFWwindow* associatedWindow,
@@ -174,6 +179,7 @@ void ScrollCallback(GLFWwindow* associatedWindow,
     }
     windowReference.scrollEvents.at(windowReference.storedScrollEvents) =
         scrollEvent;
+    windowReference.storedCursorEnterEvents++;
 }
 
 void JoystickCallback(int jid, int event)
@@ -201,6 +207,7 @@ void FileDropCallback(GLFWwindow* associatedWindow,
     }
     windowReference.fileDropEvents.at(windowReference.storedFileDropEvents) =
         fileDrop;
+    windowReference.storedCursorEnterEvents++;
 }
 
 void SetupJoystickInputBuffer()

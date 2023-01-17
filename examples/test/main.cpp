@@ -75,7 +75,7 @@ int main(int argc, char** argv)
     window.SetupCursorEnterInputBuffer();
 
     while (!window.ShouldClose()) {
-        std::cout << "Enter anything to print cursor enter information: ";
+        std::cout << "EEnter anything to print cursor enter information: ";
         std::cin >> iconPath;
         std::this_thread::sleep_for(std::chrono::seconds(1));
 
@@ -108,7 +108,7 @@ int main(int argc, char** argv)
     iconPaths.at(0) = "icon.png";
     iconPaths.at(1) = "icon_no_transparency.png";
     iconPaths.at(2) = "dffdshfuicrenu.png";
-    window.SetIcon(iconPaths);
+    window.SetCandidateIcons(iconPaths);
 
     window.Undecorate();
     window.NotAlwaysOnTop();

@@ -16,6 +16,7 @@ namespace gvw {
 
 class monitor;
 
+// TODO: Unregister windows upon destruction
 class window
 {
     GLFWwindow* windowId_ = WINDOW_ID_NULL;
@@ -34,6 +35,8 @@ class window
 
     int GetWindowAttribute_(int attribute);
     void SetWindowAttribute_(int attribute, int value);
+
+    void RegisterWindowWithInputCallbacks_();
 
   public:
     // Input buffers
@@ -186,7 +189,9 @@ class window
     void SetTitle(const char* title);
 
     void SetIcon(const char* iconImagePath);
-    void SetIcon(std::vector<const char*> candidateIconImagePaths);
+    void SetIcon(image iconImage);
+    void SetCandidateIcons(std::vector<const char*> candidateIconImagePaths);
+    void SetCandidateIcons(std::vector<image> candidateIconImages);
 
     bool IsCursorHovering();
     bool IsResizable();

@@ -128,6 +128,16 @@ void window::SetWindowAttribute_(int attribute, int value)
     }
 }
 
+void window::RegisterWindowWithInputCallbacks_()
+{
+    size_t windowIndex;
+    if (FindWindowInputIndex(this->windowId_,
+                             WINDOWS_RECIEVING_INPUT,
+                             windowIndex) == GLFW_FALSE) {
+        WINDOWS_RECIEVING_INPUT.push_back(this);
+    }
+}
+
 window::window() = default;
 
 window::window(int windowWidth,
@@ -282,6 +292,7 @@ void window::SetupKeyInputBuffer()
     this->keyEvents.resize(INPUT_BUFFER_INITIAL_SIZE);
     storedKeyEvents = 0;
     glfwSetKeyCallback(this->windowId_, KeyCallback);
+    this->RegisterWindowWithInputCallbacks_();
 }
 
 void window::SetupCharacterInputBuffer()
@@ -292,6 +303,7 @@ void window::SetupCharacterInputBuffer()
     this->characterEvents.resize(INPUT_BUFFER_INITIAL_SIZE);
     storedCharacterEvents = 0;
     glfwSetCharCallback(this->windowId_, CharacterCallback);
+    this->RegisterWindowWithInputCallbacks_();
 }
 
 void window::SetupCursorPositionInputBuffer()
@@ -302,6 +314,7 @@ void window::SetupCursorPositionInputBuffer()
     this->cursorPositionEvents.resize(INPUT_BUFFER_INITIAL_SIZE);
     storedCursorPositionEvents = 0;
     glfwSetCursorPosCallback(this->windowId_, CursorPositionCallback);
+    this->RegisterWindowWithInputCallbacks_();
 }
 
 void window::SetupCursorEnterInputBuffer()
@@ -312,6 +325,7 @@ void window::SetupCursorEnterInputBuffer()
     this->cursorEnterEvents.resize(INPUT_BUFFER_INITIAL_SIZE);
     storedCursorEnterEvents = 0;
     glfwSetCursorEnterCallback(this->windowId_, CursorEnterCallback);
+    this->RegisterWindowWithInputCallbacks_();
 }
 
 void window::SetupMouseButtonInputBuffer()
@@ -322,6 +336,7 @@ void window::SetupMouseButtonInputBuffer()
     this->mouseButtonEvents.resize(INPUT_BUFFER_INITIAL_SIZE);
     storedMouseButtonEvents = 0;
     glfwSetMouseButtonCallback(this->windowId_, MouseButtonCallback);
+    this->RegisterWindowWithInputCallbacks_();
 }
 
 void window::SetupScrollInputBuffer()
@@ -332,6 +347,7 @@ void window::SetupScrollInputBuffer()
     this->scrollEvents.resize(INPUT_BUFFER_INITIAL_SIZE);
     storedScrollEvents = 0;
     glfwSetScrollCallback(this->windowId_, ScrollCallback);
+    this->RegisterWindowWithInputCallbacks_();
 }
 
 void window::SetupFileDropInputBuffer()
@@ -342,6 +358,7 @@ void window::SetupFileDropInputBuffer()
     this->fileDropEvents.resize(INPUT_BUFFER_INITIAL_SIZE);
     storedFileDropEvents = 0;
     glfwSetDropCallback(this->windowId_, FileDropCallback);
+    this->RegisterWindowWithInputCallbacks_();
 }
 
 void window::ClearInputBuffers()
@@ -613,14 +630,36 @@ void window::SetIcon(const char* iconImagePath)
     }
     image icon = LoadRGBAImage(iconImagePath);
     std::array<GLFWimage, 1> glfwIcon;
-    glfwIcon[0] = icon;
-    if (glfwIcon[0].pixels == nullptr) {
+    if (icon.pixelData.data() == nullptr) {
         return;
     }
+    if (icon.componentsPerPixel != 4) {
+        ERROR_CALLBACK(ERROR_NOT_ENOUGH_COMPONENTS_PER_PIXEL,
+                       ERROR_MESSAGE_NOT_ENOUGH_COMPONENTS_PER_PIXEL);
+        return;
+    }
+    glfwIcon.at(0) = icon;
     glfwSetWindowIcon(this->windowId_, glfwIcon.size(), glfwIcon.data());
 }
 
-void window::SetIcon(std::vector<const char*> candidateIconImagePaths)
+void window::SetIcon(image iconImage)
+{
+    if (iconImage.pixelData.data() == nullptr) {
+        ERROR_CALLBACK(ERROR_ICON_FAILED_TO_LOAD,
+                       ERROR_MESSAGE_ICON_FAILED_TO_LOAD);
+        return;
+    }
+    if (iconImage.componentsPerPixel != 4) {
+        ERROR_CALLBACK(ERROR_NOT_ENOUGH_COMPONENTS_PER_PIXEL,
+                       ERROR_MESSAGE_NOT_ENOUGH_COMPONENTS_PER_PIXEL);
+        return;
+    }
+    std::array<GLFWimage, 1> glfwIcon;
+    glfwIcon.at(0) = iconImage;
+    glfwSetWindowIcon(this->windowId_, glfwIcon.size(), glfwIcon.data());
+}
+
+void window::SetCandidateIcons(std::vector<const char*> candidateIconImagePaths)
 {
     if (this->AssertCreation() == ASSERT_FAILURE) {
         return;
@@ -628,19 +667,44 @@ void window::SetIcon(std::vector<const char*> candidateIconImagePaths)
     std::vector<GLFWimage> glfwIcons(candidateIconImagePaths.size());
     std::vector<image> icons(candidateIconImagePaths.size());
     size_t iconIndex = 0;
-    for (size_t candidateIconIndex = 0;
-         candidateIconIndex < candidateIconImagePaths.size();
-         candidateIconIndex++) {
-        icons[iconIndex] = LoadRGBAImage(candidateIconImagePaths[iconIndex]);
-        if (icons[iconIndex].pixelData.data() == nullptr) {
-            icons[iconIndex].pixelData.clear();
+    for (const char* candidateIconImagePath : candidateIconImagePaths) {
+        icons.at(iconIndex) = LoadRGBAImage(candidateIconImagePath);
+        if (icons.at(iconIndex).pixelData.data() == nullptr) {
+            icons.at(iconIndex).pixelData.clear();
             continue;
         }
-        glfwIcons[iconIndex] = icons[iconIndex];
+        if (icons.at(iconIndex).componentsPerPixel != 4) {
+            ERROR_CALLBACK(ERROR_NOT_ENOUGH_COMPONENTS_PER_PIXEL,
+                           ERROR_MESSAGE_NOT_ENOUGH_COMPONENTS_PER_PIXEL);
+            icons.at(iconIndex).pixelData.clear();
+            continue;
+        }
+        glfwIcons.at(iconIndex) = icons.at(iconIndex);
         iconIndex++;
     }
     glfwIcons.resize(iconIndex);
-    icons.resize(iconIndex);
+    glfwSetWindowIcon(this->windowId_, glfwIcons.size(), glfwIcons.data());
+}
+
+void window::SetCandidateIcons(std::vector<image> candidateIconImages)
+{
+    std::vector<GLFWimage> glfwIcons(candidateIconImages.size());
+    size_t iconIndex = 0;
+    for (image candidateIconImage : candidateIconImages) {
+        if (candidateIconImage.pixelData.data() == nullptr) {
+            ERROR_CALLBACK(ERROR_ICON_FAILED_TO_LOAD,
+                           ERROR_MESSAGE_ICON_FAILED_TO_LOAD);
+            return;
+        }
+        if (candidateIconImage.componentsPerPixel != 4) {
+            ERROR_CALLBACK(ERROR_NOT_ENOUGH_COMPONENTS_PER_PIXEL,
+                           ERROR_MESSAGE_NOT_ENOUGH_COMPONENTS_PER_PIXEL);
+            return;
+        }
+        glfwIcons.at(iconIndex) = candidateIconImage;
+        iconIndex++;
+    }
+    glfwIcons.resize(iconIndex);
     glfwSetWindowIcon(this->windowId_, glfwIcons.size(), glfwIcons.data());
 }
 
