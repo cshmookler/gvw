@@ -37,6 +37,7 @@ class window
     void SetWindowAttribute_(int attribute, int value);
 
     void RegisterWindowWithInputCallbacks_();
+    void UnregisterWindowWithInputCallbacks_();
 
   public:
     // Input buffers
@@ -235,13 +236,13 @@ class window
     VkResult CreateSurface(VkInstance instance,
                            const VkAllocationCallbacks* allocator);
 
-    std::vector<key_event> GetKeyEvents();
-    std::vector<character_event> GetCharacterEvents();
-    std::vector<cursor_position_event> GetCursorPositionEvents();
-    std::vector<cursor_enter_event> GetCursorEnterEvents();
-    std::vector<mouse_button_event> GetMouseButtonEvents();
-    std::vector<scroll_event> GetScrollOffsetEvents();
-    std::vector<file_drop_event> GetFileDropEvents();
+    std::vector<key_event> GetKeyEvents() const;
+    std::vector<character_event> GetCharacterEvents() const;
+    std::vector<cursor_position_event> GetCursorPositionEvents() const;
+    std::vector<cursor_enter_event> GetCursorEnterEvents() const;
+    std::vector<mouse_button_event> GetMouseButtonEvents() const;
+    std::vector<scroll_event> GetScrollOffsetEvents() const;
+    std::vector<file_drop_event> GetFileDropEvents() const;
 };
 
 } // namespace gvw

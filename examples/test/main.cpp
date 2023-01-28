@@ -5,8 +5,8 @@
 #include <thread>
 
 // External includes
-// #define GLFW_INCLUDE_VULKAN
-// #include <GLFW/glfw3.h>
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 // #define GLM_FORCE_RADIANS
 // #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 // #include <glm/mat4x4.hpp>
@@ -75,12 +75,8 @@ int main(int argc, char** argv)
     window.SetupCursorEnterInputBuffer();
 
     while (!window.ShouldClose()) {
-        std::cout << "EEnter anything to print cursor enter information: ";
-        std::cin >> iconPath;
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
         gvw::PollEvents();
-
         std::vector<gvw::cursor_enter_event> cursorEnterEvents =
             window.GetCursorEnterEvents();
         for (auto& element : cursorEnterEvents) {
@@ -92,22 +88,9 @@ int main(int argc, char** argv)
 
     window.CancelClose();
 
-    glfwSetCursorEnterCallback(window.Id(), CursorEnterCallback);
-
-    std::string dummyVariable;
-    while (!window.ShouldClose()) {
-        std::cout << "Enter anything to print cursor enter information: "
-                  << std::endl;
-        std::cin >> dummyVariable;
-
-        gvw::PollEvents();
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-    }
-
-    std::vector<const char*> iconPaths(3);
+    std::vector<const char*> iconPaths(2);
     iconPaths.at(0) = "icon.png";
     iconPaths.at(1) = "icon_no_transparency.png";
-    iconPaths.at(2) = "dffdshfuicrenu.png";
     window.SetCandidateIcons(iconPaths);
 
     window.Undecorate();
@@ -132,7 +115,6 @@ int main(int argc, char** argv)
 
     // Window main loop
     while (!window.ShouldClose()) {
-
         now = std::chrono::steady_clock::now();
         duration =
             std::chrono::duration_cast<std::chrono::milliseconds>(now - start);

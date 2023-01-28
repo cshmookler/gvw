@@ -2,12 +2,11 @@
 
 // Standard includes
 #include <cstdint>
-#include <iostream>
 #include <string>
 
 // External includes
 #define STB_IMAGE_IMPLEMENTATION
-#include <stb/stb_image.h>
+#include "../../external/stb-master/stb_image.h"
 
 // Local includes
 #include "const.hpp"

@@ -1,3 +1,6 @@
 /.vscode/
 /.venv/
 /build/
+/external/cpplocate-2.3.0/
+/external/glfw-3.3.8/
+/external/stb-master/

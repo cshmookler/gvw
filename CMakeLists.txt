@@ -7,44 +7,64 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17 -Wall")
 option(GVW_BUILD_SHARED_LIBS "build a shared library" OFF)
 option(GVW_BUILD_EXAMPLES "build example programs" ON)
 
-# ----------- Build GVW ----------- #
-# set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi")
+# ---------------- Build GVW ---------------- #
+
+# --- GVW Dependencies --- #
+
+# Dynamic and static libraries
+set(GVW_DEP_DYNAMIC_LIBS
+
+    -lstdc++fs
+    -lcpplocate
+)
+set(GVW_DEP_STATIC_LIBS
+
+    libstdc++fs.a
+    libcpplocate.a
+)
+
+# ------------------------ #
+
+# GVW Source Files
 set(GVW_SOURCE_FILES
 
+    # common
     gvw/common/global.cpp
     gvw/common/file.cpp
     gvw/common/types.cpp
     gvw/common/image.cpp
 
+    # glfw
     gvw/glfw/init.cpp
     gvw/glfw/monitor.cpp
     gvw/glfw/input.cpp
     gvw/glfw/window.cpp
-)
 
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup()
+    # vulkan
+
+)
 
 if(GVW_BUILD_SHARED_LIBS)
     add_library(${PROJECT_NAME} SHARED ${GVW_SOURCE_FILES})
+    target_link_libraries(${PROJECT_NAME} ${GVW_DEP_DYNAMIC_LIBS} glfw )
 else()
     add_library(${PROJECT_NAME} STATIC ${GVW_SOURCE_FILES})
+    target_link_libraries(${PROJECT_NAME} ${GVW_DEP_STATIC_LIBS} glfw)
 endif()
 
-target_link_libraries(${PROJECT_NAME} ${CONAN_LIBS} -lglfw)
+# install(TARGETS ${PROJECT_NAME} DESTINATION lib/gvw)
+# ------------------------------------------- #
 
-install(TARGETS ${PROJECT_NAME} DESTINATION lib/gvw)
-# --------------------------------- #
+# add_subdirectory(gvw)
 
-# ---------- Build Tests ---------- #
-if(GVW_BUILD_EXAMPLES)
-    set(TARGET_NAMES test)
-
-    add_executable(test examples/test/utils.cpp examples/test/main.cpp)
-
-    target_link_directories(test PRIVATE ${CMAKE_BINARY_DIR})
-    target_link_libraries(test gvw)
-
-    file(COPY examples/test/icon.png examples/test/icon_no_transparency.png DESTINATION ${CMAKE_BINARY_DIR}/bin)
+if (GVW_BUILD_EXAMPLES)
+    add_subdirectory(examples)
 endif()
-# --------------------------------- #
+
+# if (GLFW_BUILD_TESTS)
+#     add_subdirectory(tests)
+# endif()
+
+# if (DOXYGEN_FOUND AND GLFW_BUILD_DOCS)
+#     add_subdirectory(docs)
+# endif()

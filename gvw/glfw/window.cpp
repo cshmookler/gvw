@@ -2,13 +2,13 @@
 
 // Standard includes
 #include <array>
-#include <iostream>
 
 // External includes
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 // Local includes
+#include "../common/file.hpp"
 #include "../common/global.hpp"
 #include "../common/image.hpp"
 #include "../common/types.tpp"
@@ -138,6 +138,17 @@ void window::RegisterWindowWithInputCallbacks_()
     }
 }
 
+void window::UnregisterWindowWithInputCallbacks_()
+{
+    size_t windowIndex;
+    if (FindWindowInputIndex(this->windowId_,
+                             WINDOWS_RECIEVING_INPUT,
+                             windowIndex) == GLFW_TRUE) {
+        WINDOWS_RECIEVING_INPUT.erase(WINDOWS_RECIEVING_INPUT.begin() +
+                                      windowIndex);
+    }
+}
+
 window::window() = default;
 
 window::window(int windowWidth,
@@ -159,6 +170,7 @@ void window::Destroy()
 {
     if (this->windowId_ != WINDOW_ID_NULL) {
         // TODO: destroy surface
+        this->UnregisterWindowWithInputCallbacks_();
         glfwDestroyWindow(this->windowId_);
         this->windowId_ = WINDOW_ID_NULL;
         this->displayMode_ = NOT_CREATED;
@@ -488,7 +500,7 @@ void window::SetPosition(int xPos, int yPos)
 
 coordinate<float> window::GetContentScale()
 {
-    coordinate<float> contentScale = { -1.0f, -1.0f };
+    coordinate<float> contentScale = { -1.0F, -1.0F };
     if (this->AssertCreation() == ASSERT_SUCCESS) {
         glfwGetWindowContentScale(
             this->windowId_, &contentScale.x, &contentScale.y);
@@ -710,12 +722,12 @@ void window::SetCandidateIcons(std::vector<image> candidateIconImages)
 
 bool window::IsCursorHovering()
 {
-    return this->GetWindowAttribute_(GLFW_HOVERED);
+    return static_cast<bool>(this->GetWindowAttribute_(GLFW_HOVERED));
 }
 
 bool window::IsResizable()
 {
-    return this->GetWindowAttribute_(GLFW_RESIZABLE);
+    return static_cast<bool>(this->GetWindowAttribute_(GLFW_RESIZABLE));
 }
 
 void window::Decorate()
@@ -730,7 +742,7 @@ void window::Undecorate()
 
 bool window::IsDecorated()
 {
-    return this->GetWindowAttribute_(GLFW_DECORATED);
+    return static_cast<bool>(this->GetWindowAttribute_(GLFW_DECORATED));
 }
 
 void window::MinimizeOnFocusLoss()
@@ -745,7 +757,7 @@ void window::DontMinimizeOnFocusLoss()
 
 bool window::IsMinimizedOnFocusLoss()
 {
-    return this->GetWindowAttribute_(GLFW_AUTO_ICONIFY);
+    return static_cast<bool>(this->GetWindowAttribute_(GLFW_AUTO_ICONIFY));
 }
 
 void window::AlwaysOnTop()
@@ -760,7 +772,7 @@ void window::NotAlwaysOnTop()
 
 bool window::IsAlwaysOnTop()
 {
-    return this->GetWindowAttribute_(GLFW_FLOATING);
+    return static_cast<bool>(this->GetWindowAttribute_(GLFW_FLOATING));
 }
 
 void window::Minimize()
@@ -795,12 +807,12 @@ void window::Restore()
 
 bool window::IsMinimized()
 {
-    return this->GetWindowAttribute_(GLFW_ICONIFIED);
+    return static_cast<bool>(this->GetWindowAttribute_(GLFW_ICONIFIED));
 }
 
 bool window::IsMaximized()
 {
-    return this->GetWindowAttribute_(GLFW_MAXIMIZED);
+    return static_cast<bool>(this->GetWindowAttribute_(GLFW_MAXIMIZED));
 }
 
 void window::Hide()
@@ -821,7 +833,7 @@ void window::Show()
 
 bool window::IsVisible()
 {
-    return this->GetWindowAttribute_(GLFW_VISIBLE);
+    return static_cast<bool>(this->GetWindowAttribute_(GLFW_VISIBLE));
 }
 
 void window::Focus()
@@ -834,7 +846,7 @@ void window::Focus()
 
 bool window::IsFocused()
 {
-    return this->GetWindowAttribute_(GLFW_FOCUSED);
+    return static_cast<bool>(this->GetWindowAttribute_(GLFW_FOCUSED));
 }
 
 void window::RequestFocus()
@@ -857,7 +869,7 @@ void window::DontFocusOnShow()
 
 bool window::IsFocusedOnShow()
 {
-    return this->GetWindowAttribute_(GLFW_FOCUS_ON_SHOW);
+    return static_cast<bool>(this->GetWindowAttribute_(GLFW_FOCUS_ON_SHOW));
 }
 
 void window::SetOpacity(float opacity)
@@ -870,7 +882,8 @@ void window::SetOpacity(float opacity)
 
 bool window::IsTransparent()
 {
-    return this->GetWindowAttribute_(GLFW_TRANSPARENT_FRAMEBUFFER);
+    return static_cast<bool>(
+        this->GetWindowAttribute_(GLFW_TRANSPARENT_FRAMEBUFFER));
 }
 
 void window::SwapBuffers()
@@ -896,14 +909,14 @@ VkResult window::CreateSurface(VkInstance instance,
         instance, this->windowId_, allocator, &this->surface_);
 }
 
-std::vector<key_event> window::GetKeyEvents()
+std::vector<key_event> window::GetKeyEvents() const
 {
     std::vector<key_event> truncatedKeyEvents = this->keyEvents;
     truncatedKeyEvents.resize(this->storedKeyEvents);
     return truncatedKeyEvents;
 }
 
-std::vector<character_event> window::GetCharacterEvents()
+std::vector<character_event> window::GetCharacterEvents() const
 {
     std::vector<character_event> truncatedCharacterEvents =
         this->characterEvents;
@@ -911,7 +924,7 @@ std::vector<character_event> window::GetCharacterEvents()
     return truncatedCharacterEvents;
 }
 
-std::vector<cursor_position_event> window::GetCursorPositionEvents()
+std::vector<cursor_position_event> window::GetCursorPositionEvents() const
 {
     std::vector<cursor_position_event> truncatedCursorPositionEvents =
         this->cursorPositionEvents;
@@ -919,7 +932,7 @@ std::vector<cursor_position_event> window::GetCursorPositionEvents()
     return truncatedCursorPositionEvents;
 }
 
-std::vector<cursor_enter_event> window::GetCursorEnterEvents()
+std::vector<cursor_enter_event> window::GetCursorEnterEvents() const
 {
     std::vector<cursor_enter_event> truncatedCursorEnterEvents =
         this->cursorEnterEvents;
@@ -927,7 +940,7 @@ std::vector<cursor_enter_event> window::GetCursorEnterEvents()
     return truncatedCursorEnterEvents;
 }
 
-std::vector<mouse_button_event> window::GetMouseButtonEvents()
+std::vector<mouse_button_event> window::GetMouseButtonEvents() const
 {
     std::vector<mouse_button_event> truncatedMouseButtonEvents =
         this->mouseButtonEvents;
@@ -935,14 +948,14 @@ std::vector<mouse_button_event> window::GetMouseButtonEvents()
     return truncatedMouseButtonEvents;
 }
 
-std::vector<scroll_event> window::GetScrollOffsetEvents()
+std::vector<scroll_event> window::GetScrollOffsetEvents() const
 {
     std::vector<scroll_event> truncatedScrollEvents = this->scrollEvents;
     truncatedScrollEvents.resize(this->storedScrollEvents);
     return truncatedScrollEvents;
 }
 
-std::vector<file_drop_event> window::GetFileDropEvents()
+std::vector<file_drop_event> window::GetFileDropEvents() const
 {
     std::vector<file_drop_event> truncatedFileDropEvents = this->fileDropEvents;
     truncatedFileDropEvents.resize(this->storedFileDropEvents);

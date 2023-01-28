@@ -1,11 +1,12 @@
 #include "init.tpp"
 
 // Standard includes
+#include <filesystem>
 #include <iostream>
 #include <stdexcept>
 
 // External includes
-#include <boost/dll.hpp>
+#include <cpplocate/cpplocate.h>
 
 // Local includes
 #include "../common/const.hpp"
@@ -37,12 +38,9 @@ int Init(GLFWerrorfun errorCallback)
     glfwSetErrorCallback(errorCallback);
     ERROR_CALLBACK = errorCallback;
 
-    // Set the working directory to the executable directory
-    boost::filesystem::path absolutePathToBinary =
-        boost::dll::program_location();
-    std::cout << absolutePathToBinary << std::endl;
-    absolutePathToBinary.remove_filename();
-    boost::filesystem::current_path(absolutePathToBinary);
+    // Set working directory to the location of the executable
+    std::filesystem::path absolutePathToBinary(cpplocate::getExecutablePath());
+    std::filesystem::current_path(absolutePathToBinary.parent_path());
 
 #ifdef _DEBUG
     // Print compiletime version and other information

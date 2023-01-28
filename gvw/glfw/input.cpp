@@ -1,8 +1,5 @@
 #include "input.tpp"
 
-// Standard includes
-#include <iostream>
-
 // Local includes
 #include "../common/types.tpp"
 #include "window.hpp"
