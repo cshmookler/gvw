@@ -25,8 +25,8 @@ void monitor::Init(GLFWmonitor* monitorId)
 bool monitor::AssertInitialization()
 {
     if (this->monitorId_ == MONITOR_ID_NULL) {
-        ERROR_CALLBACK(ERROR_MONITOR_ID_NOT_INITIALIZED,
-                       ERROR_MESSAGE_MONITOR_ID_NOT_INITIALIZED);
+        ERROR_CALLBACK_GLFW(ERROR_MONITOR_ID_NOT_INITIALIZED,
+                            ERROR_MESSAGE_MONITOR_ID_NOT_INITIALIZED);
         return ASSERT_FAILURE;
     }
 

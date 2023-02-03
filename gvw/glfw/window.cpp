@@ -27,15 +27,15 @@ void window::Create_(int windowWidth,
 {
     // Check if the window has already been created
     if (this->windowId_ != WINDOW_ID_NULL) {
-        ERROR_CALLBACK(ERROR_WINDOW_ALREADY_CREATED,
-                       ERROR_MESSAGE_WINDOW_ALREADY_CREATED);
+        ERROR_CALLBACK_GLFW(ERROR_WINDOW_ALREADY_CREATED,
+                            ERROR_MESSAGE_WINDOW_ALREADY_CREATED);
         return;
     }
 
     // Check if the window dimensions are valid
     if (windowWidth < MIN_WINDOW_WIDTH || windowHeight < MIN_WINDOW_HEIGHT) {
-        ERROR_CALLBACK(ERROR_INVALID_DIMENSIONS,
-                       ERROR_MESSAGE_INVALID_DIMENSIONS);
+        ERROR_CALLBACK_GLFW(ERROR_INVALID_DIMENSIONS,
+                            ERROR_MESSAGE_INVALID_DIMENSIONS);
         return;
     }
 
@@ -185,7 +185,7 @@ window::~window()
 bool window::AssertCreation(int errorCode, const char* errorMessage)
 {
     if (this->windowId_ == WINDOW_ID_NULL) {
-        ERROR_CALLBACK(errorCode, errorMessage);
+        ERROR_CALLBACK_GLFW(errorCode, errorMessage);
         return ASSERT_FAILURE;
     }
 
@@ -646,8 +646,8 @@ void window::SetIcon(const char* iconImagePath)
         return;
     }
     if (icon.componentsPerPixel != 4) {
-        ERROR_CALLBACK(ERROR_NOT_ENOUGH_COMPONENTS_PER_PIXEL,
-                       ERROR_MESSAGE_NOT_ENOUGH_COMPONENTS_PER_PIXEL);
+        ERROR_CALLBACK_GLFW(ERROR_NOT_ENOUGH_COMPONENTS_PER_PIXEL,
+                            ERROR_MESSAGE_NOT_ENOUGH_COMPONENTS_PER_PIXEL);
         return;
     }
     glfwIcon.at(0) = icon;
@@ -657,13 +657,13 @@ void window::SetIcon(const char* iconImagePath)
 void window::SetIcon(image iconImage)
 {
     if (iconImage.pixelData.data() == nullptr) {
-        ERROR_CALLBACK(ERROR_ICON_FAILED_TO_LOAD,
-                       ERROR_MESSAGE_ICON_FAILED_TO_LOAD);
+        ERROR_CALLBACK_GLFW(ERROR_ICON_FAILED_TO_LOAD,
+                            ERROR_MESSAGE_ICON_FAILED_TO_LOAD);
         return;
     }
     if (iconImage.componentsPerPixel != 4) {
-        ERROR_CALLBACK(ERROR_NOT_ENOUGH_COMPONENTS_PER_PIXEL,
-                       ERROR_MESSAGE_NOT_ENOUGH_COMPONENTS_PER_PIXEL);
+        ERROR_CALLBACK_GLFW(ERROR_NOT_ENOUGH_COMPONENTS_PER_PIXEL,
+                            ERROR_MESSAGE_NOT_ENOUGH_COMPONENTS_PER_PIXEL);
         return;
     }
     std::array<GLFWimage, 1> glfwIcon;
@@ -686,8 +686,8 @@ void window::SetCandidateIcons(std::vector<const char*> candidateIconImagePaths)
             continue;
         }
         if (icons.at(iconIndex).componentsPerPixel != 4) {
-            ERROR_CALLBACK(ERROR_NOT_ENOUGH_COMPONENTS_PER_PIXEL,
-                           ERROR_MESSAGE_NOT_ENOUGH_COMPONENTS_PER_PIXEL);
+            ERROR_CALLBACK_GLFW(ERROR_NOT_ENOUGH_COMPONENTS_PER_PIXEL,
+                                ERROR_MESSAGE_NOT_ENOUGH_COMPONENTS_PER_PIXEL);
             icons.at(iconIndex).pixelData.clear();
             continue;
         }
@@ -704,13 +704,13 @@ void window::SetCandidateIcons(std::vector<image> candidateIconImages)
     size_t iconIndex = 0;
     for (image candidateIconImage : candidateIconImages) {
         if (candidateIconImage.pixelData.data() == nullptr) {
-            ERROR_CALLBACK(ERROR_ICON_FAILED_TO_LOAD,
-                           ERROR_MESSAGE_ICON_FAILED_TO_LOAD);
+            ERROR_CALLBACK_GLFW(ERROR_ICON_FAILED_TO_LOAD,
+                                ERROR_MESSAGE_ICON_FAILED_TO_LOAD);
             return;
         }
         if (candidateIconImage.componentsPerPixel != 4) {
-            ERROR_CALLBACK(ERROR_NOT_ENOUGH_COMPONENTS_PER_PIXEL,
-                           ERROR_MESSAGE_NOT_ENOUGH_COMPONENTS_PER_PIXEL);
+            ERROR_CALLBACK_GLFW(ERROR_NOT_ENOUGH_COMPONENTS_PER_PIXEL,
+                                ERROR_MESSAGE_NOT_ENOUGH_COMPONENTS_PER_PIXEL);
             return;
         }
         glfwIcons.at(iconIndex) = candidateIconImage;
@@ -901,8 +901,8 @@ VkResult window::CreateSurface(VkInstance instance,
         return VK_ERROR_UNKNOWN;
     }
     if (this->surface_ != nullptr) {
-        ERROR_CALLBACK(ERROR_WINDOW_SURFACE_ALREADY_CREATED,
-                       ERROR_MESSAGE_WINDOW_SURFACE_ALREADY_CREATED);
+        ERROR_CALLBACK_GLFW(ERROR_WINDOW_SURFACE_ALREADY_CREATED,
+                            ERROR_MESSAGE_WINDOW_SURFACE_ALREADY_CREATED);
         return VK_ERROR_UNKNOWN;
     }
     return glfwCreateWindowSurface(

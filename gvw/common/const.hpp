@@ -1,5 +1,12 @@
 #pragma once
 
+/**
+ * @file const.hpp
+ * @author Caden Shmookler (cshmookler@gmail.com)
+ * @brief Constants and macros
+ * @date 2023-02-02
+ */
+
 // Standard includes
 #include <cstdint>
 
@@ -46,7 +53,7 @@ const char* const ERROR_MESSAGE_WINDOW_ALREADY_CREATED =
 const char* const ERROR_MESSAGE_INVALID_DIMENSIONS =
     "Invalid window dimensions";
 const char* const ERROR_MESSAGE_WINDOW_NOT_CREATED_BEFORE_OPERATION =
-    "The operation could not be performed because the window has not been "
+    "The operation could not be performed because target window has not been "
     "created";
 const char* const ERROR_MESSAGE_PARENT_WINDOW_NOT_CREATED =
     "A parent window must be created before its child window";

@@ -1,11 +1,11 @@
-# **GLFW and Vulkan wrapper**
-A thick wrapper for GLFW and Vulkan. Started development on November 24th, 2022.
-## **TODO**
+# GLFW and Vulkan Wrapper
+A C++ library for creating cross-platform desktop applications with GLFW and Vulkan. Started development on November 24th, 2022.
+### TODO
  * [X] Setup CMake
  * [X] Create a window using GLFW
- * [ ] Finish GLFW infrastructure
- * [ ] Create tests
+ * [X] Finish most GLFW infrastructure
  * [ ] Setup Doxygen and add comments
+ * [ ] Create tests
  * [ ] Create the necessary infrastructure to draw a triangle
  * [ ] (optional) Save space in the code by loading settings from a file
  * [ ] Make the triangle move
@@ -16,13 +16,14 @@ A thick wrapper for GLFW and Vulkan. Started development on November 24th, 2022.
  * [ ] Create a simple 2D platformer
  * [ ] Draw a 3D cube
  * [ ] Rotate the cube
-## **Build this project from source** (for Unix-like systems using X11)
+### Build this project from source (for Unix-like systems using X11)
 **1.** Open a terminal window in the root directory of this project.
+
 **2.** Install the required packages for building this project.
 ```bash
 $ sudo apt install g++ cmake xorg-dev
 ```
-3. Enter the `external` directory. There should be three files named `cpplocate-2.3.0.zip`, `glfw-3.3.8.zip`, and `stb-master.zip`. Unzip all of them.
+**3.** Enter the `external` directory. There should be three files named `cpplocate-2.3.0.zip`, `glfw-3.3.8.zip`, and `stb-master.zip`. Unzip all of them.
 ```bash
 $ cd external
 $ unzip "*.zip"
