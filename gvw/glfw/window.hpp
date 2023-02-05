@@ -19,11 +19,11 @@ class monitor;
 // TODO: Unregister windows upon destruction
 class window
 {
-    GLFWwindow* windowId_ = WINDOW_ID_NULL;
+    GLFWwindow* windowId_ = internal::WINDOW_ID_NULL;
     VkSurfaceKHR surface_ = VK_NULL_HANDLE;
     coordinate<int> defaultPositionInScreenCoordinates_;
     size<int> defaultSizeInScreenCoordinates_;
-    int displayMode_ = NOT_CREATED;
+    int displayMode_ = internal::NOT_CREATED;
 
     // Create the window
     void Create_(int windowWidth,
@@ -32,6 +32,13 @@ class window
                  const char* windowClassName,
                  GLFWmonitor* fullScreenMonitor,
                  GLFWwindow* contextShareWindow);
+
+    // Checks if the window has been created.
+    // If it has not, an error is sent to the GLFW error callback.
+    bool AssertCreation_(
+        int errorCode = internal::ERROR_WINDOW_NOT_CREATED_BEFORE_OPERATION,
+        const char* errorMessage =
+            internal::ERROR_MESSAGE_WINDOW_NOT_CREATED_BEFORE_OPERATION);
 
     int GetWindowAttribute_(int attribute);
     void SetWindowAttribute_(int attribute, int value);
@@ -77,13 +84,6 @@ class window
     window(const window&) = delete;
     window& operator=(const window&) = delete;
 
-    // Checks if the window has been created.
-    // If it has not, an error is sent to the GLFW error callback.
-    bool AssertCreation(
-        int errorCode = ERROR_WINDOW_NOT_CREATED_BEFORE_OPERATION,
-        const char* errorMessage =
-            ERROR_MESSAGE_WINDOW_NOT_CREATED_BEFORE_OPERATION);
-
     void Create(int windowWidth,
                 int windowHeight,
                 const char* windowTitle,
@@ -119,6 +119,9 @@ class window
                 monitor& fullScreenMonitor,
                 window& contextShareWindow);
 
+    // Get a pointer to this window's GLFWwindow pointer.
+    GLFWwindow* Id();
+
     template<typename type>
     void ScreenCoordinateToPixel(type screenCoordinateX,
                                  type screenCoordinateY,
@@ -151,8 +154,6 @@ class window
 
     // Clear input buffers
     void ClearInputBuffers();
-
-    GLFWwindow* Id();
 
     bool ShouldClose(); // Returns the state of the 'close' flag
     void Close();       // Set the 'close' flag to true

@@ -6,34 +6,11 @@
 
 namespace gvw {
 
+namespace internal {
+
 std::vector<window*> WINDOWS_RECIEVING_INPUT;
 std::vector<joystick_event> JOYSTICK_EVENTS;
 size_t STORED_JOYSTICK_EVENTS = 0;
-
-void PollEvents()
-{
-    glfwPollEvents();
-}
-
-void WaitThenPollEvents()
-{
-    glfwWaitEvents();
-}
-
-void WaitThenPollEvents(double timeout)
-{
-    glfwWaitEventsTimeout(timeout);
-}
-
-void PostEmptyEvent()
-{
-    glfwPostEmptyEvent();
-}
-
-void SetSwapInterval(int interval)
-{
-    glfwSwapInterval(interval);
-}
 
 int FindWindowInputIndex(GLFWwindow* associatedWindow,
                          std::vector<window*>& windowsRecievingInput,
@@ -200,29 +177,57 @@ void FileDropCallback(GLFWwindow* associatedWindow,
         windowReference.fileDropEvents.size()) {
         windowReference.fileDropEvents.resize(
             windowReference.fileDropEvents.size() +
-            INPUT_BUFFER_INCREMENT_SIZE);
+            internal::INPUT_BUFFER_INCREMENT_SIZE);
     }
     windowReference.fileDropEvents.at(windowReference.storedFileDropEvents) =
         fileDrop;
     windowReference.storedCursorEnterEvents++;
 }
 
+} // namespace internal
+
+void PollEvents()
+{
+    glfwPollEvents();
+}
+
+void WaitThenPollEvents()
+{
+    glfwWaitEvents();
+}
+
+void WaitThenPollEvents(double timeout)
+{
+    glfwWaitEventsTimeout(timeout);
+}
+
+void PostEmptyEvent()
+{
+    glfwPostEmptyEvent();
+}
+
+void SetSwapInterval(int interval)
+{
+    glfwSwapInterval(interval);
+}
+
 void SetupJoystickInputBuffer()
 {
-    JOYSTICK_EVENTS.resize(INPUT_BUFFER_INITIAL_SIZE);
-    glfwSetJoystickCallback(JoystickCallback);
+    internal::JOYSTICK_EVENTS.resize(internal::INPUT_BUFFER_INITIAL_SIZE);
+    glfwSetJoystickCallback(internal::JoystickCallback);
 }
 
 void ClearJoystickInputBuffer()
 {
-    JOYSTICK_EVENTS.resize(INPUT_BUFFER_INITIAL_SIZE);
-    STORED_JOYSTICK_EVENTS = 0;
+    internal::JOYSTICK_EVENTS.resize(internal::INPUT_BUFFER_INITIAL_SIZE);
+    internal::STORED_JOYSTICK_EVENTS = 0;
 }
 
 std::vector<joystick_event> GetJoystickEvents()
 {
-    std::vector<joystick_event> truncatedJoystickEvents = JOYSTICK_EVENTS;
-    truncatedJoystickEvents.resize(STORED_JOYSTICK_EVENTS);
+    std::vector<joystick_event> truncatedJoystickEvents =
+        internal::JOYSTICK_EVENTS;
+    truncatedJoystickEvents.resize(internal::STORED_JOYSTICK_EVENTS);
     return truncatedJoystickEvents;
 }
 

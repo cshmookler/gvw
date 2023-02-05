@@ -8,14 +8,11 @@
 
 namespace gvw {
 
+namespace internal {
+
 extern std::vector<window*> WINDOWS_RECIEVING_INPUT;
 extern std::vector<joystick_event> JOYSTICK_EVENTS;
 extern size_t STORED_JOYSTICK_EVENTS;
-
-void PollEvents();
-void WaitThenPollEvents();
-void WaitThenPollEvents(double timeout);
-void PostEmptyEvent();
 
 int FindWindowInputIndex(GLFWwindow* associatedWindow,
                          std::vector<window*>& windowsRecievingInput,
@@ -42,6 +39,14 @@ void JoystickCallback(int jid, int event);
 void FileDropCallback(GLFWwindow* associatedWindow,
                       int count,
                       const char** paths);
+
+} // namespace internal
+
+void PollEvents();
+void WaitThenPollEvents();
+void WaitThenPollEvents(double timeout);
+void PostEmptyEvent();
+void SetSwapInterval(int interval);
 
 // Setup the joystick input buffer and set the joystick callback
 void SetupJoystickInputBuffer();

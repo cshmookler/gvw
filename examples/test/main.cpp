@@ -56,7 +56,7 @@ int main(int argc, char** argv)
     gvw::monitor primaryMonitor = gvw::PrimaryMonitor();
     std::vector<gvw::monitor> monitors = gvw::Monitors();
     std::cout << "monitor count: " << monitors.size() << std::endl;
-    primaryMonitor.AssertInitialization();
+    std::cout << size_t(primaryMonitor.Id()) << std::endl;
     std::cout << "monitor name: " << primaryMonitor.Name() << std::endl;
 
     window.AlwaysOnTop();
@@ -171,7 +171,6 @@ int main(int argc, char** argv)
     // These function should fail because the window doesn't exist anymore
     window.FullScreen(primaryMonitor);
     window.Close();
-    window.AssertCreation();
     window.ExitFullScreen();
     window.Id();
     window.SetPosition(0, 1);

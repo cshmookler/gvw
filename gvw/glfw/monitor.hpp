@@ -16,8 +16,12 @@ namespace gvw {
 
 class monitor
 {
-    GLFWmonitor* monitorId_ = MONITOR_ID_NULL;
+    GLFWmonitor* monitorId_ = internal::MONITOR_ID_NULL;
     GLFWvidmode videoMode_;
+
+    // Checks if the monitor is initialized.
+    // If it is not, an error is sent to the GLFW error callback.
+    bool AssertInitialization_();
 
   public:
     // Constructors
@@ -28,10 +32,6 @@ class monitor
     ~monitor();
 
     inline void Init(GLFWmonitor* monitorId);
-
-    // Checks if the monitor is initialized.
-    // If it is not, an error is sent to the GLFW error callback.
-    bool AssertInitialization();
 
     GLFWmonitor* Id();
     const GLFWvidmode* VideoModeInScreenCoordinates();

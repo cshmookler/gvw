@@ -36,7 +36,7 @@ int Init(GLFWerrorfun errorCallback)
 {
     // Set the GLFW error callback
     glfwSetErrorCallback(errorCallback);
-    ERROR_CALLBACK_GLFW = errorCallback;
+    internal::ERROR_CALLBACK = errorCallback;
 
     // Set working directory to the location of the executable
     std::filesystem::path absolutePathToBinary(cpplocate::getExecutablePath());
@@ -67,8 +67,9 @@ int Init(GLFWerrorfun errorCallback)
 
     // Check Vulkan support
     if (glfwVulkanSupported() != GLFW_TRUE) {
-        ERROR_CALLBACK_GLFW(ERROR_VULKAN_LOADER_NOT_FOUND,
-                            ERROR_MESSAGE_VULKAN_LOADER_NOT_FOUND);
+        internal::ERROR_CALLBACK(
+            internal::ERROR_VULKAN_LOADER_NOT_FOUND,
+            internal::ERROR_MESSAGE_VULKAN_LOADER_NOT_FOUND);
     }
 
     return initialized;
