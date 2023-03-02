@@ -21,7 +21,7 @@ A C++ library for creating cross-platform desktop applications with GLFW and Vul
 
 **2.** Install the required packages for building this project.
 ```bash
-$ sudo apt install g++ cmake xorg-dev
+$ sudo apt install g++ cmake xorg-dev libvulkan-dev
 ```
 **3.** Enter the `external` directory. There should be three files named `cpplocate-2.3.0.zip`, `glfw-3.3.8.zip`, and `stb-master.zip`. Unzip all of them.
 ```bash

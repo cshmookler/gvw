@@ -17,7 +17,7 @@ namespace gvw {
 void ErrorCallback(int errorCode, const char* description)
 {
     if (errorCode != GLFW_NO_ERROR) {
-        if (THROW_ON_GLFW_ERROR) {
+        if (global::THROW_ON_GLFW_ERROR) {
             throw std::runtime_error(description);
         }
 
@@ -36,7 +36,7 @@ int Init(GLFWerrorfun errorCallback)
 {
     // Set the GLFW error callback
     glfwSetErrorCallback(errorCallback);
-    internal::ERROR_CALLBACK = errorCallback;
+    global::ERROR_CALLBACK = errorCallback;
 
     // Set working directory to the location of the executable
     std::filesystem::path absolutePathToBinary(cpplocate::getExecutablePath());
@@ -67,9 +67,8 @@ int Init(GLFWerrorfun errorCallback)
 
     // Check Vulkan support
     if (glfwVulkanSupported() != GLFW_TRUE) {
-        internal::ERROR_CALLBACK(
-            internal::ERROR_VULKAN_LOADER_NOT_FOUND,
-            internal::ERROR_MESSAGE_VULKAN_LOADER_NOT_FOUND);
+        global::ERROR_CALLBACK(con::ERROR_VULKAN_LOADER_NOT_FOUND,
+                               con::ERROR_MESSAGE_VULKAN_LOADER_NOT_FOUND);
     }
 
     return initialized;

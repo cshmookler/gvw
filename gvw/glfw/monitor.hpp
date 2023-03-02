@@ -16,7 +16,7 @@ namespace gvw {
 
 class monitor
 {
-    GLFWmonitor* monitorId_ = internal::MONITOR_ID_NULL;
+    GLFWmonitor* monitorId_ = con::MONITOR_ID_NULL;
     GLFWvidmode videoMode_;
 
     // Checks if the monitor is initialized.

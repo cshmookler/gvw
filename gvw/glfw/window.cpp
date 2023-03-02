@@ -18,33 +18,71 @@
 
 namespace gvw {
 
-void window::Create_(int windowWidth,
-                     int windowHeight,
-                     const char* windowTitle,
-                     const char* windowClassName,
-                     GLFWmonitor* fullScreenMonitor,
-                     GLFWwindow* contextShareWindow)
+bool window::AssertCreation_(int errorCode, const char* errorMessage)
+{
+    if (this->windowId_ == con::WINDOW_ID_NULL) {
+        global::ERROR_CALLBACK(errorCode, errorMessage);
+        return con::ASSERT_FAILURE;
+    }
+
+    return con::ASSERT_SUCCESS;
+}
+
+int window::GetWindowAttribute_(int attribute)
+{
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
+        return GLFW_DONT_CARE;
+    }
+    return glfwGetWindowAttrib(this->windowId_, attribute);
+}
+
+void window::SetWindowAttribute_(int attribute, int value)
+{
+    if (this->AssertCreation_() == con::ASSERT_SUCCESS) {
+        return glfwSetWindowAttrib(this->windowId_, attribute, value);
+    }
+}
+
+void window::RegisterWindowWithInputCallbacks_()
+{
+    size_t windowIndex;
+    if (internal::FindWindowInputIndex(this->windowId_,
+                                       global::WINDOWS_RECIEVING_INPUT,
+                                       windowIndex) == GLFW_FALSE) {
+        global::WINDOWS_RECIEVING_INPUT.push_back(this);
+    }
+}
+
+void window::UnregisterWindowWithInputCallbacks_()
+{
+    size_t windowIndex;
+    if (internal::FindWindowInputIndex(this->windowId_,
+                                       global::WINDOWS_RECIEVING_INPUT,
+                                       windowIndex) == GLFW_TRUE) {
+        global::WINDOWS_RECIEVING_INPUT.erase(
+            global::WINDOWS_RECIEVING_INPUT.begin() + windowIndex);
+    }
+}
+
+void window::Create(int width,
+                    int height,
+                    const char* title,
+                    const char* className,
+                    GLFWmonitor* fullScreenMonitorId,
+                    GLFWwindow* contextShareWindowId)
 {
     // Check if the window has already been created
-    if (this->windowId_ != internal::WINDOW_ID_NULL) {
-        internal::ERROR_CALLBACK(
-            internal::ERROR_WINDOW_ALREADY_CREATED,
-            internal::ERROR_MESSAGE_WINDOW_ALREADY_CREATED);
+    if (this->windowId_ != con::WINDOW_ID_NULL) {
+        global::ERROR_CALLBACK(con::ERROR_WINDOW_ALREADY_CREATED,
+                               con::ERROR_MESSAGE_WINDOW_ALREADY_CREATED);
         return;
     }
 
     // Check if the window dimensions are valid
-    if (windowWidth < internal::MIN_WINDOW_WIDTH ||
-        windowHeight < internal::MIN_WINDOW_HEIGHT) {
-        internal::ERROR_CALLBACK(internal::ERROR_INVALID_DIMENSIONS,
-                                 internal::ERROR_MESSAGE_INVALID_DIMENSIONS);
+    if (width < con::MIN_WINDOW_WIDTH || height < con::MIN_WINDOW_HEIGHT) {
+        global::ERROR_CALLBACK(con::ERROR_INVALID_DIMENSIONS,
+                               con::ERROR_MESSAGE_INVALID_DIMENSIONS);
         return;
-    }
-
-    if (fullScreenMonitor == nullptr) {
-        this->displayMode_ = internal::WINDOWED;
-    } else {
-        this->displayMode_ = internal::FULL_SCREEN;
     }
 
     // Window related hints
@@ -98,94 +136,45 @@ void window::Create_(int windowWidth,
     glfwWindowHint(GLFW_COCOA_GRAPHICS_SWITCHING, GLFW_FALSE);
 #elif __linux__
     // Linux specific window hints
-    glfwWindowHintString(GLFW_X11_CLASS_NAME, windowClassName);
-    glfwWindowHintString(GLFW_X11_INSTANCE_NAME, windowTitle);
+    glfwWindowHintString(GLFW_X11_CLASS_NAME, className);
+    glfwWindowHintString(GLFW_X11_INSTANCE_NAME, title);
 #endif
 
     /* ---------------------------------------------------------- */
 
     // Create the window
-    this->windowId_ = glfwCreateWindow(windowWidth,
-                                       windowHeight,
-                                       windowTitle,
-                                       fullScreenMonitor,
-                                       contextShareWindow);
+    this->windowId_ = glfwCreateWindow(
+        width, height, title, fullScreenMonitorId, contextShareWindowId);
     this->defaultPositionInScreenCoordinates_ =
         this->GetPositionInScreenCoordinates();
     this->defaultSizeInScreenCoordinates_ = this->GetSizeInScreenCoordinates();
 }
 
-bool window::AssertCreation_(int errorCode, const char* errorMessage)
-{
-    if (this->windowId_ == internal::WINDOW_ID_NULL) {
-        internal::ERROR_CALLBACK(errorCode, errorMessage);
-        return internal::ASSERT_FAILURE;
-    }
-
-    return internal::ASSERT_SUCCESS;
-}
-
-int window::GetWindowAttribute_(int attribute)
-{
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
-        return GLFW_DONT_CARE;
-    }
-    return glfwGetWindowAttrib(this->windowId_, attribute);
-}
-
-void window::SetWindowAttribute_(int attribute, int value)
-{
-    if (this->AssertCreation_() == internal::ASSERT_SUCCESS) {
-        return glfwSetWindowAttrib(this->windowId_, attribute, value);
-    }
-}
-
-void window::RegisterWindowWithInputCallbacks_()
-{
-    size_t windowIndex;
-    if (internal::FindWindowInputIndex(this->windowId_,
-                                       internal::WINDOWS_RECIEVING_INPUT,
-                                       windowIndex) == GLFW_FALSE) {
-        internal::WINDOWS_RECIEVING_INPUT.push_back(this);
-    }
-}
-
-void window::UnregisterWindowWithInputCallbacks_()
-{
-    size_t windowIndex;
-    if (internal::FindWindowInputIndex(this->windowId_,
-                                       internal::WINDOWS_RECIEVING_INPUT,
-                                       windowIndex) == GLFW_TRUE) {
-        internal::WINDOWS_RECIEVING_INPUT.erase(
-            internal::WINDOWS_RECIEVING_INPUT.begin() + windowIndex);
-    }
-}
-
 window::window() = default;
 
-window::window(int windowWidth,
-               int windowHeight,
-               const char* windowTitle,
-               const char* windowClassName,
-               GLFWmonitor* fullScreenMonitor,
-               GLFWwindow* contextShareWindow)
+window::window(int width,
+               int height,
+               const char* title,
+               const char* className,
+               GLFWmonitor* fullScreenMonitorId,
+               GLFWwindow* contextShareWindowId)
 {
-    this->Create_(windowWidth,
-                  windowHeight,
-                  windowTitle,
-                  windowClassName,
-                  fullScreenMonitor,
-                  contextShareWindow);
+    this->Create(width,
+                 height,
+                 title,
+                 className,
+                 fullScreenMonitorId,
+                 contextShareWindowId);
 }
 
 void window::Destroy()
 {
-    if (this->windowId_ != internal::WINDOW_ID_NULL) {
+    if (this->windowId_ != con::WINDOW_ID_NULL) {
         // TODO: destroy surface
         this->UnregisterWindowWithInputCallbacks_();
         glfwDestroyWindow(this->windowId_);
-        this->windowId_ = internal::WINDOW_ID_NULL;
-        this->displayMode_ = internal::NOT_CREATED;
+        this->windowId_ = con::WINDOW_ID_NULL;
+        this->displayMode_ = con::NOT_CREATED;
     }
 }
 
@@ -194,96 +183,9 @@ window::~window()
     this->Destroy();
 }
 
-void window::Create(int windowWidth,
-                    int windowHeight,
-                    const char* windowTitle,
-                    const char* windowClassName)
-{
-    this->Create_(windowWidth,
-                  windowHeight,
-                  windowTitle,
-                  windowClassName,
-                  nullptr,
-                  nullptr);
-}
-
-void window::Create(int windowWidth,
-                    int windowHeight,
-                    const char* windowTitle,
-                    const char* windowClassName,
-                    monitor& fullScreenMonitor)
-{
-    this->Create_(windowWidth,
-                  windowHeight,
-                  windowTitle,
-                  windowClassName,
-                  fullScreenMonitor.Id(),
-                  nullptr);
-}
-
-void window::Create(int windowWidth,
-                    int windowHeight,
-                    const char* windowTitle,
-                    const char* windowClassName,
-                    window& contextShareWindow)
-{
-    this->Create_(windowWidth,
-                  windowHeight,
-                  windowTitle,
-                  windowClassName,
-                  nullptr,
-                  contextShareWindow.Id());
-}
-
-void window::Create(int windowWidth,
-                    int windowHeight,
-                    const char* windowTitle,
-                    const char* windowClassName,
-                    monitor& fullScreenMonitor,
-                    window& contextShareWindow)
-{
-    this->Create_(windowWidth,
-                  windowHeight,
-                  windowTitle,
-                  windowClassName,
-                  fullScreenMonitor.Id(),
-                  contextShareWindow.Id());
-}
-
-void window::Create(int windowWidth,
-                    int windowHeight,
-                    const char* windowTitle,
-                    monitor& fullScreenMonitor)
-{
-    this->Create(windowWidth, windowHeight, windowTitle, "", fullScreenMonitor);
-}
-
-void window::Create(int windowWidth,
-                    int windowHeight,
-                    const char* windowTitle,
-                    window& contextShareWindow)
-{
-    this->Create(
-        windowWidth, windowHeight, windowTitle, "", contextShareWindow);
-}
-
-void window::Create(int windowWidth,
-                    int windowHeight,
-                    const char* windowTitle,
-                    monitor& fullScreenMonitor,
-                    window& contextShareWindow)
-{
-    this->Create(windowWidth,
-                 windowHeight,
-                 windowTitle,
-                 "",
-                 fullScreenMonitor,
-                 contextShareWindow);
-}
-
 GLFWwindow* window::Id()
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return nullptr;
     }
     return this->windowId_;
@@ -291,10 +193,10 @@ GLFWwindow* window::Id()
 
 void window::SetupKeyInputBuffer()
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
-    this->keyEvents.resize(internal::INPUT_BUFFER_INITIAL_SIZE);
+    this->keyEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
     storedKeyEvents = 0;
     glfwSetKeyCallback(this->windowId_, internal::KeyCallback);
     this->RegisterWindowWithInputCallbacks_();
@@ -302,10 +204,10 @@ void window::SetupKeyInputBuffer()
 
 void window::SetupCharacterInputBuffer()
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
-    this->characterEvents.resize(internal::INPUT_BUFFER_INITIAL_SIZE);
+    this->characterEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
     storedCharacterEvents = 0;
     glfwSetCharCallback(this->windowId_, internal::CharacterCallback);
     this->RegisterWindowWithInputCallbacks_();
@@ -313,10 +215,10 @@ void window::SetupCharacterInputBuffer()
 
 void window::SetupCursorPositionInputBuffer()
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
-    this->cursorPositionEvents.resize(internal::INPUT_BUFFER_INITIAL_SIZE);
+    this->cursorPositionEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
     storedCursorPositionEvents = 0;
     glfwSetCursorPosCallback(this->windowId_, internal::CursorPositionCallback);
     this->RegisterWindowWithInputCallbacks_();
@@ -324,10 +226,10 @@ void window::SetupCursorPositionInputBuffer()
 
 void window::SetupCursorEnterInputBuffer()
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
-    this->cursorEnterEvents.resize(internal::INPUT_BUFFER_INITIAL_SIZE);
+    this->cursorEnterEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
     storedCursorEnterEvents = 0;
     glfwSetCursorEnterCallback(this->windowId_, internal::CursorEnterCallback);
     this->RegisterWindowWithInputCallbacks_();
@@ -335,10 +237,10 @@ void window::SetupCursorEnterInputBuffer()
 
 void window::SetupMouseButtonInputBuffer()
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
-    this->mouseButtonEvents.resize(internal::INPUT_BUFFER_INITIAL_SIZE);
+    this->mouseButtonEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
     storedMouseButtonEvents = 0;
     glfwSetMouseButtonCallback(this->windowId_, internal::MouseButtonCallback);
     this->RegisterWindowWithInputCallbacks_();
@@ -346,10 +248,10 @@ void window::SetupMouseButtonInputBuffer()
 
 void window::SetupScrollInputBuffer()
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
-    this->scrollEvents.resize(internal::INPUT_BUFFER_INITIAL_SIZE);
+    this->scrollEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
     storedScrollEvents = 0;
     glfwSetScrollCallback(this->windowId_, internal::ScrollCallback);
     this->RegisterWindowWithInputCallbacks_();
@@ -357,10 +259,10 @@ void window::SetupScrollInputBuffer()
 
 void window::SetupFileDropInputBuffer()
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
-    this->fileDropEvents.resize(internal::INPUT_BUFFER_INITIAL_SIZE);
+    this->fileDropEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
     storedFileDropEvents = 0;
     glfwSetDropCallback(this->windowId_, internal::FileDropCallback);
     this->RegisterWindowWithInputCallbacks_();
@@ -368,13 +270,13 @@ void window::SetupFileDropInputBuffer()
 
 void window::ClearInputBuffers()
 {
-    this->keyEvents.resize(internal::INPUT_BUFFER_INITIAL_SIZE);
-    this->characterEvents.resize(internal::INPUT_BUFFER_INITIAL_SIZE);
-    this->cursorPositionEvents.resize(internal::INPUT_BUFFER_INITIAL_SIZE);
-    this->cursorEnterEvents.resize(internal::INPUT_BUFFER_INITIAL_SIZE);
-    this->mouseButtonEvents.resize(internal::INPUT_BUFFER_INITIAL_SIZE);
-    this->scrollEvents.resize(internal::INPUT_BUFFER_INITIAL_SIZE);
-    this->fileDropEvents.resize(internal::INPUT_BUFFER_INITIAL_SIZE);
+    this->keyEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
+    this->characterEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
+    this->cursorPositionEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
+    this->cursorEnterEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
+    this->mouseButtonEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
+    this->scrollEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
+    this->fileDropEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
     this->storedKeyEvents = 0;
     this->storedCharacterEvents = 0;
     this->storedCursorPositionEvents = 0;
@@ -386,7 +288,7 @@ void window::ClearInputBuffers()
 
 bool window::ShouldClose()
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return GLFW_FALSE;
     }
     return bool(glfwWindowShouldClose(this->windowId_));
@@ -394,7 +296,7 @@ bool window::ShouldClose()
 
 void window::Close()
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
     glfwSetWindowShouldClose(this->windowId_, GLFW_TRUE);
@@ -402,7 +304,7 @@ void window::Close()
 
 void window::CancelClose()
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
     glfwSetWindowShouldClose(this->windowId_, GLFW_FALSE);
@@ -411,7 +313,7 @@ void window::CancelClose()
 size<int> window::GetSizeInScreenCoordinates()
 {
     size<int> windowSize = { -1, -1 };
-    if (this->AssertCreation_() == internal::ASSERT_SUCCESS) {
+    if (this->AssertCreation_() == con::ASSERT_SUCCESS) {
         glfwGetWindowSize(
             this->windowId_, &windowSize.width, &windowSize.height);
     }
@@ -421,7 +323,7 @@ size<int> window::GetSizeInScreenCoordinates()
 size<int> window::GetSize()
 {
     size<int> windowSize = { -1, -1 };
-    if (this->AssertCreation_() == internal::ASSERT_SUCCESS) {
+    if (this->AssertCreation_() == con::ASSERT_SUCCESS) {
         glfwGetFramebufferSize(
             this->windowId_, &windowSize.width, &windowSize.height);
     }
@@ -430,7 +332,7 @@ size<int> window::GetSize()
 
 void window::SetSize(size<int> windowSize)
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
     windowSize = this->PixelToScreenCoordinate(windowSize);
@@ -439,7 +341,7 @@ void window::SetSize(size<int> windowSize)
 
 void window::SetSize(int width, int height)
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
     this->PixelToScreenCoordinate(width, height, width, height);
@@ -449,7 +351,7 @@ void window::SetSize(int width, int height)
 coordinate<int> window::GetPositionInScreenCoordinates()
 {
     coordinate<int> windowPosition = { -1, -1 };
-    if (this->AssertCreation_() == internal::ASSERT_SUCCESS) {
+    if (this->AssertCreation_() == con::ASSERT_SUCCESS) {
         glfwGetWindowPos(this->windowId_, &windowPosition.x, &windowPosition.y);
     }
     return windowPosition;
@@ -458,7 +360,7 @@ coordinate<int> window::GetPositionInScreenCoordinates()
 coordinate<int> window::GetPosition()
 {
     coordinate<int> windowPosition = { -1, -1 };
-    if (this->AssertCreation_() == internal::ASSERT_SUCCESS) {
+    if (this->AssertCreation_() == con::ASSERT_SUCCESS) {
         glfwGetWindowPos(this->windowId_, &windowPosition.x, &windowPosition.y);
         windowPosition = this->ScreenCoordinateToPixel(windowPosition);
     }
@@ -467,7 +369,7 @@ coordinate<int> window::GetPosition()
 
 void window::SetPosition(coordinate<int> windowPosition)
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
     windowPosition = this->PixelToScreenCoordinate(windowPosition);
@@ -476,7 +378,7 @@ void window::SetPosition(coordinate<int> windowPosition)
 
 void window::SetPosition(int xPos, int yPos)
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
     this->PixelToScreenCoordinate(xPos, yPos, xPos, yPos);
@@ -486,7 +388,7 @@ void window::SetPosition(int xPos, int yPos)
 coordinate<float> window::GetContentScale()
 {
     coordinate<float> contentScale = { -1.0F, -1.0F };
-    if (this->AssertCreation_() == internal::ASSERT_SUCCESS) {
+    if (this->AssertCreation_() == con::ASSERT_SUCCESS) {
         glfwGetWindowContentScale(
             this->windowId_, &contentScale.x, &contentScale.y);
     }
@@ -498,7 +400,7 @@ void window::SetMinimumAndMaximumSize(int minimumWidth,
                                       int maximumWidth,
                                       int maximumHeight)
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
     this->PixelToScreenCoordinate(
@@ -547,7 +449,7 @@ void window::SetMaximumSize(size<int> maximumSize)
 
 void window::SetAspectRatio(int numerator, int denominator)
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
     glfwSetWindowAspectRatio(this->windowId_, numerator, denominator);
@@ -555,15 +457,15 @@ void window::SetAspectRatio(int numerator, int denominator)
 
 void window::FullScreen(monitor& fullScreenMonitor)
 {
-    if ((this->AssertCreation_() == internal::ASSERT_FAILURE) ||
-        (this->displayMode_ == internal::FULL_SCREEN)) {
+    if ((this->AssertCreation_() == con::ASSERT_FAILURE) ||
+        (this->displayMode_ == con::FULL_SCREEN)) {
         return;
     }
 
     this->defaultPositionInScreenCoordinates_ =
         this->GetPositionInScreenCoordinates();
     this->defaultSizeInScreenCoordinates_ = this->GetSizeInScreenCoordinates();
-    this->displayMode_ = internal::FULL_SCREEN;
+    this->displayMode_ = con::FULL_SCREEN;
     const GLFWvidmode* videoMode =
         fullScreenMonitor.VideoModeInScreenCoordinates();
     glfwSetWindowMonitor(this->windowId_,
@@ -577,12 +479,12 @@ void window::FullScreen(monitor& fullScreenMonitor)
 
 void window::ExitFullScreen()
 {
-    if ((this->AssertCreation_() == internal::ASSERT_FAILURE) ||
-        (this->displayMode_ != internal::FULL_SCREEN)) {
+    if ((this->AssertCreation_() == con::ASSERT_FAILURE) ||
+        (this->displayMode_ != con::FULL_SCREEN)) {
         return;
     }
 
-    this->displayMode_ = internal::WINDOWED;
+    this->displayMode_ = con::WINDOWED;
     glfwSetWindowMonitor(this->windowId_,
                          nullptr,
                          this->defaultPositionInScreenCoordinates_.x,
@@ -594,14 +496,14 @@ void window::ExitFullScreen()
 
 void window::ExitFullScreen(int xPos, int yPos, int width, int height)
 {
-    if ((this->AssertCreation_() == internal::ASSERT_FAILURE) ||
-        (this->displayMode_ != internal::FULL_SCREEN)) {
+    if ((this->AssertCreation_() == con::ASSERT_FAILURE) ||
+        (this->displayMode_ != con::FULL_SCREEN)) {
         return;
     }
     this->PixelToScreenCoordinate(xPos, yPos, xPos, yPos);
     this->PixelToScreenCoordinate(width, height, width, height);
 
-    this->displayMode_ = internal::WINDOWED;
+    this->displayMode_ = con::WINDOWED;
     glfwSetWindowMonitor(
         this->windowId_, nullptr, xPos, yPos, width, height, GLFW_DONT_CARE);
 }
@@ -613,7 +515,7 @@ void window::ExitFullScreen(coordinate<int> position, size<int> size)
 
 void window::SetTitle(const char* title)
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
     glfwSetWindowTitle(this->windowId_, title);
@@ -621,7 +523,7 @@ void window::SetTitle(const char* title)
 
 void window::SetIcon(const char* iconImagePath)
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
     image icon = LoadRGBAImage(iconImagePath);
@@ -630,9 +532,9 @@ void window::SetIcon(const char* iconImagePath)
         return;
     }
     if (icon.componentsPerPixel != 4) {
-        internal::ERROR_CALLBACK(
-            internal::ERROR_NOT_ENOUGH_COMPONENTS_PER_PIXEL,
-            internal::ERROR_MESSAGE_NOT_ENOUGH_COMPONENTS_PER_PIXEL);
+        global::ERROR_CALLBACK(
+            con::ERROR_NOT_ENOUGH_COMPONENTS_PER_PIXEL,
+            con::ERROR_MESSAGE_NOT_ENOUGH_COMPONENTS_PER_PIXEL);
         return;
     }
     glfwIcon.at(0) = icon;
@@ -642,14 +544,14 @@ void window::SetIcon(const char* iconImagePath)
 void window::SetIcon(image iconImage)
 {
     if (iconImage.pixelData.data() == nullptr) {
-        internal::ERROR_CALLBACK(internal::ERROR_ICON_FAILED_TO_LOAD,
-                                 internal::ERROR_MESSAGE_ICON_FAILED_TO_LOAD);
+        global::ERROR_CALLBACK(con::ERROR_ICON_FAILED_TO_LOAD,
+                               con::ERROR_MESSAGE_ICON_FAILED_TO_LOAD);
         return;
     }
     if (iconImage.componentsPerPixel != 4) {
-        internal::ERROR_CALLBACK(
-            internal::ERROR_NOT_ENOUGH_COMPONENTS_PER_PIXEL,
-            internal::ERROR_MESSAGE_NOT_ENOUGH_COMPONENTS_PER_PIXEL);
+        global::ERROR_CALLBACK(
+            con::ERROR_NOT_ENOUGH_COMPONENTS_PER_PIXEL,
+            con::ERROR_MESSAGE_NOT_ENOUGH_COMPONENTS_PER_PIXEL);
         return;
     }
     std::array<GLFWimage, 1> glfwIcon;
@@ -659,7 +561,7 @@ void window::SetIcon(image iconImage)
 
 void window::SetCandidateIcons(std::vector<const char*> candidateIconImagePaths)
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
     std::vector<GLFWimage> glfwIcons(candidateIconImagePaths.size());
@@ -672,9 +574,9 @@ void window::SetCandidateIcons(std::vector<const char*> candidateIconImagePaths)
             continue;
         }
         if (icons.at(iconIndex).componentsPerPixel != 4) {
-            internal::ERROR_CALLBACK(
-                internal::ERROR_NOT_ENOUGH_COMPONENTS_PER_PIXEL,
-                internal::ERROR_MESSAGE_NOT_ENOUGH_COMPONENTS_PER_PIXEL);
+            global::ERROR_CALLBACK(
+                con::ERROR_NOT_ENOUGH_COMPONENTS_PER_PIXEL,
+                con::ERROR_MESSAGE_NOT_ENOUGH_COMPONENTS_PER_PIXEL);
             icons.at(iconIndex).pixelData.clear();
             continue;
         }
@@ -691,15 +593,14 @@ void window::SetCandidateIcons(std::vector<image> candidateIconImages)
     size_t iconIndex = 0;
     for (image candidateIconImage : candidateIconImages) {
         if (candidateIconImage.pixelData.data() == nullptr) {
-            internal::ERROR_CALLBACK(
-                internal::ERROR_ICON_FAILED_TO_LOAD,
-                internal::ERROR_MESSAGE_ICON_FAILED_TO_LOAD);
+            global::ERROR_CALLBACK(con::ERROR_ICON_FAILED_TO_LOAD,
+                                   con::ERROR_MESSAGE_ICON_FAILED_TO_LOAD);
             return;
         }
         if (candidateIconImage.componentsPerPixel != 4) {
-            internal::ERROR_CALLBACK(
-                internal::ERROR_NOT_ENOUGH_COMPONENTS_PER_PIXEL,
-                internal::ERROR_MESSAGE_NOT_ENOUGH_COMPONENTS_PER_PIXEL);
+            global::ERROR_CALLBACK(
+                con::ERROR_NOT_ENOUGH_COMPONENTS_PER_PIXEL,
+                con::ERROR_MESSAGE_NOT_ENOUGH_COMPONENTS_PER_PIXEL);
             return;
         }
         glfwIcons.at(iconIndex) = candidateIconImage;
@@ -766,32 +667,32 @@ bool window::IsAlwaysOnTop()
 
 void window::Minimize()
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
     glfwIconifyWindow(this->windowId_);
-    this->displayMode_ = internal::ICONIFIED;
+    this->displayMode_ = con::ICONIFIED;
 }
 
 void window::Maximize()
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
     glfwMaximizeWindow(this->windowId_);
-    this->displayMode_ = internal::MAXIMIZED;
+    this->displayMode_ = con::MAXIMIZED;
 }
 
 void window::Restore()
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
     glfwRestoreWindow(this->windowId_);
-    if (this->displayMode_ == internal::FULL_SCREEN) {
+    if (this->displayMode_ == con::FULL_SCREEN) {
         this->ExitFullScreen();
     }
-    this->displayMode_ = internal::WINDOWED;
+    this->displayMode_ = con::WINDOWED;
 }
 
 bool window::IsMinimized()
@@ -806,7 +707,7 @@ bool window::IsMaximized()
 
 void window::Hide()
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
     glfwHideWindow(this->windowId_);
@@ -814,7 +715,7 @@ void window::Hide()
 
 void window::Show()
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
     glfwShowWindow(this->windowId_);
@@ -827,7 +728,7 @@ bool window::IsVisible()
 
 void window::Focus()
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
     glfwFocusWindow(this->windowId_);
@@ -840,7 +741,7 @@ bool window::IsFocused()
 
 void window::RequestFocus()
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
     glfwRequestWindowAttention(this->windowId_);
@@ -863,7 +764,7 @@ bool window::IsFocusedOnShow()
 
 void window::SetOpacity(float opacity)
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
     glfwSetWindowOpacity(this->windowId_, opacity);
@@ -877,7 +778,7 @@ bool window::IsTransparent()
 
 void window::SwapBuffers()
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
     glfwSwapBuffers(this->windowId_);
@@ -886,13 +787,13 @@ void window::SwapBuffers()
 VkResult window::CreateSurface(VkInstance instance,
                                const VkAllocationCallbacks* allocator)
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return VK_ERROR_UNKNOWN;
     }
     if (this->surface_ != nullptr) {
-        internal::ERROR_CALLBACK(
-            internal::ERROR_WINDOW_SURFACE_ALREADY_CREATED,
-            internal::ERROR_MESSAGE_WINDOW_SURFACE_ALREADY_CREATED);
+        global::ERROR_CALLBACK(
+            con::ERROR_WINDOW_SURFACE_ALREADY_CREATED,
+            con::ERROR_MESSAGE_WINDOW_SURFACE_ALREADY_CREATED);
         return VK_ERROR_UNKNOWN;
     }
     return glfwCreateWindowSurface(

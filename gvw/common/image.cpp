@@ -23,8 +23,8 @@ image LoadImage(const char* imagePath, int colorChannels)
                                      &imageBuffer.componentsPerPixel,
                                      colorChannels);
     if (pixelBuffer == nullptr) {
-        internal::ERROR_CALLBACK(internal::ERROR_ICON_FAILED_TO_LOAD,
-                                 internal::ERROR_MESSAGE_ICON_FAILED_TO_LOAD);
+        global::ERROR_CALLBACK(con::ERROR_ICON_FAILED_TO_LOAD,
+                               con::ERROR_MESSAGE_ICON_FAILED_TO_LOAD);
         return imageBuffer;
     }
     size_t pixelBufferSize = size_t(imageBuffer.width) *

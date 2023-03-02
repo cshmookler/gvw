@@ -1,5 +1,3 @@
-set(TARGET_NAMES test)
-
 add_executable(test utils.cpp main.cpp)
 
 target_link_directories(test PRIVATE ${CMAKE_BINARY_DIR})

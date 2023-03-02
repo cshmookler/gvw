@@ -6,11 +6,15 @@
 
 namespace gvw {
 
-namespace internal {
+namespace global {
 
 std::vector<window*> WINDOWS_RECIEVING_INPUT;
 std::vector<joystick_event> JOYSTICK_EVENTS;
 size_t STORED_JOYSTICK_EVENTS = 0;
+
+} // namespace global
+
+namespace internal {
 
 int FindWindowInputIndex(GLFWwindow* associatedWindow,
                          std::vector<window*>& windowsRecievingInput,
@@ -32,15 +36,15 @@ void KeyCallback(GLFWwindow* associatedWindow,
 {
     size_t windowIndex;
     if (FindWindowInputIndex(associatedWindow,
-                             WINDOWS_RECIEVING_INPUT,
+                             global::WINDOWS_RECIEVING_INPUT,
                              windowIndex) == GLFW_FALSE) {
         return;
     }
     key_event keyEvent = { key, scancode, action, mods };
-    window& windowReference = *WINDOWS_RECIEVING_INPUT.at(windowIndex);
+    window& windowReference = *global::WINDOWS_RECIEVING_INPUT.at(windowIndex);
     if (windowReference.storedKeyEvents >= windowReference.keyEvents.size()) {
         windowReference.keyEvents.resize(windowReference.keyEvents.size() +
-                                         INPUT_BUFFER_INCREMENT_SIZE);
+                                         con::INPUT_BUFFER_INCREMENT_SIZE);
     }
     windowReference.keyEvents.at(windowReference.storedKeyEvents) = keyEvent;
     windowReference.storedCursorEnterEvents++;
@@ -50,16 +54,16 @@ void CharacterCallback(GLFWwindow* associatedWindow, unsigned int codePoint)
 {
     size_t windowIndex;
     if (FindWindowInputIndex(associatedWindow,
-                             WINDOWS_RECIEVING_INPUT,
+                             global::WINDOWS_RECIEVING_INPUT,
                              windowIndex) == GLFW_FALSE) {
         return;
     }
-    window& windowReference = *WINDOWS_RECIEVING_INPUT.at(windowIndex);
+    window& windowReference = *global::WINDOWS_RECIEVING_INPUT.at(windowIndex);
     if (windowReference.storedCharacterEvents >=
         windowReference.characterEvents.size()) {
         windowReference.characterEvents.resize(
             windowReference.characterEvents.size() +
-            INPUT_BUFFER_INCREMENT_SIZE);
+            con::INPUT_BUFFER_INCREMENT_SIZE);
     }
     windowReference.characterEvents.at(windowReference.storedCharacterEvents) =
         character_event(codePoint);
@@ -72,17 +76,17 @@ void CursorPositionCallback(GLFWwindow* associatedWindow,
 {
     size_t windowIndex;
     if (FindWindowInputIndex(associatedWindow,
-                             WINDOWS_RECIEVING_INPUT,
+                             global::WINDOWS_RECIEVING_INPUT,
                              windowIndex) == GLFW_FALSE) {
         return;
     }
     cursor_position_event cursorPosition = { xPosition, yPosition };
-    window& windowReference = *WINDOWS_RECIEVING_INPUT.at(windowIndex);
+    window& windowReference = *global::WINDOWS_RECIEVING_INPUT.at(windowIndex);
     if (windowReference.storedCursorPositionEvents >=
         windowReference.cursorPositionEvents.size()) {
         windowReference.cursorPositionEvents.resize(
             windowReference.cursorPositionEvents.size() +
-            INPUT_BUFFER_INCREMENT_SIZE);
+            con::INPUT_BUFFER_INCREMENT_SIZE);
     }
     windowReference.cursorPositionEvents.at(
         windowReference.storedCursorPositionEvents) = cursorPosition;
@@ -93,16 +97,16 @@ void CursorEnterCallback(GLFWwindow* associatedWindow, int entered)
 {
     size_t windowIndex;
     if (FindWindowInputIndex(associatedWindow,
-                             WINDOWS_RECIEVING_INPUT,
+                             global::WINDOWS_RECIEVING_INPUT,
                              windowIndex) == GLFW_FALSE) {
         return;
     }
-    window& windowReference = *WINDOWS_RECIEVING_INPUT.at(windowIndex);
+    window& windowReference = *global::WINDOWS_RECIEVING_INPUT.at(windowIndex);
     if (windowReference.storedCursorEnterEvents >=
         windowReference.cursorEnterEvents.size()) {
         windowReference.cursorEnterEvents.resize(
             windowReference.cursorEnterEvents.size() +
-            INPUT_BUFFER_INCREMENT_SIZE);
+            con::INPUT_BUFFER_INCREMENT_SIZE);
     }
     windowReference.cursorEnterEvents.at(
         windowReference.storedCursorEnterEvents) = cursor_enter_event(entered);
@@ -116,18 +120,18 @@ void MouseButtonCallback(GLFWwindow* associatedWindow,
 {
     size_t windowIndex;
     if (FindWindowInputIndex(associatedWindow,
-                             WINDOWS_RECIEVING_INPUT,
+                             global::WINDOWS_RECIEVING_INPUT,
                              windowIndex) == GLFW_FALSE) {
         return;
     }
 
     mouse_button_event mouseButtonEvent = { button, action, mods };
-    window& windowReference = *WINDOWS_RECIEVING_INPUT.at(windowIndex);
+    window& windowReference = *global::WINDOWS_RECIEVING_INPUT.at(windowIndex);
     if (windowReference.storedMouseButtonEvents >=
         windowReference.mouseButtonEvents.size()) {
         windowReference.mouseButtonEvents.resize(
             windowReference.mouseButtonEvents.size() +
-            INPUT_BUFFER_INCREMENT_SIZE);
+            con::INPUT_BUFFER_INCREMENT_SIZE);
     }
     windowReference.mouseButtonEvents.at(
         windowReference.storedMouseButtonEvents) = mouseButtonEvent;
@@ -140,16 +144,17 @@ void ScrollCallback(GLFWwindow* associatedWindow,
 {
     size_t windowIndex;
     if (FindWindowInputIndex(associatedWindow,
-                             WINDOWS_RECIEVING_INPUT,
+                             global::WINDOWS_RECIEVING_INPUT,
                              windowIndex) == GLFW_FALSE) {
         return;
     }
     scroll_event scrollEvent = { xOffset, yOffset };
-    window& windowReference = *WINDOWS_RECIEVING_INPUT.at(windowIndex);
+    window& windowReference = *global::WINDOWS_RECIEVING_INPUT.at(windowIndex);
     if (windowReference.storedScrollEvents >=
         windowReference.scrollEvents.size()) {
         windowReference.scrollEvents.resize(
-            windowReference.scrollEvents.size() + INPUT_BUFFER_INCREMENT_SIZE);
+            windowReference.scrollEvents.size() +
+            con::INPUT_BUFFER_INCREMENT_SIZE);
     }
     windowReference.scrollEvents.at(windowReference.storedScrollEvents) =
         scrollEvent;
@@ -167,17 +172,17 @@ void FileDropCallback(GLFWwindow* associatedWindow,
 {
     size_t windowIndex;
     if (FindWindowInputIndex(associatedWindow,
-                             WINDOWS_RECIEVING_INPUT,
+                             global::WINDOWS_RECIEVING_INPUT,
                              windowIndex) == GLFW_FALSE) {
         return;
     }
     file_drop_event fileDrop = { count, paths };
-    window& windowReference = *WINDOWS_RECIEVING_INPUT.at(windowIndex);
+    window& windowReference = *global::WINDOWS_RECIEVING_INPUT.at(windowIndex);
     if (windowReference.storedFileDropEvents >=
         windowReference.fileDropEvents.size()) {
         windowReference.fileDropEvents.resize(
             windowReference.fileDropEvents.size() +
-            internal::INPUT_BUFFER_INCREMENT_SIZE);
+            con::INPUT_BUFFER_INCREMENT_SIZE);
     }
     windowReference.fileDropEvents.at(windowReference.storedFileDropEvents) =
         fileDrop;
@@ -213,21 +218,21 @@ void SetSwapInterval(int interval)
 
 void SetupJoystickInputBuffer()
 {
-    internal::JOYSTICK_EVENTS.resize(internal::INPUT_BUFFER_INITIAL_SIZE);
+    global::JOYSTICK_EVENTS.resize(con::INPUT_BUFFER_INITIAL_SIZE);
     glfwSetJoystickCallback(internal::JoystickCallback);
 }
 
 void ClearJoystickInputBuffer()
 {
-    internal::JOYSTICK_EVENTS.resize(internal::INPUT_BUFFER_INITIAL_SIZE);
-    internal::STORED_JOYSTICK_EVENTS = 0;
+    global::JOYSTICK_EVENTS.resize(con::INPUT_BUFFER_INITIAL_SIZE);
+    global::STORED_JOYSTICK_EVENTS = 0;
 }
 
 std::vector<joystick_event> GetJoystickEvents()
 {
     std::vector<joystick_event> truncatedJoystickEvents =
-        internal::JOYSTICK_EVENTS;
-    truncatedJoystickEvents.resize(internal::STORED_JOYSTICK_EVENTS);
+        global::JOYSTICK_EVENTS;
+    truncatedJoystickEvents.resize(global::STORED_JOYSTICK_EVENTS);
     return truncatedJoystickEvents;
 }
 

@@ -11,16 +11,11 @@ option(GVW_BUILD_EXAMPLES "build example programs" ON)
 
 # --- GVW Dependencies --- #
 
-# Dynamic and static libraries
-set(GVW_DEP_DYNAMIC_LIBS
+set(GVW_DEPENDENCIES
 
-    -lstdc++fs
-    -lcpplocate
-)
-set(GVW_DEP_STATIC_LIBS
-
-    libstdc++fs.a
-    libcpplocate.a
+    stdc++fs
+    cpplocate
+    glfw
 )
 
 # ------------------------ #
@@ -46,11 +41,11 @@ set(GVW_SOURCE_FILES
 
 if(GVW_BUILD_SHARED_LIBS)
     add_library(${PROJECT_NAME} SHARED ${GVW_SOURCE_FILES})
-    target_link_libraries(${PROJECT_NAME} ${GVW_DEP_DYNAMIC_LIBS} glfw )
 else()
     add_library(${PROJECT_NAME} STATIC ${GVW_SOURCE_FILES})
-    target_link_libraries(${PROJECT_NAME} ${GVW_DEP_STATIC_LIBS} glfw)
 endif()
+
+target_link_libraries(${PROJECT_NAME} ${GVW_DEPENDENCIES})
 
 # install(TARGETS ${PROJECT_NAME} DESTINATION lib/gvw)
 # ------------------------------------------- #

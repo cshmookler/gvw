@@ -51,7 +51,7 @@ int main(int argc, char** argv)
 
     // Create the window
     gvw::window window;
-    window.Create(600, 450, "This is the window title");
+    window.Create(600, 450, "This is the window title", "", nullptr, nullptr);
 
     gvw::monitor primaryMonitor = gvw::PrimaryMonitor();
     std::vector<gvw::monitor> monitors = gvw::Monitors();
@@ -178,7 +178,9 @@ int main(int argc, char** argv)
     thing.Create(39,
                  2903,
                  "THIDHFSDIUFHDSFJHUDFHSFJDHFJKDSFHDJKSFHDKJFHSDJFHSDKFH",
-                 window);
+                 "",
+                 nullptr,
+                 window.Id());
     gvw::size<int> windowSize = window.GetSize();
     std::cout << "window.GetSize(): x=" << windowSize.width
               << ", y=" << windowSize.height << std::endl;

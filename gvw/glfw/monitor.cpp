@@ -10,14 +10,13 @@ namespace gvw {
 
 bool monitor::AssertInitialization_()
 {
-    if (this->monitorId_ == internal::MONITOR_ID_NULL) {
-        internal::ERROR_CALLBACK(
-            internal::ERROR_MONITOR_ID_NOT_INITIALIZED,
-            internal::ERROR_MESSAGE_MONITOR_ID_NOT_INITIALIZED);
-        return internal::ASSERT_FAILURE;
+    if (this->monitorId_ == con::MONITOR_ID_NULL) {
+        global::ERROR_CALLBACK(con::ERROR_MONITOR_ID_NOT_INITIALIZED,
+                               con::ERROR_MESSAGE_MONITOR_ID_NOT_INITIALIZED);
+        return con::ASSERT_FAILURE;
     }
 
-    return internal::ASSERT_SUCCESS;
+    return con::ASSERT_SUCCESS;
 }
 
 monitor::monitor() = default;
@@ -36,7 +35,7 @@ void monitor::Init(GLFWmonitor* monitorId)
 
 GLFWmonitor* monitor::Id()
 {
-    if (this->AssertInitialization_() == internal::ASSERT_FAILURE) {
+    if (this->AssertInitialization_() == con::ASSERT_FAILURE) {
         return nullptr;
     }
     return this->monitorId_;
@@ -44,7 +43,7 @@ GLFWmonitor* monitor::Id()
 
 const GLFWvidmode* monitor::VideoModeInScreenCoordinates()
 {
-    if (this->AssertInitialization_() == internal::ASSERT_FAILURE) {
+    if (this->AssertInitialization_() == con::ASSERT_FAILURE) {
         return nullptr;
     }
 
@@ -65,7 +64,7 @@ GLFWvidmode* monitor::VideoMode(window& associatedWindow)
 size<int> monitor::PhysicalSize()
 {
     size<int> physicalSize = { -1, -1 };
-    if (this->AssertInitialization_() == internal::ASSERT_FAILURE) {
+    if (this->AssertInitialization_() == con::ASSERT_FAILURE) {
         return physicalSize;
     }
 
@@ -78,7 +77,7 @@ size<int> monitor::PhysicalSize()
 coordinate<float> monitor::ContentScale()
 {
     coordinate<float> contentScale = { -1.0F, -1.0F };
-    if (this->AssertInitialization_() == internal::ASSERT_FAILURE) {
+    if (this->AssertInitialization_() == con::ASSERT_FAILURE) {
         return contentScale;
     }
 
@@ -91,7 +90,7 @@ coordinate<float> monitor::ContentScale()
 coordinate<int> monitor::VirtualPosition(window& associatedWindow)
 {
     coordinate<int> virtualPosition = { -1, -1 };
-    if (this->AssertInitialization_() == internal::ASSERT_FAILURE) {
+    if (this->AssertInitialization_() == con::ASSERT_FAILURE) {
         return virtualPosition;
     }
 
@@ -107,7 +106,7 @@ coordinate<int> monitor::VirtualPosition(window& associatedWindow)
 coordinate<int> monitor::WorkAreaPosition(window& associatedWindow)
 {
     coordinate<int> workAreaPosition;
-    if (this->AssertInitialization_() == internal::ASSERT_FAILURE) {
+    if (this->AssertInitialization_() == con::ASSERT_FAILURE) {
         return workAreaPosition;
     }
 
@@ -127,7 +126,7 @@ coordinate<int> monitor::WorkAreaPosition(window& associatedWindow)
 size<int> monitor::WorkAreaSize(window& associatedWindow)
 {
     size<int> workAreaSize;
-    if (this->AssertInitialization_() == internal::ASSERT_FAILURE) {
+    if (this->AssertInitialization_() == con::ASSERT_FAILURE) {
         return workAreaSize;
     }
 
@@ -146,7 +145,7 @@ size<int> monitor::WorkAreaSize(window& associatedWindow)
 
 const char* monitor::Name()
 {
-    if (this->AssertInitialization_() == internal::ASSERT_FAILURE) {
+    if (this->AssertInitialization_() == con::ASSERT_FAILURE) {
         return nullptr;
     }
     return glfwGetMonitorName(this->monitorId_);
@@ -154,7 +153,7 @@ const char* monitor::Name()
 
 const GLFWgammaramp* monitor::GammaRamp()
 {
-    if (this->AssertInitialization_() == internal::ASSERT_FAILURE) {
+    if (this->AssertInitialization_() == con::ASSERT_FAILURE) {
         return nullptr;
     }
     return glfwGetGammaRamp(this->monitorId_);
@@ -167,7 +166,7 @@ void monitor::SetGammaRamp(const GLFWgammaramp& gammaRamp)
 
 void monitor::ResetGammaRamp()
 {
-    glfwSetGamma(this->monitorId_, internal::GAMMA_DEFAULT);
+    glfwSetGamma(this->monitorId_, con::GAMMA_DEFAULT);
 }
 
 monitor PrimaryMonitor()

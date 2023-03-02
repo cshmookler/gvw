@@ -53,10 +53,11 @@ int Init(GLFWerrorfun errorCallback = ErrorCallback);
 void Destroy();
 
 /// @brief Returns the process name associated with a Vulkan instance.
-/// @param instance
-/// @param procname
+/// @param vulkanInstance
+/// @param processName
 /// @return A `GLFWvkproc` object.
-GLFWvkproc GetInstanceProcessAddress(VkInstance instance, const char* procname);
+GLFWvkproc GetInstanceProcessAddress(VkInstance vulkanInstance,
+                                     const char* processName);
 
 /// @brief Returns the required vulkan instance extensions.
 /// @return A vector of `const char*`.

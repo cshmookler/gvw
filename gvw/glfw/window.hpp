@@ -19,26 +19,18 @@ class monitor;
 // TODO: Unregister windows upon destruction
 class window
 {
-    GLFWwindow* windowId_ = internal::WINDOW_ID_NULL;
+    GLFWwindow* windowId_ = con::WINDOW_ID_NULL;
     VkSurfaceKHR surface_ = VK_NULL_HANDLE;
     coordinate<int> defaultPositionInScreenCoordinates_;
     size<int> defaultSizeInScreenCoordinates_;
-    int displayMode_ = internal::NOT_CREATED;
-
-    // Create the window
-    void Create_(int windowWidth,
-                 int windowHeight,
-                 const char* windowTitle,
-                 const char* windowClassName,
-                 GLFWmonitor* fullScreenMonitor,
-                 GLFWwindow* contextShareWindow);
+    int displayMode_ = con::NOT_CREATED;
 
     // Checks if the window has been created.
     // If it has not, an error is sent to the GLFW error callback.
     bool AssertCreation_(
-        int errorCode = internal::ERROR_WINDOW_NOT_CREATED_BEFORE_OPERATION,
+        int errorCode = con::ERROR_WINDOW_NOT_CREATED_BEFORE_OPERATION,
         const char* errorMessage =
-            internal::ERROR_MESSAGE_WINDOW_NOT_CREATED_BEFORE_OPERATION);
+            con::ERROR_MESSAGE_WINDOW_NOT_CREATED_BEFORE_OPERATION);
 
     int GetWindowAttribute_(int attribute);
     void SetWindowAttribute_(int attribute, int value);
@@ -64,14 +56,22 @@ class window
     size_t storedScrollEvents = 0;
     size_t storedFileDropEvents = 0;
 
+    // Create the window
+    void Create(int width,
+                int height,
+                const char* title,
+                const char* className,
+                GLFWmonitor* fullScreenMonitorId,
+                GLFWwindow* contextShareWindowId);
+
     // Constructors
     window();
-    window(int windowWidth,
-           int windowHeight,
-           const char* windowTitle,
-           const char* windowClassName,
-           GLFWmonitor* fullScreenMonitor,
-           GLFWwindow* contextShareWindow);
+    window(int width,
+           int height,
+           const char* title,
+           const char* className,
+           GLFWmonitor* fullScreenMonitorId,
+           GLFWwindow* contextShareWindowId);
 
     // Immediately closes the window
     void Destroy();
@@ -83,41 +83,6 @@ class window
     // It should not be possible to copy this object
     window(const window&) = delete;
     window& operator=(const window&) = delete;
-
-    void Create(int windowWidth,
-                int windowHeight,
-                const char* windowTitle,
-                const char* windowClassName = "");
-
-    void Create(int windowWidth,
-                int windowHeight,
-                const char* windowTitle,
-                const char* windowClassName,
-                monitor& fullScreenMonitor);
-    void Create(int windowWidth,
-                int windowHeight,
-                const char* windowTitle,
-                const char* windowClassName,
-                window& contextShareWindow);
-    void Create(int windowWidth,
-                int windowHeight,
-                const char* windowTitle,
-                const char* windowClassName,
-                monitor& fullScreenMonitor,
-                window& contextShareWindow);
-    void Create(int windowWidth,
-                int windowHeight,
-                const char* windowTitle,
-                monitor& fullScreenMonitor);
-    void Create(int windowWidth,
-                int windowHeight,
-                const char* windowTitle,
-                window& contextShareWindow);
-    void Create(int windowWidth,
-                int windowHeight,
-                const char* windowTitle,
-                monitor& fullScreenMonitor,
-                window& contextShareWindow);
 
     // Get a pointer to this window's GLFWwindow pointer.
     GLFWwindow* Id();
@@ -152,12 +117,16 @@ class window
     void SetupScrollInputBuffer();
     void SetupFileDropInputBuffer();
 
-    // Clear input buffers
     void ClearInputBuffers();
 
-    bool ShouldClose(); // Returns the state of the 'close' flag
-    void Close();       // Set the 'close' flag to true
-    void CancelClose(); // Set the 'close' flag to false
+    // Returns the state of the 'close' flag
+    bool ShouldClose();
+
+    // Set the 'close' flag to true
+    void Close();
+
+    // Set the 'close' flag to false
+    void CancelClose();
 
     size<int> GetSizeInScreenCoordinates();
     size<int> GetSize();

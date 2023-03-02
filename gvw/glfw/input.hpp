@@ -8,11 +8,15 @@
 
 namespace gvw {
 
-namespace internal {
+namespace global {
 
 extern std::vector<window*> WINDOWS_RECIEVING_INPUT;
 extern std::vector<joystick_event> JOYSTICK_EVENTS;
 extern size_t STORED_JOYSTICK_EVENTS;
+
+} // namespace global
+
+namespace internal {
 
 int FindWindowInputIndex(GLFWwindow* associatedWindow,
                          std::vector<window*>& windowsRecievingInput,

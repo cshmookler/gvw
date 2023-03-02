@@ -10,7 +10,7 @@ void window::ScreenCoordinateToPixel(type screenCoordinateX,
                                      type& pixelX,
                                      type& pixelY)
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
 
@@ -61,7 +61,7 @@ void window::PixelToScreenCoordinate(type pixelX,
                                      type& screenCoordinateX,
                                      type& screenCoordinateY)
 {
-    if (this->AssertCreation_() == internal::ASSERT_FAILURE) {
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
 
