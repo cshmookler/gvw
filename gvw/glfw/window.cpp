@@ -24,7 +24,6 @@ bool window::AssertCreation_(int errorCode, const char* errorMessage)
         global::ERROR_CALLBACK(errorCode, errorMessage);
         return con::ASSERT_FAILURE;
     }
-
     return con::ASSERT_SUCCESS;
 }
 
@@ -145,9 +144,8 @@ void window::Create(int width,
     // Create the window
     this->windowId_ = glfwCreateWindow(
         width, height, title, fullScreenMonitorId, contextShareWindowId);
-    this->defaultPositionInScreenCoordinates_ =
-        this->GetPositionInScreenCoordinates();
-    this->defaultSizeInScreenCoordinates_ = this->GetSizeInScreenCoordinates();
+    this->defaultPositionInScreenCoordinates_ = this->GetPosition();
+    this->defaultSizeInScreenCoordinates_ = this->GetSize();
 }
 
 window::window() = default;
@@ -310,7 +308,7 @@ void window::CancelClose()
     glfwSetWindowShouldClose(this->windowId_, GLFW_FALSE);
 }
 
-size<int> window::GetSizeInScreenCoordinates()
+size<int> window::GetSize()
 {
     size<int> windowSize = { -1, -1 };
     if (this->AssertCreation_() == con::ASSERT_SUCCESS) {
@@ -320,7 +318,7 @@ size<int> window::GetSizeInScreenCoordinates()
     return windowSize;
 }
 
-size<int> window::GetSize()
+size<int> window::GetSizeInPixels()
 {
     size<int> windowSize = { -1, -1 };
     if (this->AssertCreation_() == con::ASSERT_SUCCESS) {
@@ -335,7 +333,6 @@ void window::SetSize(size<int> windowSize)
     if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
-    windowSize = this->PixelToScreenCoordinate(windowSize);
     glfwSetWindowSize(this->windowId_, windowSize.width, windowSize.height);
 }
 
@@ -344,17 +341,7 @@ void window::SetSize(int width, int height)
     if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
-    this->PixelToScreenCoordinate(width, height, width, height);
     glfwSetWindowSize(this->windowId_, width, height);
-}
-
-coordinate<int> window::GetPositionInScreenCoordinates()
-{
-    coordinate<int> windowPosition = { -1, -1 };
-    if (this->AssertCreation_() == con::ASSERT_SUCCESS) {
-        glfwGetWindowPos(this->windowId_, &windowPosition.x, &windowPosition.y);
-    }
-    return windowPosition;
 }
 
 coordinate<int> window::GetPosition()
@@ -362,7 +349,6 @@ coordinate<int> window::GetPosition()
     coordinate<int> windowPosition = { -1, -1 };
     if (this->AssertCreation_() == con::ASSERT_SUCCESS) {
         glfwGetWindowPos(this->windowId_, &windowPosition.x, &windowPosition.y);
-        windowPosition = this->ScreenCoordinateToPixel(windowPosition);
     }
     return windowPosition;
 }
@@ -372,7 +358,6 @@ void window::SetPosition(coordinate<int> windowPosition)
     if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
-    windowPosition = this->PixelToScreenCoordinate(windowPosition);
     glfwSetWindowPos(this->windowId_, windowPosition.x, windowPosition.y);
 }
 
@@ -381,7 +366,6 @@ void window::SetPosition(int xPos, int yPos)
     if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
-    this->PixelToScreenCoordinate(xPos, yPos, xPos, yPos);
     glfwSetWindowPos(this->windowId_, xPos, yPos);
 }
 
@@ -403,10 +387,6 @@ void window::SetMinimumAndMaximumSize(int minimumWidth,
     if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
-    this->PixelToScreenCoordinate(
-        minimumWidth, minimumHeight, minimumWidth, minimumHeight);
-    this->PixelToScreenCoordinate(
-        maximumWidth, maximumHeight, maximumWidth, maximumHeight);
     glfwSetWindowSizeLimits(this->windowId_,
                             minimumWidth,
                             minimumHeight,
@@ -461,13 +441,10 @@ void window::FullScreen(monitor& fullScreenMonitor)
         (this->displayMode_ == con::FULL_SCREEN)) {
         return;
     }
-
-    this->defaultPositionInScreenCoordinates_ =
-        this->GetPositionInScreenCoordinates();
-    this->defaultSizeInScreenCoordinates_ = this->GetSizeInScreenCoordinates();
+    this->defaultPositionInScreenCoordinates_ = this->GetPosition();
+    this->defaultSizeInScreenCoordinates_ = this->GetSize();
     this->displayMode_ = con::FULL_SCREEN;
-    const GLFWvidmode* videoMode =
-        fullScreenMonitor.VideoModeInScreenCoordinates();
+    const GLFWvidmode* videoMode = fullScreenMonitor.VideoMode();
     glfwSetWindowMonitor(this->windowId_,
                          fullScreenMonitor.Id(),
                          GLFW_FALSE,
@@ -483,7 +460,6 @@ void window::ExitFullScreen()
         (this->displayMode_ != con::FULL_SCREEN)) {
         return;
     }
-
     this->displayMode_ = con::WINDOWED;
     glfwSetWindowMonitor(this->windowId_,
                          nullptr,
@@ -500,9 +476,6 @@ void window::ExitFullScreen(int xPos, int yPos, int width, int height)
         (this->displayMode_ != con::FULL_SCREEN)) {
         return;
     }
-    this->PixelToScreenCoordinate(xPos, yPos, xPos, yPos);
-    this->PixelToScreenCoordinate(width, height, width, height);
-
     this->displayMode_ = con::WINDOWED;
     glfwSetWindowMonitor(
         this->windowId_, nullptr, xPos, yPos, width, height, GLFW_DONT_CARE);

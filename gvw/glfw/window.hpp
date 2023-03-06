@@ -87,27 +87,6 @@ class window
     // Get a pointer to this window's GLFWwindow pointer.
     GLFWwindow* Id();
 
-    template<typename type>
-    void ScreenCoordinateToPixel(type screenCoordinateX,
-                                 type screenCoordinateY,
-                                 type& pixelX,
-                                 type& pixelY);
-    template<typename type>
-    coordinate<type> ScreenCoordinateToPixel(
-        coordinate<type>& screenCoordinate);
-    template<typename type>
-    size<type> ScreenCoordinateToPixel(size<type>& screenCoordinate);
-
-    template<typename type>
-    void PixelToScreenCoordinate(type pixelX,
-                                 type pixelY,
-                                 type& screenCoordinateX,
-                                 type& screenCoordinateY);
-    template<typename type>
-    coordinate<type> PixelToScreenCoordinate(coordinate<type>& pixel);
-    template<typename type>
-    size<type> PixelToScreenCoordinate(size<type>& pixel);
-
     // Setup input buffers and event callbacks
     void SetupKeyInputBuffer();
     void SetupCharacterInputBuffer();
@@ -128,12 +107,11 @@ class window
     // Set the 'close' flag to false
     void CancelClose();
 
-    size<int> GetSizeInScreenCoordinates();
     size<int> GetSize();
+    size<int> GetSizeInPixels();
     void SetSize(size<int> windowSize);
     void SetSize(int width, int height);
 
-    coordinate<int> GetPositionInScreenCoordinates();
     coordinate<int> GetPosition();
     void SetPosition(coordinate<int> windowPosition);
     void SetPosition(int xPos, int yPos);

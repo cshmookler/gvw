@@ -211,11 +211,6 @@ void PostEmptyEvent()
     glfwPostEmptyEvent();
 }
 
-void SetSwapInterval(int interval)
-{
-    glfwSwapInterval(interval);
-}
-
 void SetupJoystickInputBuffer()
 {
     global::JOYSTICK_EVENTS.resize(con::INPUT_BUFFER_INITIAL_SIZE);

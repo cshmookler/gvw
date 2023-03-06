@@ -3,8 +3,6 @@
 // Local includes
 #include "../common/global.hpp"
 #include "init.tpp"
-#include "window.hpp"
-#include "window.tpp"
 
 namespace gvw {
 
@@ -41,24 +39,13 @@ GLFWmonitor* monitor::Id()
     return this->monitorId_;
 }
 
-const GLFWvidmode* monitor::VideoModeInScreenCoordinates()
+const GLFWvidmode* monitor::VideoMode()
 {
     if (this->AssertInitialization_() == con::ASSERT_FAILURE) {
         return nullptr;
     }
 
     return glfwGetVideoMode(this->monitorId_);
-}
-
-GLFWvidmode* monitor::VideoMode(window& associatedWindow)
-{
-    this->videoMode_ = *this->VideoModeInScreenCoordinates();
-    associatedWindow.ScreenCoordinateToPixel(this->videoMode_.width,
-                                             this->videoMode_.height,
-                                             this->videoMode_.width,
-                                             this->videoMode_.height);
-
-    return &this->videoMode_;
 }
 
 size<int> monitor::PhysicalSize()
@@ -87,7 +74,7 @@ coordinate<float> monitor::ContentScale()
     return contentScale;
 }
 
-coordinate<int> monitor::VirtualPosition(window& associatedWindow)
+coordinate<int> monitor::VirtualPosition()
 {
     coordinate<int> virtualPosition = { -1, -1 };
     if (this->AssertInitialization_() == con::ASSERT_FAILURE) {
@@ -95,15 +82,11 @@ coordinate<int> monitor::VirtualPosition(window& associatedWindow)
     }
 
     glfwGetMonitorPos(this->monitorId_, &virtualPosition.x, &virtualPosition.y);
-    associatedWindow.ScreenCoordinateToPixel(virtualPosition.x,
-                                             virtualPosition.y,
-                                             virtualPosition.x,
-                                             virtualPosition.y);
 
     return virtualPosition;
 }
 
-coordinate<int> monitor::WorkAreaPosition(window& associatedWindow)
+coordinate<int> monitor::WorkAreaPosition()
 {
     coordinate<int> workAreaPosition;
     if (this->AssertInitialization_() == con::ASSERT_FAILURE) {
@@ -115,15 +98,11 @@ coordinate<int> monitor::WorkAreaPosition(window& associatedWindow)
                            &workAreaPosition.y,
                            nullptr,
                            nullptr);
-    associatedWindow.ScreenCoordinateToPixel(workAreaPosition.x,
-                                             workAreaPosition.y,
-                                             workAreaPosition.x,
-                                             workAreaPosition.y);
 
     return workAreaPosition;
 }
 
-size<int> monitor::WorkAreaSize(window& associatedWindow)
+size<int> monitor::WorkAreaSize()
 {
     size<int> workAreaSize;
     if (this->AssertInitialization_() == con::ASSERT_FAILURE) {
@@ -135,10 +114,6 @@ size<int> monitor::WorkAreaSize(window& associatedWindow)
                            nullptr,
                            &workAreaSize.width,
                            &workAreaSize.height);
-    associatedWindow.ScreenCoordinateToPixel(workAreaSize.width,
-                                             workAreaSize.height,
-                                             workAreaSize.width,
-                                             workAreaSize.height);
 
     return workAreaSize;
 }

@@ -3,7 +3,7 @@
 /**
  * @file global.hpp
  * @author Caden Shmookler (cshmookler@gmail.com)
- * @brief Global variablesbefore all other GLFW functions
+ * @brief Global variables
  * @date 2023-02-02
  */
 
