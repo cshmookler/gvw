@@ -168,7 +168,7 @@ window::window(int width,
 void window::Destroy()
 {
     if (this->windowId_ != con::WINDOW_ID_NULL) {
-        // TODO: destroy surface
+        /// @todo destroy surface
         this->UnregisterWindowWithInputCallbacks_();
         glfwDestroyWindow(this->windowId_);
         this->windowId_ = con::WINDOW_ID_NULL;
@@ -189,99 +189,155 @@ GLFWwindow* window::Id()
     return this->windowId_;
 }
 
-void window::SetupKeyInputBuffer()
+void window::InitKeyInputBuffer()
 {
     if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
-    this->keyEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
-    storedKeyEvents = 0;
+    this->keyEvents_.resize(con::INPUT_BUFFER_INITIAL_SIZE);
+    storedKeyEvents_ = 0;
     glfwSetKeyCallback(this->windowId_, internal::KeyCallback);
     this->RegisterWindowWithInputCallbacks_();
 }
 
-void window::SetupCharacterInputBuffer()
+void window::InitCharacterInputBuffer()
 {
     if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
-    this->characterEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
-    storedCharacterEvents = 0;
+    this->characterEvents_.resize(con::INPUT_BUFFER_INITIAL_SIZE);
+    storedCharacterEvents_ = 0;
     glfwSetCharCallback(this->windowId_, internal::CharacterCallback);
     this->RegisterWindowWithInputCallbacks_();
 }
 
-void window::SetupCursorPositionInputBuffer()
+void window::InitCursorPositionInputBuffer()
 {
     if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
-    this->cursorPositionEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
-    storedCursorPositionEvents = 0;
+    this->cursorPositionEvents_.resize(con::INPUT_BUFFER_INITIAL_SIZE);
+    storedCursorPositionEvents_ = 0;
     glfwSetCursorPosCallback(this->windowId_, internal::CursorPositionCallback);
     this->RegisterWindowWithInputCallbacks_();
 }
 
-void window::SetupCursorEnterInputBuffer()
+void window::InitCursorEnterInputBuffer()
 {
     if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
-    this->cursorEnterEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
-    storedCursorEnterEvents = 0;
+    this->cursorEnterEvents_.resize(con::INPUT_BUFFER_INITIAL_SIZE);
+    storedCursorEnterEvents_ = 0;
     glfwSetCursorEnterCallback(this->windowId_, internal::CursorEnterCallback);
     this->RegisterWindowWithInputCallbacks_();
 }
 
-void window::SetupMouseButtonInputBuffer()
+void window::InitMouseButtonInputBuffer()
 {
     if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
-    this->mouseButtonEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
-    storedMouseButtonEvents = 0;
+    this->mouseButtonEvents_.resize(con::INPUT_BUFFER_INITIAL_SIZE);
+    storedMouseButtonEvents_ = 0;
     glfwSetMouseButtonCallback(this->windowId_, internal::MouseButtonCallback);
     this->RegisterWindowWithInputCallbacks_();
 }
 
-void window::SetupScrollInputBuffer()
+void window::InitScrollInputBuffer()
 {
     if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
-    this->scrollEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
-    storedScrollEvents = 0;
+    this->scrollEvents_.resize(con::INPUT_BUFFER_INITIAL_SIZE);
+    storedScrollEvents_ = 0;
     glfwSetScrollCallback(this->windowId_, internal::ScrollCallback);
     this->RegisterWindowWithInputCallbacks_();
 }
 
-void window::SetupFileDropInputBuffer()
+void window::InitFileDropInputBuffer()
 {
     if (this->AssertCreation_() == con::ASSERT_FAILURE) {
         return;
     }
-    this->fileDropEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
-    storedFileDropEvents = 0;
+    this->fileDropEvents_.resize(con::INPUT_BUFFER_INITIAL_SIZE);
+    storedFileDropEvents_ = 0;
     glfwSetDropCallback(this->windowId_, internal::FileDropCallback);
     this->RegisterWindowWithInputCallbacks_();
 }
 
+void window::FreezeKeyInputBuffer()
+{
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
+        return;
+    }
+    glfwSetKeyCallback(this->windowId_, nullptr);
+}
+
+void window::FreezeCharacterInputBuffer()
+{
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
+        return;
+    }
+    glfwSetCharCallback(this->windowId_, nullptr);
+}
+
+void window::FreezeCursorPositionInputBuffer()
+{
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
+        return;
+    }
+    glfwSetCursorPosCallback(this->windowId_, nullptr);
+}
+
+void window::FreezeCursorEnterInputBuffer()
+{
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
+        return;
+    }
+    glfwSetCursorEnterCallback(this->windowId_, nullptr);
+}
+
+void window::FreezeMouseButtonInputBuffer()
+{
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
+        return;
+    }
+    glfwSetMouseButtonCallback(this->windowId_, nullptr);
+}
+
+void window::FreezeScrollInputBuffer()
+{
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
+        return;
+    }
+    glfwSetScrollCallback(this->windowId_, nullptr);
+}
+
+void window::FreezeFileDropInputBuffer()
+{
+    if (this->AssertCreation_() == con::ASSERT_FAILURE) {
+        return;
+    }
+    glfwSetDropCallback(this->windowId_, nullptr);
+}
+
 void window::ClearInputBuffers()
 {
-    this->keyEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
-    this->characterEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
-    this->cursorPositionEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
-    this->cursorEnterEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
-    this->mouseButtonEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
-    this->scrollEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
-    this->fileDropEvents.resize(con::INPUT_BUFFER_INITIAL_SIZE);
-    this->storedKeyEvents = 0;
-    this->storedCharacterEvents = 0;
-    this->storedCursorPositionEvents = 0;
-    this->storedCursorEnterEvents = 0;
-    this->storedMouseButtonEvents = 0;
-    this->storedScrollEvents = 0;
-    this->storedFileDropEvents = 0;
+    this->keyEvents_.resize(con::INPUT_BUFFER_INITIAL_SIZE);
+    this->characterEvents_.resize(con::INPUT_BUFFER_INITIAL_SIZE);
+    this->cursorPositionEvents_.resize(con::INPUT_BUFFER_INITIAL_SIZE);
+    this->cursorEnterEvents_.resize(con::INPUT_BUFFER_INITIAL_SIZE);
+    this->mouseButtonEvents_.resize(con::INPUT_BUFFER_INITIAL_SIZE);
+    this->scrollEvents_.resize(con::INPUT_BUFFER_INITIAL_SIZE);
+    this->fileDropEvents_.resize(con::INPUT_BUFFER_INITIAL_SIZE);
+    this->storedKeyEvents_ = 0;
+    this->storedCharacterEvents_ = 0;
+    this->storedCursorPositionEvents_ = 0;
+    this->storedCursorEnterEvents_ = 0;
+    this->storedMouseButtonEvents_ = 0;
+    this->storedScrollEvents_ = 0;
+    this->storedFileDropEvents_ = 0;
 }
 
 bool window::ShouldClose()
@@ -775,54 +831,55 @@ VkResult window::CreateSurface(VkInstance instance,
 
 std::vector<key_event> window::GetKeyEvents() const
 {
-    std::vector<key_event> truncatedKeyEvents = this->keyEvents;
-    truncatedKeyEvents.resize(this->storedKeyEvents);
+    std::vector<key_event> truncatedKeyEvents = this->keyEvents_;
+    truncatedKeyEvents.resize(this->storedKeyEvents_);
     return truncatedKeyEvents;
 }
 
 std::vector<character_event> window::GetCharacterEvents() const
 {
     std::vector<character_event> truncatedCharacterEvents =
-        this->characterEvents;
-    truncatedCharacterEvents.resize(this->storedCharacterEvents);
+        this->characterEvents_;
+    truncatedCharacterEvents.resize(this->storedCharacterEvents_);
     return truncatedCharacterEvents;
 }
 
 std::vector<cursor_position_event> window::GetCursorPositionEvents() const
 {
     std::vector<cursor_position_event> truncatedCursorPositionEvents =
-        this->cursorPositionEvents;
-    truncatedCursorPositionEvents.resize(this->storedCursorPositionEvents);
+        this->cursorPositionEvents_;
+    truncatedCursorPositionEvents.resize(this->storedCursorPositionEvents_);
     return truncatedCursorPositionEvents;
 }
 
 std::vector<cursor_enter_event> window::GetCursorEnterEvents() const
 {
     std::vector<cursor_enter_event> truncatedCursorEnterEvents =
-        this->cursorEnterEvents;
-    truncatedCursorEnterEvents.resize(this->storedCursorEnterEvents);
+        this->cursorEnterEvents_;
+    truncatedCursorEnterEvents.resize(this->storedCursorEnterEvents_);
     return truncatedCursorEnterEvents;
 }
 
 std::vector<mouse_button_event> window::GetMouseButtonEvents() const
 {
     std::vector<mouse_button_event> truncatedMouseButtonEvents =
-        this->mouseButtonEvents;
-    truncatedMouseButtonEvents.resize(this->storedMouseButtonEvents);
+        this->mouseButtonEvents_;
+    truncatedMouseButtonEvents.resize(this->storedMouseButtonEvents_);
     return truncatedMouseButtonEvents;
 }
 
 std::vector<scroll_event> window::GetScrollOffsetEvents() const
 {
-    std::vector<scroll_event> truncatedScrollEvents = this->scrollEvents;
-    truncatedScrollEvents.resize(this->storedScrollEvents);
+    std::vector<scroll_event> truncatedScrollEvents = this->scrollEvents_;
+    truncatedScrollEvents.resize(this->storedScrollEvents_);
     return truncatedScrollEvents;
 }
 
 std::vector<file_drop_event> window::GetFileDropEvents() const
 {
-    std::vector<file_drop_event> truncatedFileDropEvents = this->fileDropEvents;
-    truncatedFileDropEvents.resize(this->storedFileDropEvents);
+    std::vector<file_drop_event> truncatedFileDropEvents =
+        this->fileDropEvents_;
+    truncatedFileDropEvents.resize(this->storedFileDropEvents_);
     return truncatedFileDropEvents;
 }
 

@@ -4,7 +4,7 @@ A C++ library for creating cross-platform desktop applications with GLFW and Vul
  * [X] Setup CMake
  * [X] Create a window using GLFW
  * [X] Finish most GLFW infrastructure
- * [ ] Setup Doxygen and add comments
+ * [X] Setup Doxygen and add comments
  * [ ] Create tests
  * [ ] Create the necessary infrastructure to draw a triangle
  * [ ] (optional) Save space in the code by loading settings from a file

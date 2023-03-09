@@ -1,5 +1,12 @@
 #pragma once
 
+/**
+ * @file monitor.hpp
+ * @author Caden Shmookler (cshmookler@gmail.com)
+ * @brief The monitor class and other monitor related functions.
+ * @date 2023-03-03
+ */
+
 // Standard includes
 #include <optional>
 #include <vector>
@@ -14,7 +21,7 @@
 
 namespace gvw {
 
-/// @brief For retrieving monitor information.
+/// @brief Accesses monitor information.
 class monitor
 {
     GLFWmonitor* monitorId_ = con::MONITOR_ID_NULL;
@@ -25,23 +32,20 @@ class monitor
     bool AssertInitialization_();
 
   public:
-    // Constructors
+    /// @brief Creates a monitor object without assigning a monitor ID.
     monitor();
 
     /// @brief Assign a monitor ID on object creation.
     /// @param monitorId
     monitor(GLFWmonitor* monitorId);
 
-    // Destructor
+    /// @brief Destroys the monitor object.
     ~monitor();
 
     /// @brief Assign a monitor ID if one wasn't already set during object
-    /// construction.
-    ///
-    /// A monitor ID should not be assigned more than once. If the monitor ID
-    /// was set during object construction, then this function should not be
-    /// called.
-    ///
+    /// construction. A monitor ID should not be assigned more than once. If the
+    /// monitor ID was set during object construction, then this function should
+    /// not be called.
     /// @param monitorId
     inline void Init(GLFWmonitor* monitorId);
 
@@ -58,12 +62,10 @@ class monitor
     /// @return A size object of type int.
     size<int> PhysicalSize();
 
-    /// @brief Returns the content scale of the assigned monitor.
-    ///
-    /// The content scale is the ratio between the current DPI and the
-    /// platform's default DPI. This can be used to scale text and UI elements
-    /// so that they look appropriate on all devices.
-    ///
+    /// @brief Returns the content scale of the assigned monitor. The content
+    /// scale is the ratio between the current DPI and the platform's default
+    /// DPI. This can be used to scale text and UI elements so that they look
+    /// appropriate on all devices.
     /// @return A coordinate object of type float.
     coordinate<float> ContentScale();
 
@@ -72,19 +74,15 @@ class monitor
     /// @return A coordinate object of type int.
     coordinate<int> VirtualPosition();
 
-    /// @brief Returns the origin of the work area in screen coordinates.
-    ///
-    /// The position of the work area may differ from the monitor virtual
-    /// position if a toolbar is placed on top or on the left of the monitor.
-    ///
+    /// @brief Returns the origin of the work area in screen coordinates. The
+    /// position of the work area may differ from the monitor virtual position
+    /// if a toolbar is placed on top or on the left of the monitor.
     /// @return A coordinate object of type int.
     coordinate<int> WorkAreaPosition();
 
-    /// @brief Returns the size of the work area in screen coordinates.
-    ///
-    /// The size of the work area may not be the same as the size of the monitor
-    /// if there are toolbars present.
-    ///
+    /// @brief Returns the size of the work area in screen coordinates. The size
+    /// of the work area may not be the same as the size of the monitor if there
+    /// are toolbars present.
     /// @return A size object of type int.
     size<int> WorkAreaSize();
 
@@ -104,10 +102,14 @@ class monitor
     void ResetGammaRamp();
 };
 
-// Returns a 'Monitor' object for the primary monitor
+/// @brief Returns a `monitor` object cooresponding to the primary monitor. The
+/// primary monitor, on most operating systems, contains the taskbar.
+/// @return A `monitor` object.
 monitor PrimaryMonitor();
 
-// Returns a vector containing a 'Monitor' object for each physical monitor
+/// @brief Returns a vector containing `monitor` objects for each physical
+/// monitor.
+/// @return A vector of `monitor` objects.
 std::vector<monitor> Monitors();
 
 } // namespace gvw

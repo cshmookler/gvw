@@ -37,13 +37,11 @@ version RuntimeVersion();
 
 /// @brief Initializes GLFW. Must be called once at the beginning of your
 /// program before most other GLFW functions.
-///
-/// Sets the glfw and vulkan error callback. Changes the working directory to
-/// the parent directory of the executable (so all paths are relative to it). If
-/// running in debug mode, the GLFW compile-time and runtime version are printed
-/// to the console. GLFW initialization hints are set and the `glfwInit`
-/// function is called.
-///
+/// @remark Sets the glfw and vulkan error callback. Changes the working
+/// directory to the parent directory of the executable (so all paths are
+/// relative to it). If running in debug mode, the GLFW compile-time and runtime
+/// version are printed to the console. GLFW initialization hints are set and
+/// the `glfwInit` function is called.
 /// @param errorCallback
 /// @return GLFW_TRUE if initialization succeeded.<br> GLFW_FALSE if
 /// initialization failed.
