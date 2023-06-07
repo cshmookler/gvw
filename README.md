@@ -16,21 +16,21 @@ A C++ library for creating cross-platform desktop applications with GLFW and Vul
  * [ ] Create a simple 2D platformer
  * [ ] Draw a 3D cube
  * [ ] Rotate the cube
-### Build this project from source (for Unix-like systems using X11)
+### Build this project (and GLFW) from source (for Unix-like systems using X11)
 **1.** Open a terminal window in the root directory of this project.
 
 **2.** Install the required packages for building this project.
 ```bash
 $ sudo apt install g++ cmake xorg-dev libvulkan-dev
 ```
-**3.** Enter the `external` directory. There should be three files named `cpplocate-2.3.0.zip`, `glfw-3.3.8.zip`, and `stb-master.zip`. Unzip all of them.
+**3.** Create a directory called `external` and cd into it. Clone the GLFW repository and name it `glfw`.
 ```bash
 $ cd external
-$ unzip "*.zip"
+$ git clone https://github.com/glfw/glfw.git glfw
 ```
-**4.** Enter the `glfw-3.3.8` directory. Then create a directory named `build` and enter it.
+**4.** Enter the `glfw` directory. Then create a directory named `build` and enter it.
 ```bash
-$ cd glfw-3.3.8
+$ cd glfw
 $ mkdir build && cd build
 ```
 **5.** Build and install glfw.
@@ -38,22 +38,12 @@ $ mkdir build && cd build
 $ cmake -D GLFW_BUILD_EXAMPLES=OFF -D GLFW_BUILD_TESTS=OFF -D GLFW_BUILD_DOCS=OFF ..
 $ sudo make install
 ```
-**6.** Enter the `cpplocate-2.3.0` directory. Then create a directory named `build` and enter it.
-```bash
-$ cd ../../cpplocate-2.3.0
-$ mkdir build && cd build
-```
-**7.** Build and install cpplocate.
-```bash
-$ cmake -D OPTION_BUILD_TESTS=OFF ..
-$ sudo make install
-```
-**8.** Go back to the root directory of this project. Then create a directory named `build` and enter it.
+**6.** Go back to the root directory of this project. Then create a directory named `build` and cd into it.
 ```bash
 $ cd ../../..
 $ mkdir build && cd build
 ```
-**9.** Generate CMake information for the build system. By default, this project is built in release mode as a static library with a few example programs.
+**7.** Generate CMake information for the build system. By default, this project is built in release mode as a static library with a few example programs.
 ```bash
 $ cmake ..
 ```
@@ -73,7 +63,7 @@ Any of the above flags can be combined into one command. For example, the below 
 ```bash
 $ cmake -DGVW_BUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Debug -DGVW_BUILD_EXAMPLES=OFF ..
 ```
-**10.** Finally, build the project.
+**9.** Finally, build the project.
 ```bash
 $ make
 ```

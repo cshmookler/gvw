@@ -3,6 +3,7 @@ project(gvw VERSION 1.0.0)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++17 -D _DEBUG -Wall")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17 -Wall")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(GVW_BUILD_SHARED_LIBS "build a shared library" OFF)
 option(GVW_BUILD_EXAMPLES "build example programs" ON)
@@ -13,8 +14,6 @@ option(GVW_BUILD_EXAMPLES "build example programs" ON)
 
 set(GVW_DEPENDENCIES
 
-    stdc++fs
-    cpplocate
     glfw
 )
 
@@ -23,20 +22,10 @@ set(GVW_DEPENDENCIES
 # GVW Source Files
 set(GVW_SOURCE_FILES
 
-    # common
-    gvw/common/global.cpp
-    gvw/common/file.cpp
-    gvw/common/types.cpp
-    gvw/common/image.cpp
-
-    # glfw
-    gvw/glfw/init.cpp
-    gvw/glfw/monitor.cpp
-    gvw/glfw/input.cpp
-    gvw/glfw/window.cpp
-
-    # vulkan
-
+    gvw/types.cpp
+    gvw/init.cpp
+    gvw/window.cpp
+    gvw/monitor.cpp
 )
 
 if(GVW_BUILD_SHARED_LIBS)

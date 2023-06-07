@@ -1,5 +1,6 @@
 #pragma once
 
-#include "common/common.hpp"
-#include "glfw/glfw.hpp"
-#include "vulkan/vulkan.hpp"
+#include "init.hpp"
+#include "monitor.hpp"
+#include "types.tpp"
+#include "window.hpp"
