@@ -1,10 +1,81 @@
-# GLFW and Vulkan Wrapper
+# **GLFW and Vulkan Wrapper**
 A C++ library for creating cross-platform desktop applications with GLFW and Vulkan. Started development on November 24th, 2022.
-### TODO
+
+### **Build from source and install using Conan 2 (for Unix-like systems using X11)**
+**1.** Install a C++ compiler (Example: g++), Git, Python 3.6+, and the Python Virtual Environment using the system package manager (Example: apt).
+```bash
+$ sudo apt install g++ git python3 python3-venv
+```
+**2.** Verify that your version of python is >= 3.6.
+```bash
+$ python3 --version
+```
+**3.** Create a Python 3.6+ virtual environment and activate it.
+```bash
+$ python3 -m venv venv
+$ source venv/bin/activate
+```
+**4.** Install Conan 2.
+```bash
+$ pip3 install "conan>=2.0.0"
+```
+**5.** Verify that Conan 2 was successfully installed.
+```bash
+$ conan --version
+```
+**6.** Create the default Conan profile (If you already have a conan profile, ignore this step).
+```bash
+$ conan profile detect
+```
+**7.** Clone the GVW git repository and enter the root directory of the project.
+```bash
+$ git clone https://github.com/cshmookler/GLFW-and-Vulkan-wrapper.git
+$ cd GLFW-and-Vulkan-wrapper
+```
+**8.** Build and install this project with Conan 2. Change the last configuration option (tools.system.package_manager:tool) to your default system packet manager (options: apt-get, yum, dnf, brew, pacman, choco, zypper, pkg, or pkgutil). To build in debug mode, change the last option (build_type) to Debug.
+```bash
+$ conan create . -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=True -c tools.system.package_manager:tool=apt-get --build=missing -s build_type=Release
+```
+
+### **Build from source using CMake (for Unix-like systems using X11)**
+**1.** Install a C++ compiler (Example: g++), Git, CMake 3.22.6+, and precompiled GLFW headers and library files using the system package manager (Example: apt).
+```bash
+$ sudo apt install g++ git cmake libglfw3-dev
+```
+**2.** Verify that your version of cmake is >= 3.22.6.
+```bash
+$ cmake --version
+```
+**3.** Clone the GVW git repository and enter the root directory of the project.
+```bash
+$ git clone https://github.com/cshmookler/GLFW-and-Vulkan-wrapper.git
+$ cd GLFW-and-Vulkan-wrapper
+```
+**4.** Create the build directory and enter it.
+```bash
+$ mkdir build
+$ cd build
+```
+**5.** Generate CMake information for the build system. This command builds static and shared libraries and some example programs in debug mode.
+```bash
+$ cmake -D GVW_STATIC=ON -D GVW_SHARED=ON -D GVW_EXAMPLES -D CMAKE_BUILD_TYPE=Debug ..
+```
+**6.** Finally, build the project.
+```bash
+$ make
+```
+To install the library after compilation, run this instead:
+```bash
+$ sudo make install
+```
+
+
+### **TODO**
  * [X] Setup CMake
  * [X] Create a window using GLFW
  * [X] Finish most GLFW infrastructure
  * [X] Setup Doxygen and add comments
+ * [X] Implement support for Conan 2.0
  * [ ] Create tests
  * [ ] Create the necessary infrastructure to draw a triangle
  * [ ] (optional) Save space in the code by loading settings from a file
@@ -16,58 +87,3 @@ A C++ library for creating cross-platform desktop applications with GLFW and Vul
  * [ ] Create a simple 2D platformer
  * [ ] Draw a 3D cube
  * [ ] Rotate the cube
-### Build this project (and GLFW) from source (for Unix-like systems using X11)
-**1.** Open a terminal window in the root directory of this project.
-
-**2.** Install the required packages for building this project.
-```bash
-$ sudo apt install g++ cmake xorg-dev libvulkan-dev
-```
-**3.** Create a directory called `external` and cd into it. Clone the GLFW repository and name it `glfw`.
-```bash
-$ cd external
-$ git clone https://github.com/glfw/glfw.git glfw
-```
-**4.** Enter the `glfw` directory. Then create a directory named `build` and enter it.
-```bash
-$ cd glfw
-$ mkdir build && cd build
-```
-**5.** Build and install glfw.
-```bash
-$ cmake -D GLFW_BUILD_EXAMPLES=OFF -D GLFW_BUILD_TESTS=OFF -D GLFW_BUILD_DOCS=OFF ..
-$ sudo make install
-```
-**6.** Go back to the root directory of this project. Then create a directory named `build` and cd into it.
-```bash
-$ cd ../../..
-$ mkdir build && cd build
-```
-**7.** Generate CMake information for the build system. By default, this project is built in release mode as a static library with a few example programs.
-```bash
-$ cmake ..
-```
-For building a shared (dynamic) library instead of a static one, set the `GVW_BUILD_SHARED_LIBS` flag to ON.
-```bash
-$ cmake -DGVW_BUILD_SHARED_LIBS=ON ..
-```
-For debug builds, set the `CMAKE_BUILD_TYPE` flag to Debug.
-```bash
-$ cmake -DCMAKE_BUILD_TYPE=Debug ..
-```
-For not building the example programs, set the `GVW_BUILD_EXAMPLES` flag to OFF.
-```bash
-$ cmake -DGVW_BUILD_EXAMPLES=OFF ..
-```
-Any of the above flags can be combined into one command. For example, the below command generates CMake info for compiling a shared library in debug mode without example programs.
-```bash
-$ cmake -DGVW_BUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Debug -DGVW_BUILD_EXAMPLES=OFF ..
-```
-**9.** Finally, build the project.
-```bash
-$ make
-```
-To install the library after compilation, run this instead:
-```bash
-$ sudo make install
-```

@@ -1,11 +1,11 @@
-import os
 from conan import ConanFile
-from conan.tools.cmake import CMakeToolchain, cmake_layout, CMake
+from conan.tools.cmake import CMake, CMakeToolchain, CMakeDeps, cmake_layout
+from conan.tools.build import check_min_cppstd
 
 class gvw(ConanFile):
     # Required
     name = "gvw"
-    version = "1.0"
+    version = "1.0.0"
 
     # Metadata
     license = "MIT"
@@ -16,24 +16,45 @@ class gvw(ConanFile):
 
     # Configuration
     settings = "os", "compiler", "build_type", "arch"
-    options = {"shared": [True, False], "fPIC": [True, False]}
-    default_options = {"shared": False, "fPIC": True}
+    options = {
+        "gvw_static": [True, False],
+        "gvw_shared": [True, False],
+        "gvw_examples": [True, False],
+        "fPIC": [True, False]
+    }
+    default_options = {
+        "gvw_static": True,
+        "gvw_shared": True,
+        "gvw_examples": True,
+        "fPIC": True
+    }
 
     # Sources
-    exports_sources = "CMakeLists.txt", "gvw/*"
+    exports_sources = "CMakeLists.txt", "gvw/*", "examples/*"
+
+    def validate(self):
+        check_min_cppstd(self, "17")
 
     def config_options(self):
         if self.settings.os == "Windows":
             del self.options.fPIC
 
-    def layout(self):
-        cmake_layout(self, build_folder="build")
-
     def requirements(self):
         self.requires("glfw/3.3.8")
 
+    def build_requirements(self):
+        self.tool_requires("cmake/3.22.6")
+
+    def layout(self):
+        cmake_layout(self, src_folder=".", build_folder="build")
+
     def generate(self):
+        deps = CMakeDeps(self)
+        deps.generate()
         tc = CMakeToolchain(self)
+        tc.variables["GVW_STATIC"] = self.options.gvw_static
+        tc.variables["GVW_SHARED"] = self.options.gvw_shared
+        tc.variables["GVW_EXAMPLES"] = self.options.gvw_examples
         tc.generate()
 
     def build(self):

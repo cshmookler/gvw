@@ -65,11 +65,11 @@ struct glfw_hint // NOLINT
 template<size_t IntHints, size_t StringHints>
 struct glfw_hints
 {
-    std::array<glfw_hint<int>, IntHints> intHints;
-    std::array<glfw_hint<const char*>, StringHints> stringHints;
-
     const std::function<void(int, int)> INT_HINT_FUNC;            // NOLINT
     const std::function<void(int, const char*)> STRING_HINT_FUNC; // NOLINT
+
+    std::array<glfw_hint<int>, IntHints> intHints;
+    std::array<glfw_hint<const char*>, StringHints> stringHints;
 
     glfw_hints(std::function<void(int, int)>&& Int_Hint_Func,
                std::function<void(int, const char*)>&& String_Hint_Func,
