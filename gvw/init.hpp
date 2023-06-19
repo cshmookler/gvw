@@ -8,10 +8,14 @@
  */
 
 // Standard includes
+#include <vector>
 
 // External includes
-#define GLFW_INCLUDE_VULKAN
+// clang-format off
+#include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
+// #include <vulkan/vulkan_handles.hpp>
+// clang-format on
 
 // Local includes
 #include "types.tpp"
@@ -34,6 +38,36 @@ extern const glfw_shared_init_hints DEFAULT_GLFW_SHARED_INIT_HINTS;
 /// @brief Default values for MacOS GLFW initialization hints.
 extern const glfw_macos_init_hints DEFAULT_GLFW_MACOS_INIT_HINTS;
 
+/// @brief Default values for general window hints.
+extern const glfw_general_hints DEFAULT_GLFW_GENERAL_HINTS;
+
+/// @brief Default values for framebuffer hints.
+extern const glfw_framebuffer_hints DEFAULT_GLFW_FRAMEBUFFER_HINTS;
+
+/// @brief Default values for monitor hints.
+extern const glfw_monitor_hints DEFAULT_GLFW_MONITOR_HINTS;
+
+/// @brief Default values for context hints.
+extern const glfw_context_hints DEFAULT_GLFW_CONTEXT_HINTS;
+
+/// @brief Default values for MacOS window hints.
+extern const glfw_macos_window_hints DEFAULT_GLFW_MACOS_WINDOW_HINTS;
+
+/// @brief Default values for Linux window hints.
+extern const glfw_linux_window_hints DEFAULT_GLFW_LINUX_WINDOW_HINTS;
+
+/// @brief The default size of the window.
+extern const area<int> DEFAULT_WINDOW_SIZE;
+
+/// @brief The default title of the window.
+extern const char* const DEFAULT_WINDOW_TITLE;
+
+/// @brief The default minimum size of the window.
+extern const area<int> DEFAULT_MINIMUM_WINDOW_SIZE;
+
+/// @brief The default maximum size of the window.
+extern const area<int> DEFAULT_MAXIMUM_WINDOW_SIZE;
+
 //////////////////////////////////////////////////
 //                   Variables                  //
 //////////////////////////////////////////////////
@@ -43,7 +77,10 @@ extern const glfw_macos_init_hints DEFAULT_GLFW_MACOS_INIT_HINTS;
 extern size_t INSTANCE_COUNT;
 
 /// @brief Pointer to the GVW error callback.
-extern std::function<gvw_error_callback> GVW_ERROR_CALLBACK;
+extern gvw_error_callback GVW_ERROR_CALLBACK;
+
+/// @brief Joystick events.
+extern std::vector<joystick_event> JOYSTICK_EVENTS;
 
 // NOLINTEND
 //////////////////////////////////////////////////
@@ -97,6 +134,27 @@ void SetGvwErrorCallback(
 /// @thread_safety Must be called from the main thread.
 void SetGlfwErrorCallback(
     GLFWerrorfun GLFW_Error_Callback = DefaultGlfwErrorCallback) noexcept;
+
+/// @brief The joystick event callback.
+/// @param JID The joystick id.
+/// @param Event The joystick event.
+/// @gvw_errors None.
+/// @glfw_errors None.
+/// @thread_safety Must be called from the main thread.
+void JoystickCallback(int JID, int Event);
+
+/// @brief Returns the joystick event buffer.
+/// @returns A reference to a vector of joystick events.
+/// @gvw_errors None.
+/// @glfw_errors None.
+/// @thread_safety Must be called from the main thread.
+std::vector<joystick_event>& JoystickEvents();
+
+/// @brief Clears the joystick event buffer.
+/// @gvw_errors None.
+/// @glfw_errors None.
+/// @thread_safety Must be called from the main thread.
+void ClearJoystickEvents();
 
 /// @brief Initializes the GVW library.
 /// @param GVW_Error_Callback The GVW error callback. The default GVW error

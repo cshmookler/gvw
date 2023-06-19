@@ -41,6 +41,7 @@ class gvw(ConanFile):
 
     def requirements(self):
         self.requires("glfw/3.3.8")
+        self.requires("vulkan-headers/1.3.243.0")
 
     def build_requirements(self):
         self.tool_requires("cmake/3.22.6")
@@ -52,6 +53,7 @@ class gvw(ConanFile):
         deps = CMakeDeps(self)
         deps.generate()
         tc = CMakeToolchain(self)
+        tc.variable["GVW_CONAN"] = True
         tc.variables["GVW_STATIC"] = self.options.gvw_static
         tc.variables["GVW_SHARED"] = self.options.gvw_shared
         tc.variables["GVW_EXAMPLES"] = self.options.gvw_examples

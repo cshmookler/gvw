@@ -37,43 +37,67 @@ glfw_hint<T>& glfw_hint<T>::operator=(T Value)
     return *this;
 }
 
-template<size_t IntHints, size_t StringHints>
-glfw_hints<IntHints, StringHints>::glfw_hints(
-    std::function<void(int, int)>&& Int_Hint_Func,
-    std::function<void(int, const char*)>&& String_Hint_Func,
+template<int_hint_function IntHintFunc,
+         string_hint_function StringHintFunc,
+         size_t IntHints,
+         size_t StringHints>
+glfw_hints<IntHintFunc, StringHintFunc, IntHints, StringHints>::glfw_hints(
     std::array<glfw_hint<int>, IntHints>&& Int_Hints,
     std::array<glfw_hint<const char*>, StringHints>&& String_Hints)
-    : INT_HINT_FUNC(std::move(Int_Hint_Func))
-    , STRING_HINT_FUNC(std::move(String_Hint_Func))
-    , intHints(std::move(Int_Hints))
+    : intHints(std::move(Int_Hints))
     , stringHints(std::move(String_Hints))
 {
 }
 
-template<size_t IntHints, size_t StringHints>
-glfw_hints<IntHints, StringHints>& glfw_hints<IntHints, StringHints>::operator=(
+template<int_hint_function IntHintFunc,
+         string_hint_function StringHintFunc,
+         size_t IntHints,
+         size_t StringHints>
+glfw_hints<IntHintFunc, StringHintFunc, IntHints, StringHints>::glfw_hints(
+    const glfw_hints& GLFW_Hints)
+    : intHints(GLFW_Hints.intHints)
+    , stringHints(GLFW_Hints.stringHints)
+{
+}
+
+template<int_hint_function IntHintFunc,
+         string_hint_function StringHintFunc,
+         size_t IntHints,
+         size_t StringHints>
+glfw_hints<IntHintFunc, StringHintFunc, IntHints, StringHints>&
+glfw_hints<IntHintFunc, StringHintFunc, IntHints, StringHints>::operator=(
     const glfw_hints& GLFW_Hints)
 {
-    *this = GLFW_Hints;
+    this->intHints = GLFW_Hints.intHints;
+    this->stringHints = GLFW_Hints.stringHints;
     return *this;
 }
 
-template<size_t IntHints, size_t StringHints>
-glfw_hints<IntHints, StringHints>& glfw_hints<IntHints, StringHints>::operator=(
+template<int_hint_function IntHintFunc,
+         string_hint_function StringHintFunc,
+         size_t IntHints,
+         size_t StringHints>
+glfw_hints<IntHintFunc, StringHintFunc, IntHints, StringHints>&
+glfw_hints<IntHintFunc, StringHintFunc, IntHints, StringHints>::operator=(
     glfw_hints&& GLFW_Hints) noexcept
 {
-    *this = std::move(GLFW_Hints);
+    this->intHints = std::move(GLFW_Hints.intHints);
+    this->stringHints = std::move(GLFW_Hints.stringHints);
     return *this;
 }
 
-template<size_t IntHints, size_t StringHints>
-void glfw_hints<IntHints, StringHints>::Apply() const
+template<int_hint_function IntHintFunc,
+         string_hint_function StringHintFunc,
+         size_t IntHints,
+         size_t StringHints>
+void glfw_hints<IntHintFunc, StringHintFunc, IntHints, StringHints>::Apply()
+    const
 {
     for (const glfw_hint<int>& intHint : this->intHints) {
-        INT_HINT_FUNC(intHint.HINT, intHint.value);
+        IntHintFunc(intHint.HINT, intHint.value);
     }
     for (const glfw_hint<const char*>& stringHint : this->stringHints) {
-        STRING_HINT_FUNC(stringHint.HINT, stringHint.value);
+        StringHintFunc(stringHint.HINT, stringHint.value);
     }
 }
 
@@ -107,8 +131,8 @@ coordinate<T>::coordinate(coordinate<T>&& Coordinate) noexcept
 
 template<typename T>
 coordinate<T>::coordinate(area<T>&& Area) noexcept
-    : x(std::move(Area.x))
-    , y(std::move(Area.y))
+    : x(std::move(Area.width))
+    , y(std::move(Area.height))
 {
 }
 

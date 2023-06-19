@@ -11,12 +11,17 @@
 #include <vector>
 
 // External includes
-#define GLFW_INCLUDE_VULKAN
+// clang-format off
+#include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
+// #include <vulkan/vulkan_handles.hpp>
+// clang-format on
 
 // Local includes
 #include "init.hpp"
 #include "types.tpp"
+
+namespace gvw {
 
 /// @brief Accesses monitor properties.
 class monitor_t // NOLINT
@@ -35,8 +40,8 @@ class monitor_t // NOLINT
 
     /// @brief Initializes the monitor object.
     /// @remark The last 4 parameters are for GVW initialization. If GVW is
-    /// already initialized (this function has been run once before), then
-    /// arguments passed to these parameters are ignored.
+    /// already initialized (an initialization function has been run before),
+    /// then arguments passed to these parameters are ignored.
     /// @param Monitor_Handle The monitor handle.
     /// @param GVW_Error_Callback The GVW error callback. The default GVW error
     /// callback throws all errors.
@@ -50,13 +55,19 @@ class monitor_t // NOLINT
     /// @glfw_errors None.
     /// @thread_safety Can be called from any thread.
     monitor_t(GLFWmonitor* Monitor_Handle,
-              gvw::gvw_error_callback GVW_Error_Callback =
-                  gvw::DefaultGvwErrorCallback,
-              GLFWerrorfun GLFW_Error_Callback = gvw::DefaultGlfwErrorCallback,
-              const gvw::glfw_shared_init_hints& Shared_Init_Hints =
-                  gvw::DEFAULT_GLFW_SHARED_INIT_HINTS,
-              const gvw::glfw_macos_init_hints& MacOS_Init_Hints =
-                  gvw::DEFAULT_GLFW_MACOS_INIT_HINTS) noexcept;
+              gvw_error_callback GVW_Error_Callback = DefaultGvwErrorCallback,
+              GLFWerrorfun GLFW_Error_Callback = DefaultGlfwErrorCallback,
+              const glfw_shared_init_hints& Shared_Init_Hints =
+                  DEFAULT_GLFW_SHARED_INIT_HINTS,
+              const glfw_macos_init_hints& MacOS_Init_Hints =
+                  DEFAULT_GLFW_MACOS_INIT_HINTS) noexcept;
+
+    // The copy constructor, move constructor, copy assignment operator,
+    // and move assignment operator are all defined.
+    monitor_t(const monitor_t&) = default;
+    monitor_t(monitor_t&&) noexcept = default;
+    monitor_t& operator=(const monitor_t&) = default;
+    monitor_t& operator=(monitor_t&&) noexcept = default;
 
     /// @todo Make this function thread safe!
     /// @brief The destructor is public so as to allow explicit destruction
@@ -68,7 +79,7 @@ class monitor_t // NOLINT
     /// @gvw_errors None.
     /// @glfw_errors None.
     /// @thread_safety Can be called from any thread.
-    [[nodiscard]] GLFWmonitor* MonitorHandle() const noexcept;
+    [[nodiscard]] GLFWmonitor* Handle() const noexcept;
 
     /// @brief Sets the handle to the underlying GLFW monitor object.
     /// @param Monitor_Handle THe monitor handle.
@@ -96,7 +107,7 @@ class monitor_t // NOLINT
     /// @gvw_errors None.
     /// @glfw_errors `GLFW_NOT_INITIALIZED`.
     /// @thread_safety Must be called from the main thread.
-    [[nodiscard]] gvw::area<int> PhysicalSize() const;
+    [[nodiscard]] area<int> PhysicalSize() const;
 
     /// @brief Returns the content scale of the monitor.
     /// @remark The content scale of the monitor is the ratio between the
@@ -105,7 +116,7 @@ class monitor_t // NOLINT
     /// @gvw_errors None.
     /// @glfw_errors `GLFW_NOT_INITIALIZED` or `GLFW_PLATFORM_ERROR`.
     /// @thread_safety Must be called from the main thread.
-    [[nodiscard]] gvw::coordinate<float> ContentScale() const;
+    [[nodiscard]] coordinate<float> ContentScale() const;
 
     /// @brief Returns the position of the upper-left corner of the monitor on
     /// the virtual screen in screen coordinates.
@@ -113,7 +124,7 @@ class monitor_t // NOLINT
     /// @gvw_errors None.
     /// @glfw_errors `GLFW_NOT_INITIALIZED` or `GLFW_PLATFORM_ERROR`.
     /// @thread_safety Must be called from the main thread.
-    [[nodiscard]] gvw::coordinate<int> VirtualPosition() const;
+    [[nodiscard]] coordinate<int> VirtualPosition() const;
 
     /// @brief Returns the origin of the work area in screen coordinates.
     /// @remark The position of the work area may differ from the monitor
@@ -123,7 +134,7 @@ class monitor_t // NOLINT
     /// @gvw_errors None.
     /// @glfw_errors `GLFW_NOT_INITIALIZED` or `GLFW_PLATFORM_ERROR`.
     /// @thread_safety Must be called from the main thread.
-    [[nodiscard]] gvw::coordinate<int> WorkAreaPosition() const;
+    [[nodiscard]] coordinate<int> WorkAreaPosition() const;
 
     /// @brief Returns the size of the work area in screen coordinates.
     /// @remark The size of the work area may not be the same as the size of the
@@ -132,7 +143,7 @@ class monitor_t // NOLINT
     /// @gvw_errors None.
     /// @glfw_errors `GLFW_NOT_INITIALIZED` or `GLFW_PLATFORM_ERROR`.
     /// @thread_safety Must be called from the main thread.
-    [[nodiscard]] gvw::area<int> WorkAreaSize() const;
+    [[nodiscard]] area<int> WorkAreaSize() const;
 
     /// @brief Returns the name of the monitor.
     /// @returns A C-style string.
@@ -163,8 +174,6 @@ class monitor_t // NOLINT
     void ResetGammaRamp() const;
 };
 
-namespace gvw {
-
 //////////////////////////////////////////////////
 //                Const Variables               //
 //////////////////////////////////////////////////
@@ -178,8 +187,8 @@ const float DEFAULT_GAMMA = 1.0F;
 /// @brief Returns a `monitor` object cooresponding to the primary monitor.
 /// @remark The primary monitor, on most operating systems, contains the
 /// taskbar.
-/// @remark The 4 parameters are for GVW initialization. If GVW is
-/// already initialized (this function has been run once before), then
+/// @remark All 4 parameters are for GVW initialization. If GVW is
+/// already initialized (an initialization function has been run before), then
 /// arguments passed to these parameters are ignored.
 /// @param GVW_Error_Callback The GVW error callback. The default GVW error
 /// callback throws all errors.
@@ -194,16 +203,17 @@ const float DEFAULT_GAMMA = 1.0F;
 /// @glfw_errors `GLFW_NOT_INITIALIZED`.
 /// @thread_safety Must be called from the main thread.
 [[nodiscard]] monitor_t PrimaryMonitor(
-    gvw::gvw_error_callback GVW_Error_Callback = gvw::DefaultGvwErrorCallback,
-    GLFWerrorfun GLFW_Error_Callback = gvw::DefaultGlfwErrorCallback,
-    const gvw::glfw_shared_init_hints& Shared_Init_Hints =
-        gvw::DEFAULT_GLFW_SHARED_INIT_HINTS,
-    const gvw::glfw_macos_init_hints& MacOS_Init_Hints =
-        gvw::DEFAULT_GLFW_MACOS_INIT_HINTS);
+    gvw_error_callback GVW_Error_Callback = DefaultGvwErrorCallback,
+    GLFWerrorfun GLFW_Error_Callback = DefaultGlfwErrorCallback,
+    const glfw_shared_init_hints& Shared_Init_Hints =
+        DEFAULT_GLFW_SHARED_INIT_HINTS,
+    const glfw_macos_init_hints& MacOS_Init_Hints =
+        DEFAULT_GLFW_MACOS_INIT_HINTS);
 
-/// @brief Returns a vector of `monitor` objects for each physical monitor.
-/// @remark The 4 parameters are for GVW initialization. If GVW is
-/// already initialized (this function has been run once before), then
+/// @brief Returns a vector of `monitor` objects that each coorespond to a
+/// physical monitor.
+/// @remark All 4 parameters are for GVW initialization. If GVW is
+/// already initialized (an initialization function has been run before), then
 /// arguments passed to these parameters are ignored.
 /// @param GVW_Error_Callback The GVW error callback. The default GVW error
 /// callback throws all errors.
@@ -218,11 +228,11 @@ const float DEFAULT_GAMMA = 1.0F;
 /// @glfw_errors `GLFW_NOT_INITIALIZED`.
 /// @thread_safety Must be called from the main thread.
 [[nodiscard]] std::vector<monitor_t> AllMonitors(
-    gvw::gvw_error_callback GVW_Error_Callback = gvw::DefaultGvwErrorCallback,
-    GLFWerrorfun GLFW_Error_Callback = gvw::DefaultGlfwErrorCallback,
-    const gvw::glfw_shared_init_hints& Shared_Init_Hints =
-        gvw::DEFAULT_GLFW_SHARED_INIT_HINTS,
-    const gvw::glfw_macos_init_hints& MacOS_Init_Hints =
-        gvw::DEFAULT_GLFW_MACOS_INIT_HINTS);
+    gvw_error_callback GVW_Error_Callback = DefaultGvwErrorCallback,
+    GLFWerrorfun GLFW_Error_Callback = DefaultGlfwErrorCallback,
+    const glfw_shared_init_hints& Shared_Init_Hints =
+        DEFAULT_GLFW_SHARED_INIT_HINTS,
+    const glfw_macos_init_hints& MacOS_Init_Hints =
+        DEFAULT_GLFW_MACOS_INIT_HINTS);
 
 } // namespace gvw

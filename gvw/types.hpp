@@ -9,11 +9,14 @@
 
 // Standard includes
 #include <array>
-#include <functional>
+#include <optional>
 
 // External includes
-#define GLFW_INCLUDE_VULKAN
+// clang-format off
+#include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
+// #include <vulkan/vulkan_handles.hpp>
+// clang-format on
 
 // Local includes
 
@@ -23,7 +26,7 @@ namespace gvw {
 //            Structs and Other Types           //
 //////////////////////////////////////////////////
 
-/// @brief Error code and human readable description
+/// @brief Error code and human readable description.
 struct error
 {
     int code;
@@ -31,7 +34,13 @@ struct error
 };
 
 /// @brief Signature for GVW error callbacks.
-using gvw_error_callback = void(error Error);
+using gvw_error_callback = void (*)(error Error);
+
+/// @brief Signature for GLFW integer hint functions.
+using int_hint_function = void (*)(int, int);
+
+/// @brief Signature for GLFW string hint functions.
+using string_hint_function = void (*)(int, const char*);
 
 /// @brief Version major, minor, and revision.
 struct version
@@ -58,25 +67,25 @@ struct glfw_hint // NOLINT
 };
 
 /// @brief The base struct of the *_init_hints and *_hints structs.
+/// @tparam The integer hint function used to apply the integer hints.
+/// @tparam The string hint function used to apply the string hints.
 /// @tparam IntHints The number of hints with cooresponding integer values
 /// (int).
 /// @tparam StringHints The number of hints with cooresponding string
 /// values (const char*).
-template<size_t IntHints, size_t StringHints>
+template<int_hint_function IntHintFunc,
+         string_hint_function StringHintFunc,
+         size_t IntHints,
+         size_t StringHints>
 struct glfw_hints
 {
-    const std::function<void(int, int)> INT_HINT_FUNC;            // NOLINT
-    const std::function<void(int, const char*)> STRING_HINT_FUNC; // NOLINT
-
     std::array<glfw_hint<int>, IntHints> intHints;
     std::array<glfw_hint<const char*>, StringHints> stringHints;
 
-    glfw_hints(std::function<void(int, int)>&& Int_Hint_Func,
-               std::function<void(int, const char*)>&& String_Hint_Func,
-               std::array<glfw_hint<int>, IntHints>&& Int_Hints,
+    glfw_hints(std::array<glfw_hint<int>, IntHints>&& Int_Hints,
                std::array<glfw_hint<const char*>, StringHints>&& String_Hints);
-    glfw_hints(const glfw_hints&) = delete;
-    glfw_hints(glfw_hints&&) noexcept = delete;
+    glfw_hints(const glfw_hints& GLFW_Hints);
+    glfw_hints(glfw_hints&& GLFW_Hints) noexcept = delete;
     ~glfw_hints() = default;
     glfw_hints& operator=(const glfw_hints& GLFW_Hints);
     glfw_hints& operator=(glfw_hints&& GLFW_Hints) noexcept;
@@ -90,7 +99,7 @@ struct glfw_hints
 };
 
 /// @brief Shared initialization hints for GLFW.
-struct glfw_shared_init_hints : public glfw_hints<1, 0>
+struct glfw_shared_init_hints : public glfw_hints<glfwInitHint, nullptr, 1, 0>
 {
     // NOLINTBEGIN
     glfw_hint<int>& joystickHatButtons = intHints.at(0);
@@ -100,7 +109,7 @@ struct glfw_shared_init_hints : public glfw_hints<1, 0>
 };
 
 /// @brief MacOS specific initialization hints for GLFW.
-struct glfw_macos_init_hints : public glfw_hints<2, 0>
+struct glfw_macos_init_hints : public glfw_hints<glfwInitHint, nullptr, 2, 0>
 {
     // NOLINTBEGIN
     glfw_hint<int>& cocoaChdirResources = intHints.at(0);
@@ -112,7 +121,8 @@ struct glfw_macos_init_hints : public glfw_hints<2, 0>
 };
 
 /// @brief General window hints for GLFW window creation.
-struct glfw_general_hints : public glfw_hints<11, 0> // NOLINT
+struct glfw_general_hints
+    : public glfw_hints<glfwWindowHint, glfwWindowHintString, 11, 0> // NOLINT
 {
     // NOLINTBEGIN
     glfw_hint<int>& resizable = intHints.at(0);
@@ -142,7 +152,8 @@ struct glfw_general_hints : public glfw_hints<11, 0> // NOLINT
 };
 
 /// @brief Framebuffer hints for GLFW window creation.
-struct glfw_framebuffer_hints : public glfw_hints<11, 0> // NOLINT
+struct glfw_framebuffer_hints
+    : public glfw_hints<glfwWindowHint, glfwWindowHintString, 11, 0> // NOLINT
 {
     // NOLINTBEGIN
     glfw_hint<int>& redBits = intHints.at(0);
@@ -172,7 +183,8 @@ struct glfw_framebuffer_hints : public glfw_hints<11, 0> // NOLINT
 };
 
 /// @brief Monitor hints for GLFW window creation.
-struct glfw_monitor_hints : public glfw_hints<1, 0>
+struct glfw_monitor_hints
+    : public glfw_hints<glfwWindowHint, glfwWindowHintString, 1, 0>
 {
     // NOLINTBEGIN
     glfw_hint<int>& refreshRate = intHints.at(0);
@@ -182,7 +194,8 @@ struct glfw_monitor_hints : public glfw_hints<1, 0>
 };
 
 /// @brief Context hints for GLFW window creation.
-struct glfw_context_hints : public glfw_hints<10, 0> // NOLINT
+struct glfw_context_hints
+    : public glfw_hints<glfwWindowHint, glfwWindowHintString, 10, 0> // NOLINT
 {
     // NOLINTBEGIN
     glfw_hint<int>& clientApi = intHints.at(0);
@@ -210,7 +223,8 @@ struct glfw_context_hints : public glfw_hints<10, 0> // NOLINT
 };
 
 /// @brief MacOS specific window hints for GLFW window creation.
-struct glfw_macos_window_hints : public glfw_hints<2, 1>
+struct glfw_macos_window_hints
+    : public glfw_hints<glfwWindowHint, glfwWindowHintString, 2, 1>
 {
     // NOLINTBEGIN
     glfw_hint<int>& cocoaRetinaFramebuffer = intHints.at(0);
@@ -224,7 +238,8 @@ struct glfw_macos_window_hints : public glfw_hints<2, 1>
 };
 
 /// @brief Linux specific window hints for GLFW window creation.
-struct glfw_linux_window_hints : public glfw_hints<0, 2>
+struct glfw_linux_window_hints
+    : public glfw_hints<glfwWindowHint, glfwWindowHintString, 0, 2>
 {
     // NOLINTBEGIN
     glfw_hint<const char*>& x11ClassName = stringHints.at(0);
@@ -339,6 +354,77 @@ struct joystick_event
     int event;
 
     joystick_event(int JID, int Event);
+};
+
+/// @brief GLFW input event callbacks.
+struct glfw_input_event_callbacks
+{
+    GLFWkeyfun keyCallback;
+    GLFWcharfun characterCallback;
+    GLFWcursorposfun cursorPositionCallback;
+    GLFWcursorenterfun cursorEnterCallback;
+    GLFWmousebuttonfun mouseButtonCallback;
+    GLFWscrollfun scrollCallback;
+    GLFWdropfun fileDropCallback;
+
+    glfw_input_event_callbacks(
+        std::optional<GLFWkeyfun> KeyCallback = std::nullopt,
+        std::optional<GLFWcharfun> CharacterCallback = std::nullopt,
+        std::optional<GLFWcursorposfun> CursorPositionCallback = std::nullopt,
+        std::optional<GLFWcursorenterfun> CursorEnterCallback = std::nullopt,
+        std::optional<GLFWmousebuttonfun> MouseButtonCallback = std::nullopt,
+        std::optional<GLFWscrollfun> ScrollCallback = std::nullopt,
+        std::optional<GLFWdropfun> FileDropCallback = std::nullopt);
+};
+
+/// @brief A size event stored as an `area` of type int.
+using size_event = area<int>;
+
+/// @brief A framebuffer event stored as an `area` of type int.
+using framebuffer_size_event = area<int>;
+
+/// @brief A content scale event stored as a `coordinate` of type float.
+using content_scale_event = coordinate<float>;
+
+/// @brief A position event stored as an `area` of type int.
+using position_event = coordinate<int>;
+
+/// @brief An iconify event stored as an integer. Can be interpreted as a
+/// boolean.
+using iconify_event = int;
+
+/// @brief A maximize event stored as an integer. Can be interpreted as a
+/// boolean.
+using maximize_event = int;
+
+/// @brief A focus event stored as an integer. Can be interpreted as a boolean.
+using focus_event = int;
+
+/// @brief GLFW window event callbacks.
+struct glfw_window_event_callbacks
+{
+    GLFWwindowclosefun closeCallback;
+    GLFWwindowsizefun sizeCallback;
+    GLFWframebuffersizefun framebufferSizeCallback;
+    GLFWwindowcontentscalefun contentScaleCallback;
+    GLFWwindowposfun positionCallback;
+    GLFWwindowiconifyfun iconifyCallback;
+    GLFWwindowmaximizefun maximizeCallback;
+    GLFWwindowfocusfun focusCallback;
+    GLFWwindowrefreshfun refreshCallback;
+
+    glfw_window_event_callbacks(
+        std::optional<GLFWwindowclosefun> CloseCallback = std::nullopt,
+        std::optional<GLFWwindowsizefun> SizeCallback = std::nullopt,
+        std::optional<GLFWframebuffersizefun> FramebufferSizeCallback =
+            std::nullopt,
+        std::optional<GLFWwindowcontentscalefun> ContentScaleCallback =
+            std::nullopt,
+        std::optional<GLFWwindowposfun> PositionCallback = std::nullopt,
+        std::optional<GLFWwindowiconifyfun> IconifyCallback = std::nullopt,
+        std::optional<GLFWwindowmaximizefun> MaximizeCallback = std::nullopt,
+        std::optional<GLFWwindowfocusfun> FocusCallback = std::nullopt,
+        std::optional<GLFWwindowrefreshfun> RefreshCallback = std::nullopt);
 };
 
 } // namespace gvw

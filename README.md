@@ -32,7 +32,7 @@ $ conan profile detect
 $ git clone https://github.com/cshmookler/GLFW-and-Vulkan-wrapper.git
 $ cd GLFW-and-Vulkan-wrapper
 ```
-**8.** Build and install this project with Conan 2. Change the last configuration option (tools.system.package_manager:tool) to your default system packet manager (options: apt-get, yum, dnf, brew, pacman, choco, zypper, pkg, or pkgutil). To build in debug mode, change the last option (build_type) to Debug.
+**8.** Build and install this project with Conan 2. Change the last configuration option (`tools.system.package_manager:tool`) to your default system packet manager (options: apt-get, yum, dnf, brew, pacman, choco, zypper, pkg, or pkgutil). To build in debug mode, change the last option (`build_type`) to Debug.
 ```bash
 $ conan create . -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=True -c tools.system.package_manager:tool=apt-get --build=missing -s build_type=Release
 ```
@@ -56,19 +56,34 @@ $ cd GLFW-and-Vulkan-wrapper
 $ mkdir build
 $ cd build
 ```
-**5.** Generate CMake information for the build system. This command builds static and shared libraries and some example programs in debug mode.
+**5.** Generate CMake information for the build system. By default, GVW is built as a shared library along with some example programs.
 ```bash
-$ cmake -D GVW_STATIC=ON -D GVW_SHARED=ON -D GVW_EXAMPLES -D CMAKE_BUILD_TYPE=Debug ..
+$ cmake ..
+```
+To build GVW as a static library, set the `GVW_STATIC` option to `ON`. GVW will also be built as a shared library.
+```bash
+$ cmake .. -D GVW_STATIC=ON
+```
+To only build a static library, set the `GVW_SHARED` option to `OFF`.
+```bash
+$ cmake .. -D GVW_STATIC=ON -D GVW_SHARED=OFF
+```
+To NOT build the example programs, set the `GVW_EXAMPLES` option to `OFF`.
+```bash
+$ cmake .. -D GVW_EXAMPLES=OFF
+```
+To build the library in debug mode, set the `CMAKE_BUILD_TYPE` option to `Debug`.
+```bash
+$ cmake .. -D CMAKE_BUILD_TYPE=Debug
 ```
 **6.** Finally, build the project.
 ```bash
-$ make
+$ cmake --build .
 ```
 To install the library after compilation, run this instead:
 ```bash
-$ sudo make install
+$ sudo cmake --build . --install .
 ```
-
 
 ### **TODO**
  * [X] Setup CMake
@@ -76,7 +91,6 @@ $ sudo make install
  * [X] Finish most GLFW infrastructure
  * [X] Setup Doxygen and add comments
  * [X] Implement support for Conan 2.0
- * [ ] Create tests
  * [ ] Create the necessary infrastructure to draw a triangle
  * [ ] (optional) Save space in the code by loading settings from a file
  * [ ] Make the triangle move

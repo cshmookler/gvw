@@ -1,63 +1,25 @@
 // Standard includes
-#include <limits>
 
 // External includes
 
 // Local includes
+#include "window.hpp"
 #include "init.hpp"
 #include "types.hpp"
-#include "window.hpp"
 
-// NOLINTBEGIN
-std::vector<gvw::joystick_event> window_t::JOYSTICK_EVENTS;
-// NOLINTEND
+namespace gvw {
 
-const gvw::error window_t::ERROR_GLFW_INVALID_POSITION = {
-    0x00200001,
-    "\"Invalid window position\""
+const glfw_input_event_callbacks NO_INPUT_EVENT_CALLBACKS = {
+    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr
 };
-const gvw::error window_t::ERROR_GLFW_INVALID_SIZE = {
-    0x00200002,
-    "\"Invalid window size\""
+const glfw_window_event_callbacks NO_WINDOW_EVENT_CALLBACKS = {
+    nullptr, nullptr, nullptr, nullptr, nullptr,
+    nullptr, nullptr, nullptr, nullptr
 };
 
-const gvw::glfw_general_hints window_t::DEFAULT_GLFW_GENERAL_HINTS = {};
-const gvw::glfw_framebuffer_hints window_t::DEFAULT_GLFW_FRAMEBUFFER_HINTS = {};
-const gvw::glfw_monitor_hints window_t::DEFAULT_GLFW_MONITOR_HINTS = {};
-const gvw::glfw_context_hints window_t::DEFAULT_GLFW_CONTEXT_HINTS = {};
-const gvw::glfw_macos_window_hints
-    window_t::DEFAULT_GLFW_MACOS_WINDOW_HINTS = {};
-const gvw::glfw_linux_window_hints
-    window_t::DEFAULT_GLFW_LINUX_WINDOW_HINTS = {};
+const window_info DEFAULT_WINDOW_INFO = {};
 
-const gvw::coordinate<int> window_t::DEFAULT_WINDOW_POSITION = { 0, 0 };
-const gvw::area<int> window_t::DEFAULT_WINDOW_SIZE = { 640, 360 };
-const gvw::area<int> window_t::DEFAULT_MINIMUM_WINDOW_SIZE = { GLFW_DONT_CARE,
-                                                               GLFW_DONT_CARE };
-const gvw::area<int> window_t::DEFAULT_MAXIMUM_WINDOW_SIZE = { GLFW_DONT_CARE,
-                                                               GLFW_DONT_CARE };
-const gvw::coordinate<int> window_t::NULL_WINDOW_POSITION = {
-    std::numeric_limits<int>::min(),
-    std::numeric_limits<int>::min()
-};
-const gvw::area<int> window_t::NULL_WINDOW_SIZE = { 0, 0 };
-
-void window_t::JoystickCallback(int JID, int Event)
-{
-    JOYSTICK_EVENTS.emplace_back(JID, Event);
-}
-
-std::vector<gvw::joystick_event>& window_t::JoystickEvents()
-{
-    return JOYSTICK_EVENTS;
-}
-
-void window_t::ClearJoystickEvents()
-{
-    JOYSTICK_EVENTS.clear();
-}
-
-window_t& window_t::WindowInstance(GLFWwindow* Window)
+window_t& window_t::Instance(GLFWwindow* Window)
 {
     return *static_cast<window_t*>(glfwGetWindowUserPointer(Window));
 }
@@ -68,25 +30,24 @@ void window_t::KeyCallback(GLFWwindow* Window,
                            int Action,
                            int Mods)
 {
-    WindowInstance(Window).keyEvents.emplace_back(Key, Scancode, Action, Mods);
+    Instance(Window).keyEvents.emplace_back(Key, Scancode, Action, Mods);
 };
 
 void window_t::CharacterCallback(GLFWwindow* Window, unsigned int Code_Point)
 {
-    WindowInstance(Window).characterEvents.emplace_back(Code_Point);
+    Instance(Window).characterEvents.emplace_back(Code_Point);
 }
 
 void window_t::CursorPositionCallback(GLFWwindow* Window,
                                       double X_Position,
                                       double Y_Position)
 {
-    WindowInstance(Window).cursorPositionEvents.emplace_back(X_Position,
-                                                             Y_Position);
+    Instance(Window).cursorPositionEvents.emplace_back(X_Position, Y_Position);
 }
 
 void window_t::CursorEnterCallback(GLFWwindow* Window, int Entered)
 {
-    WindowInstance(Window).cursorEnterEvents.emplace_back(Entered);
+    Instance(Window).cursorEnterEvents.emplace_back(Entered);
 }
 
 void window_t::MouseButtonCallback(GLFWwindow* Window,
@@ -94,97 +55,72 @@ void window_t::MouseButtonCallback(GLFWwindow* Window,
                                    int Action,
                                    int Mods)
 {
-    WindowInstance(Window).mouseButtonEvents.emplace_back(Button, Action, Mods);
+    Instance(Window).mouseButtonEvents.emplace_back(Button, Action, Mods);
 }
 
 void window_t::ScrollCallback(GLFWwindow* Window,
                               double X_Offset,
                               double Y_Offset)
 {
-    WindowInstance(Window).scrollEvents.emplace_back(X_Offset, Y_Offset);
+    Instance(Window).scrollEvents.emplace_back(X_Offset, Y_Offset);
 }
 
 void window_t::FileDropCallback(GLFWwindow* Window,
                                 int Count,
                                 const char** Paths)
 {
-    WindowInstance(Window).fileDropEvents.emplace_back(Count, Paths);
+    Instance(Window).fileDropEvents.emplace_back(Count, Paths);
 }
 
-window_t::window_t(const gvw::coordinate<int>& Position,
-                   const gvw::area<int>& Size,
-                   const char* Title,
-                   GLFWmonitor* Full_Screen_Monitor,
-                   GLFWwindow* Parent_Window,
-                   const gvw::glfw_general_hints& General_Hints,
-                   const gvw::glfw_framebuffer_hints& Framebuffer_Hints,
-                   const gvw::glfw_monitor_hints& Monitor_Hints,
-                   const gvw::glfw_context_hints& Context_Hints,
-                   const gvw::glfw_macos_window_hints& MacOS_Window_Hints,
-                   const gvw::glfw_linux_window_hints& Linux_Window_Hints,
-                   GLFWerrorfun GLFW_Error_Callback,
-                   gvw::gvw_error_callback GVW_Error_Callback,
-                   const gvw::glfw_shared_init_hints& Shared_Init_Hints,
-                   const gvw::glfw_macos_init_hints& MacOS_Init_Hints)
+void window_t::CloseCallback(GLFWwindow* Window)
 {
-    if (Position == NULL_WINDOW_POSITION) {
-        GVW_Error_Callback(ERROR_GLFW_INVALID_POSITION);
-    }
-    if (Size == NULL_WINDOW_SIZE) {
-        GVW_Error_Callback(ERROR_GLFW_INVALID_SIZE);
-    }
-
-    // Initialize GVW if it hasn't been initialized yet.
-    if (gvw::INSTANCE_COUNT == 0) {
-        gvw::Init(GVW_Error_Callback,
-                  GLFW_Error_Callback,
-                  Shared_Init_Hints,
-                  MacOS_Init_Hints);
-    }
-    gvw::INSTANCE_COUNT++;
-
-    // Apply window creation hints
-    General_Hints.Apply();
-    Framebuffer_Hints.Apply();
-    Monitor_Hints.Apply();
-    Context_Hints.Apply();
-    MacOS_Window_Hints.Apply();
-    Linux_Window_Hints.Apply();
-
-    // Apply window creation hint overrides
-    glfwWindowHint(General_Hints.visible.HINT, GLFW_FALSE);
-
-    // Create the window
-    this->windowHandle = glfwCreateWindow(
-        Size.width, Size.height, Title, Full_Screen_Monitor, Parent_Window);
-
-    // Link this window object with the underlying GLFW window object
-    glfwSetWindowUserPointer(this->windowHandle, this);
-
-    // Set position
-    if (Position != DEFAULT_WINDOW_POSITION) {
-        glfwSetWindowPos(this->windowHandle, Position.x, Position.y);
-        this->Position(Position);
-    }
-    this->resetPosition = this->Position();
-    this->resetSize = this->Size();
-
-    // Remove window creation hint overrides
-    this->Show();
-
-    // Set input callbacks
-    glfwSetKeyCallback(this->windowHandle, KeyCallback);
-    glfwSetCharCallback(this->windowHandle, CharacterCallback);
-    glfwSetCursorPosCallback(this->windowHandle, CursorPositionCallback);
-    glfwSetCursorEnterCallback(this->windowHandle, CursorEnterCallback);
-    glfwSetMouseButtonCallback(this->windowHandle, MouseButtonCallback);
-    glfwSetScrollCallback(this->windowHandle, ScrollCallback);
-    glfwSetDropCallback(this->windowHandle, FileDropCallback);
+    Instance(Window).closeEvents++;
 }
 
-void window_t::InitInputBuffers()
+void window_t::SizeCallback(GLFWwindow* Window, int Width, int Height)
 {
-    // glfwSetKeyCallback(GLFWwindow* window, GLFWkeyfun callback)
+    Instance(Window).sizeEvents.emplace_back(Width, Height);
+}
+
+void window_t::FramebufferSizeCallback(GLFWwindow* Window,
+                                       int Width,
+                                       int Height)
+{
+    Instance(Window).framebufferSizeEvents.emplace_back(Width, Height);
+}
+
+void window_t::ContentScaleCallback(GLFWwindow* Window,
+                                    float XScale,
+                                    float YScale)
+{
+    Instance(Window).contentScaleEvents.emplace_back(XScale, YScale);
+}
+
+void window_t::PositionCallback(GLFWwindow* Window,
+                                int XPosition,
+                                int YPosition)
+{
+    Instance(Window).positionEvents.emplace_back(XPosition, YPosition);
+}
+
+void window_t::IconifyCallback(GLFWwindow* Window, int Iconified)
+{
+    Instance(Window).iconifyEvents.emplace_back(Iconified);
+}
+
+void window_t::MaximizeCallback(GLFWwindow* Window, int Maximized)
+{
+    Instance(Window).maximizeEvents.emplace_back(Maximized);
+}
+
+void window_t::FocusCallback(GLFWwindow* Window, int Focused)
+{
+    Instance(Window).focusEvents.emplace_back(Focused);
+}
+
+void window_t::RefreshCallback(GLFWwindow* Window)
+{
+    Instance(Window).refreshEvents++;
 }
 
 int window_t::WindowAttribute(int Attribute) const
@@ -197,57 +133,151 @@ void window_t::WindowAttribute(int Attribute, int Value) const
     glfwSetWindowAttrib(this->windowHandle, Attribute, Value);
 }
 
+window_t::window_t(const window_info& Window_Info)
+{
+    // Initialize GVW if it hasn't been initialized yet.
+    if (INSTANCE_COUNT == 0) {
+        Init(Window_Info.gvwErrorCallback,
+             Window_Info.glfwErrorCallback,
+             Window_Info.sharedInitHints,
+             Window_Info.macosInitHints);
+    }
+    INSTANCE_COUNT++;
+
+    // Apply window creation hints
+    Window_Info.generalHints.Apply();
+    Window_Info.framebufferHints.Apply();
+    Window_Info.monitorHints.Apply();
+    Window_Info.contextHints.Apply();
+    Window_Info.macosWindowHints.Apply();
+    Window_Info.linuxWindowHints.Apply();
+
+    // Briefly hide the window if an initial position was specified. If this is
+    // not done the window may be in the wrong position for one frame (the
+    // default position set by the operating system).
+    if (Window_Info.position.has_value()) {
+        glfwWindowHint(Window_Info.generalHints.visible.HINT, GLFW_FALSE);
+    }
+
+    // Create the window
+    this->windowHandle = glfwCreateWindow(Window_Info.size.width,
+                                          Window_Info.size.height,
+                                          Window_Info.title,
+                                          Window_Info.fullScreenMonitor,
+                                          Window_Info.parentWindow);
+
+    // Link this window object with the underlying GLFW window object
+    glfwSetWindowUserPointer(this->windowHandle, this);
+
+    // Set an initial position if one was specified.
+    if (Window_Info.position.has_value()) {
+        this->Position(Window_Info.position.value());
+        // Show the window now that it has been moved to the correct position.
+        this->Show();
+    }
+
+    /// @todo Audit the utility of this->resetPosition and this->resetSize. They
+    /// may be redundant bloat.
+    // Set the reset position and size of the window.
+    this->resetPosition = this->Position();
+    this->resetSize = this->Size();
+
+    // Set callbacks
+    this->InputEventCallbacks(Window_Info.inputEventCallbacks);
+    this->WindowEventCallbacks(Window_Info.windowEventCallbacks);
+}
+
 window_t::~window_t()
 {
     // Destroy the window
     glfwDestroyWindow(this->windowHandle);
 
-    gvw::INSTANCE_COUNT--;
+    INSTANCE_COUNT--;
 
     // Terminate GVW if there aren't any instances left to manage.
-    if (gvw::INSTANCE_COUNT == 0) {
+    if (INSTANCE_COUNT == 0) {
         // Terminate GLFW
         glfwTerminate();
     }
 }
 
-GLFWwindow* window_t::WindowHandle() const noexcept
+void window_t::InputEventCallbacks(
+    const glfw_input_event_callbacks& InputEventCallbacks)
+{
+    glfwSetKeyCallback(this->windowHandle, InputEventCallbacks.keyCallback);
+    glfwSetCharCallback(this->windowHandle,
+                        InputEventCallbacks.characterCallback);
+    glfwSetCursorPosCallback(this->windowHandle,
+                             InputEventCallbacks.cursorPositionCallback);
+    glfwSetCursorEnterCallback(this->windowHandle,
+                               InputEventCallbacks.cursorEnterCallback);
+    glfwSetMouseButtonCallback(this->windowHandle,
+                               InputEventCallbacks.mouseButtonCallback);
+    glfwSetScrollCallback(this->windowHandle,
+                          InputEventCallbacks.scrollCallback);
+    glfwSetDropCallback(this->windowHandle,
+                        InputEventCallbacks.fileDropCallback);
+}
+
+void window_t::WindowEventCallbacks(
+    const glfw_window_event_callbacks& WindowEventCallbacks)
+{
+    glfwSetWindowCloseCallback(this->windowHandle,
+                               WindowEventCallbacks.closeCallback);
+    glfwSetWindowSizeCallback(this->windowHandle,
+                              WindowEventCallbacks.sizeCallback);
+    glfwSetFramebufferSizeCallback(
+        this->windowHandle, WindowEventCallbacks.framebufferSizeCallback);
+    glfwSetWindowContentScaleCallback(
+        this->windowHandle, WindowEventCallbacks.contentScaleCallback);
+    glfwSetWindowPosCallback(this->windowHandle,
+                             WindowEventCallbacks.positionCallback);
+    glfwSetWindowIconifyCallback(this->windowHandle,
+                                 WindowEventCallbacks.iconifyCallback);
+    glfwSetWindowMaximizeCallback(this->windowHandle,
+                                  WindowEventCallbacks.maximizeCallback);
+    glfwSetWindowFocusCallback(this->windowHandle,
+                               WindowEventCallbacks.focusCallback);
+    glfwSetWindowRefreshCallback(this->windowHandle,
+                                 WindowEventCallbacks.refreshCallback);
+}
+
+GLFWwindow* window_t::Handle() const noexcept
 {
     return this->windowHandle;
 }
 
-std::vector<gvw::key_event>& window_t::KeyEvents() noexcept
+std::vector<key_event>& window_t::KeyEvents() noexcept
 {
     return this->keyEvents;
 }
 
-std::vector<gvw::character_event>& window_t::CharacterEvents() noexcept
+std::vector<character_event>& window_t::CharacterEvents() noexcept
 {
     return this->characterEvents;
 }
 
-std::vector<gvw::cursor_position_event>&
-window_t::CursorPositionEvents() noexcept
+std::vector<cursor_position_event>& window_t::CursorPositionEvents() noexcept
 {
     return this->cursorPositionEvents;
 }
 
-std::vector<gvw::cursor_enter_event>& window_t::CursorEnterEvents() noexcept
+std::vector<cursor_enter_event>& window_t::CursorEnterEvents() noexcept
 {
     return this->cursorEnterEvents;
 }
 
-std::vector<gvw::mouse_button_event>& window_t::MouseButtonEvents() noexcept
+std::vector<mouse_button_event>& window_t::MouseButtonEvents() noexcept
 {
     return this->mouseButtonEvents;
 }
 
-std::vector<gvw::scroll_event>& window_t::ScrollEvents() noexcept
+std::vector<scroll_event>& window_t::ScrollEvents() noexcept
 {
     return this->scrollEvents;
 }
 
-std::vector<gvw::file_drop_event>& window_t::FileDropEvents() noexcept
+std::vector<file_drop_event>& window_t::FileDropEvents() noexcept
 {
     return this->fileDropEvents;
 }
@@ -287,15 +317,126 @@ void window_t::ClearFileDropEvents() noexcept
     this->fileDropEvents.clear();
 }
 
+void window_t::ClearInputEvents() noexcept
+{
+    this->ClearKeyEvents();
+    this->ClearCharacterEvents();
+    this->ClearCursorPositionEvents();
+    this->ClearCursorEnterEvents();
+    this->ClearMouseButtonEvents();
+    this->ClearScrollEvents();
+    this->ClearFileDropEvents();
+}
+
+[[nodiscard]] size_t window_t::CloseEvents() const noexcept
+{
+    return this->closeEvents;
+}
+
+[[nodiscard]] std::vector<size_event>& window_t::SizeEvents() noexcept
+{
+    return this->sizeEvents;
+}
+
+[[nodiscard]] std::vector<framebuffer_size_event>&
+window_t::FramebufferSizeEvents() noexcept
+{
+    return this->framebufferSizeEvents;
+}
+
+[[nodiscard]] std::vector<content_scale_event>&
+window_t::ContentScaleEvents() noexcept
+{
+    return this->contentScaleEvents;
+}
+
+[[nodiscard]] std::vector<position_event>& window_t::PositionEvents() noexcept
+{
+    return this->positionEvents;
+}
+
+[[nodiscard]] std::vector<iconify_event>& window_t::IconifyEvents() noexcept
+{
+    return this->iconifyEvents;
+}
+
+[[nodiscard]] std::vector<maximize_event>& window_t::MaximizeEvents() noexcept
+{
+    return this->maximizeEvents;
+}
+
+[[nodiscard]] std::vector<focus_event>& window_t::FocusEvents() noexcept
+{
+    return this->focusEvents;
+}
+
+[[nodiscard]] size_t window_t::RefreshEvents() const noexcept
+{
+    return this->refreshEvents;
+}
+
+void window_t::ClearCloseEvents() noexcept
+{
+    this->closeEvents = 0;
+}
+
+void window_t::ClearSizeEvents() noexcept
+{
+    this->sizeEvents.clear();
+}
+
+void window_t::ClearFramebufferSizeEvents() noexcept
+{
+    this->framebufferSizeEvents.clear();
+}
+
+void window_t::ClearContentScaleEvents() noexcept
+{
+    this->contentScaleEvents.clear();
+}
+
+void window_t::ClearPositionEvents() noexcept
+{
+    this->positionEvents.clear();
+}
+
+void window_t::ClearIconifyEvents() noexcept
+{
+    this->iconifyEvents.clear();
+}
+
+void window_t::ClearMaximizeEvents() noexcept
+{
+    this->maximizeEvents.clear();
+}
+
+void window_t::ClearFocusEvents() noexcept
+{
+    this->focusEvents.clear();
+}
+
+void window_t::ClearRefreshEvents() noexcept
+{
+    this->refreshEvents = 0;
+}
+
+void window_t::ClearWindowEvents() noexcept
+{
+    this->ClearCloseEvents();
+    this->ClearSizeEvents();
+    this->ClearFramebufferSizeEvents();
+    this->ClearContentScaleEvents();
+    this->ClearPositionEvents();
+    this->ClearIconifyEvents();
+    this->ClearMaximizeEvents();
+    this->ClearFocusEvents();
+    this->ClearRefreshEvents();
+}
+
 void window_t::ClearEvents() noexcept
 {
-    ClearKeyEvents();
-    ClearCharacterEvents();
-    ClearCursorPositionEvents();
-    ClearCursorEnterEvents();
-    ClearMouseButtonEvents();
-    ClearScrollEvents();
-    ClearFileDropEvents();
+    this->ClearInputEvents();
+    this->ClearWindowEvents();
 }
 
 bool window_t::ShouldClose() const
@@ -308,47 +449,47 @@ void window_t::ShouldClose(bool State) const
     glfwSetWindowShouldClose(this->windowHandle, static_cast<int>(State));
 }
 
-gvw::area<int> window_t::Size() const
+area<int> window_t::Size() const
 {
-    gvw::area<int> size = { 0, 0 };
+    area<int> size = { 0, 0 };
     glfwGetWindowSize(this->windowHandle, &size.width, &size.height);
     return size;
 }
 
-void window_t::Size(const gvw::area<int>& Size) const
+void window_t::Size(const area<int>& Size) const
 {
     glfwSetWindowSize(this->windowHandle, Size.width, Size.height);
 }
 
-gvw::area<int> window_t::SizeInPixels() const
+area<int> window_t::SizeInPixels() const
 {
-    gvw::area<int> size = { 0, 0 };
+    area<int> size = { 0, 0 };
     glfwGetFramebufferSize(this->windowHandle, &size.width, &size.height);
     return size;
 }
 
-gvw::coordinate<int> window_t::Position() const
+coordinate<int> window_t::Position() const
 {
-    gvw::coordinate<int> position = { 0, 0 };
+    coordinate<int> position = { 0, 0 };
     glfwGetWindowPos(this->windowHandle, &position.x, &position.y);
     return position;
 }
 
-void window_t::Position(const gvw::coordinate<int>& Position) const
+void window_t::Position(const coordinate<int>& Position) const
 {
     glfwSetWindowPos(this->windowHandle, Position.x, Position.y);
 }
 
-gvw::coordinate<float> window_t::ContentScale() const
+coordinate<float> window_t::ContentScale() const
 {
-    gvw::coordinate<float> contentScale = { 0.0F, 0.0F };
+    coordinate<float> contentScale = { 0.0F, 0.0F };
     glfwGetWindowContentScale(
         this->windowHandle, &contentScale.x, &contentScale.y);
     return contentScale;
 }
 
-void window_t::SizeLimits(const gvw::area<int>& Minimum_Size,
-                          const gvw::area<int>& Maximum_Size) const
+void window_t::SizeLimits(const area<int>& Minimum_Size,
+                          const area<int>& Maximum_Size) const
 {
     glfwSetWindowSizeLimits(this->windowHandle,
                             Minimum_Size.width,
@@ -506,7 +647,7 @@ void window_t::EnterFullScreen(const monitor_t& Full_Screen_Monitor,
     const GLFWvidmode* videoMode =
         Video_Mode == nullptr ? Full_Screen_Monitor.VideoMode() : Video_Mode;
     glfwSetWindowMonitor(this->windowHandle,
-                         Full_Screen_Monitor.MonitorHandle(),
+                         Full_Screen_Monitor.Handle(),
                          GLFW_FALSE,
                          GLFW_FALSE,
                          videoMode->width,
@@ -514,12 +655,13 @@ void window_t::EnterFullScreen(const monitor_t& Full_Screen_Monitor,
                          videoMode->refreshRate);
 }
 
-void window_t::ExitFullScreen(const gvw::coordinate<int>& Position,
-                              const gvw::area<int>& Size)
+void window_t::ExitFullScreen(const std::optional<coordinate<int>>& Position,
+                              const std::optional<area<int>>& Size)
 {
-    gvw::coordinate<int> position =
-        Position == NULL_WINDOW_POSITION ? this->resetPosition : Position;
-    gvw::area<int> size = Size == NULL_WINDOW_SIZE ? this->resetSize : Size;
+    /// @todo Resolve this->resetPosition and this->resetSize.
+    const coordinate<int>& position =
+        Position.value_or(this->resetPosition.value());
+    const area<int>& size = Size.value_or(this->resetSize.value());
     glfwSetWindowMonitor(this->windowHandle,
                          nullptr,
                          position.x,
@@ -528,3 +670,5 @@ void window_t::ExitFullScreen(const gvw::coordinate<int>& Position,
                          size.height,
                          GLFW_FALSE);
 }
+
+} // namespace gvw

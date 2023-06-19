@@ -1,1 +1,2 @@
 add_subdirectory(screen_freeze)
+add_subdirectory(minimal_example)

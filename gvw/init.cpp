@@ -18,9 +18,24 @@ const error ERROR_VULKAN_NOT_SUPPORTED = {
 const glfw_shared_init_hints DEFAULT_GLFW_SHARED_INIT_HINTS = {};
 const glfw_macos_init_hints DEFAULT_GLFW_MACOS_INIT_HINTS = {};
 
+const glfw_general_hints DEFAULT_GLFW_GENERAL_HINTS = {};
+const glfw_framebuffer_hints DEFAULT_GLFW_FRAMEBUFFER_HINTS = {};
+const glfw_monitor_hints DEFAULT_GLFW_MONITOR_HINTS = {};
+const glfw_context_hints DEFAULT_GLFW_CONTEXT_HINTS = {};
+const glfw_macos_window_hints DEFAULT_GLFW_MACOS_WINDOW_HINTS = {};
+const glfw_linux_window_hints DEFAULT_GLFW_LINUX_WINDOW_HINTS = {};
+
+const area<int> DEFAULT_WINDOW_SIZE = { 640, 360 };
+const char* const DEFAULT_WINDOW_TITLE = "Untitled window";
+const area<int> DEFAULT_MINIMUM_WINDOW_SIZE = { GLFW_DONT_CARE,
+                                                GLFW_DONT_CARE };
+const area<int> DEFAULT_MAXIMUM_WINDOW_SIZE = { GLFW_DONT_CARE,
+                                                GLFW_DONT_CARE };
+
 // NOLINTBEGIN
 size_t INSTANCE_COUNT = 0;
-std::function<gvw_error_callback> GVW_ERROR_CALLBACK = DefaultGvwErrorCallback;
+gvw_error_callback GVW_ERROR_CALLBACK = DefaultGvwErrorCallback;
+std::vector<joystick_event> JOYSTICK_EVENTS;
 // NOLINTEND
 
 void DefaultGvwErrorCallback(error GVW_Error)
@@ -60,6 +75,21 @@ void SetGvwErrorCallback(gvw_error_callback GVW_Error_Callback) noexcept
 void SetGlfwErrorCallback(GLFWerrorfun GLFW_Error_Callback) noexcept
 {
     glfwSetErrorCallback(GLFW_Error_Callback);
+}
+
+void JoystickCallback(int JID, int Event)
+{
+    JOYSTICK_EVENTS.emplace_back(JID, Event);
+}
+
+std::vector<joystick_event>& JoystickEvents()
+{
+    return JOYSTICK_EVENTS;
+}
+
+void ClearJoystickEvents()
+{
+    JOYSTICK_EVENTS.clear();
 }
 
 void Init(gvw_error_callback GVW_Error_Callback,

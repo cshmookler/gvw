@@ -8,102 +8,71 @@
  */
 
 // Standard includes
+#include <optional>
 
 // External includes
-#define GLFW_INCLUDE_VULKAN
+// clang-format off
+#include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
-// #include <vulkan/vulkan.hpp>
+// #include <vulkan/vulkan_handles.hpp>
+// clang-format on
 
 // Local includes
 #include "init.hpp"
 #include "monitor.hpp"
+#include "types.hpp"
 #include "types.tpp"
+
+namespace gvw {
+
+/// @brief Blocks all input events when passed to the `window_info` constructor
+/// or `EventCallbacks`.
+extern const glfw_input_event_callbacks NO_INPUT_EVENT_CALLBACKS;
+
+/// @brief Blocks all window events when passed to the `window_info` constructor
+/// or `EventCallbacks`.
+extern const glfw_window_event_callbacks NO_WINDOW_EVENT_CALLBACKS;
+
+/// @brief Stores initialization information for a `window_t` object.
+struct window_info
+{
+    // NOLINTBEGIN
+    std::optional<coordinate<int>> position = std::nullopt;
+    const area<int>& size = DEFAULT_WINDOW_SIZE;
+    const char* title = DEFAULT_WINDOW_TITLE;
+    const glfw_input_event_callbacks& inputEventCallbacks =
+        NO_INPUT_EVENT_CALLBACKS;
+    const glfw_window_event_callbacks& windowEventCallbacks =
+        NO_WINDOW_EVENT_CALLBACKS;
+    GLFWmonitor* fullScreenMonitor = nullptr;
+    GLFWwindow* parentWindow = nullptr;
+    const glfw_general_hints& generalHints = DEFAULT_GLFW_GENERAL_HINTS;
+    const glfw_framebuffer_hints& framebufferHints =
+        DEFAULT_GLFW_FRAMEBUFFER_HINTS;
+    const glfw_monitor_hints& monitorHints = DEFAULT_GLFW_MONITOR_HINTS;
+    const glfw_context_hints& contextHints = DEFAULT_GLFW_CONTEXT_HINTS;
+    const glfw_macos_window_hints& macosWindowHints =
+        DEFAULT_GLFW_MACOS_WINDOW_HINTS;
+    const glfw_linux_window_hints& linuxWindowHints =
+        DEFAULT_GLFW_LINUX_WINDOW_HINTS;
+    GLFWerrorfun glfwErrorCallback = DefaultGlfwErrorCallback;
+    gvw_error_callback gvwErrorCallback = DefaultGvwErrorCallback;
+    const glfw_shared_init_hints& sharedInitHints =
+        DEFAULT_GLFW_SHARED_INIT_HINTS;
+    const glfw_macos_init_hints& macosInitHints = DEFAULT_GLFW_MACOS_INIT_HINTS;
+    // NOLINTEND
+};
+
+/// @brief The default information for creating a new window;
+extern const window_info DEFAULT_WINDOW_INFO;
 
 /// @brief Creates and manages a GLFW window.
 class window_t
 {
-  private:
-    //////////////////////////////////////////////////
-    //        Private Static Const Variables        //
-    //////////////////////////////////////////////////
-    // NOLINTBEGIN
-
-    /// @brief Joystick events.
-    static std::vector<gvw::joystick_event> JOYSTICK_EVENTS;
-
-    // NOLINTEND
-
   public:
-    //////////////////////////////////////////////////
-    //         Public Static Const Variables        //
-    //////////////////////////////////////////////////
-
-    /// @brief The window position is invalid.
-    static const gvw::error ERROR_GLFW_INVALID_POSITION;
-
-    /// @brief The window size is invalid.
-    static const gvw::error ERROR_GLFW_INVALID_SIZE;
-
-    /// @brief Default values for general window hints.
-    static const gvw::glfw_general_hints DEFAULT_GLFW_GENERAL_HINTS;
-
-    /// @brief Default values for framebuffer hints.
-    static const gvw::glfw_framebuffer_hints DEFAULT_GLFW_FRAMEBUFFER_HINTS;
-
-    /// @brief Default values for monitor hints.
-    static const gvw::glfw_monitor_hints DEFAULT_GLFW_MONITOR_HINTS;
-
-    /// @brief Default values for context hints.
-    static const gvw::glfw_context_hints DEFAULT_GLFW_CONTEXT_HINTS;
-
-    /// @brief Default values for MacOS window hints.
-    static const gvw::glfw_macos_window_hints DEFAULT_GLFW_MACOS_WINDOW_HINTS;
-
-    /// @brief Default values for Linux window hints.
-    static const gvw::glfw_linux_window_hints DEFAULT_GLFW_LINUX_WINDOW_HINTS;
-
-    /// @brief The default position of the window.
-    static const gvw::coordinate<int> DEFAULT_WINDOW_POSITION;
-
-    /// @brief The default size of the window.
-    static const gvw::area<int> DEFAULT_WINDOW_SIZE;
-
-    /// @brief The default minimum size of the window.
-    static const gvw::area<int> DEFAULT_MINIMUM_WINDOW_SIZE;
-
-    /// @brief The default maximum size of the window.
-    static const gvw::area<int> DEFAULT_MAXIMUM_WINDOW_SIZE;
-
-    /// @brief Null window position.
-    static const gvw::coordinate<int> NULL_WINDOW_POSITION;
-
-    /// @brief Null window size.
-    static const gvw::area<int> NULL_WINDOW_SIZE;
-
     //////////////////////////////////////////////////
     //            Public Static Functions           //
     //////////////////////////////////////////////////
-
-    /// @brief The joystick event callback.
-    /// @param JID The joystick id.
-    /// @param Event The joystick event.
-    /// @gvw_errors None.
-    /// @glfw_errors None.
-    /// @thread_safety Must be called from the main thread.
-    static void JoystickCallback(int JID, int Event);
-
-    /// @brief Returns the joystick event buffer.
-    /// @returns A reference to a vector of joystick events.
-    /// @gvw_errors None.
-    /// @glfw_errors None.
-    /// @thread_safety Must be called from the main thread.
-    static std::vector<gvw::joystick_event>& JoystickEvents();
-
-    /// @brief Clears the joystick event buffer.
-    /// @gvw_errors None.
-    /// @glfw_errors None.
-    /// @thread_safety Must be called from the main thread.
-    static void ClearJoystickEvents();
 
     /// @brief Returns the GVW instance associated with a specific window
     /// handle.
@@ -112,7 +81,7 @@ class window_t
     /// @gvw_errors None.
     /// @glfw_errors `GLFW_NOT_INITIALIZED`.
     /// @thread_safety Can be called from any thread.
-    [[nodiscard]] static window_t& WindowInstance(GLFWwindow* Window);
+    [[nodiscard]] static window_t& Instance(GLFWwindow* Window);
 
     /// @brief The key event callback.
     /// @param Window The window handle.
@@ -192,6 +161,91 @@ class window_t
                                  int Count,
                                  const char** Paths);
 
+    /// @brief The close event callback.
+    /// @param Window The window handle.
+    /// @gvw_errors None.
+    /// @glfw_errors `GLFW_NOT_INITIALIZED`.
+    /// @thread_safety Can be called from any thread.
+    static void CloseCallback(GLFWwindow* Window);
+
+    /// @brief The size event callback.
+    /// @param Window The window handle.
+    /// @param Width The new width of the window.
+    /// @param Height The new height of the window.
+    /// @gvw_errors None.
+    /// @glfw_errors `GLFW_NOT_INITIALIZED`.
+    /// @thread_safety Can be called from any thread.
+    static void SizeCallback(GLFWwindow* Window, int Width, int Height);
+
+    /// @brief The framebuffer size event callback.
+    /// @param Window The window handle.
+    /// @param Width The new framebuffer width of the window.
+    /// @param Height The new framebuffer height of the window.
+    /// @gvw_errors None.
+    /// @glfw_errors `GLFW_NOT_INITIALIZED`.
+    /// @thread_safety Can be called from any thread.
+    static void FramebufferSizeCallback(GLFWwindow* Window,
+                                        int Width,
+                                        int Height);
+
+    /// @brief The content scale event callback.
+    /// @param Window The window handle.
+    /// @param XScale The X-axis content scale of the window.
+    /// @param YScale The Y-axis content scale of the window.
+    /// @gvw_errors None.
+    /// @glfw_errors `GLFW_NOT_INITIALIZED`.
+    /// @thread_safety Can be called from any thread.
+    static void ContentScaleCallback(GLFWwindow* Window,
+                                     float XScale,
+                                     float YScale);
+
+    /// @brief The position event callback.
+    /// @param Window The window handle.
+    /// @param XPosition The new X position of the upper-left corner of the
+    /// window.
+    /// @param YPosition The new Y position of the upper-left corner of the
+    /// window.
+    /// @gvw_errors None.
+    /// @glfw_errors `GLFW_NOT_INITIALIZED`.
+    /// @thread_safety Can be called from any thread.
+    static void PositionCallback(GLFWwindow* Window,
+                                 int XPosition,
+                                 int YPosition);
+
+    /// @brief The iconify event callback.
+    /// @param Window The window handle.
+    /// @param Iconified `GLFW_TRUE` if the window is iconified. `GLFW_FALSE` if
+    /// the window is NOT iconified.
+    /// @gvw_errors None.
+    /// @glfw_errors `GLFW_NOT_INITIALIZED`.
+    /// @thread_safety Can be called from any thread.
+    static void IconifyCallback(GLFWwindow* Window, int Iconified);
+
+    /// @brief The maximize event callback.
+    /// @param Window The window handle.
+    /// @param Maximized `GLFW_TRUE` if the window is maximized. `GLFW_FALSE` if
+    /// the window is NOT maximized.
+    /// @gvw_errors None.
+    /// @glfw_errors `GLFW_NOT_INITIALIZED`.
+    /// @thread_safety Can be called from any thread.
+    static void MaximizeCallback(GLFWwindow* Window, int Maximized);
+
+    /// @brief The focus event callback.
+    /// @param Window The window handle.
+    /// @param Focused `GLFW_TRUE` if the window is focused. `GLFW_FALSE` if
+    /// the window is NOT focused.
+    /// @gvw_errors None.
+    /// @glfw_errors `GLFW_NOT_INITIALIZED`.
+    /// @thread_safety Can be called from any thread.
+    static void FocusCallback(GLFWwindow* Window, int Focused);
+
+    /// @brief The refresh event callback.
+    /// @param Window The window handle.
+    /// @gvw_errors None.
+    /// @glfw_errors `GLFW_NOT_INITIALIZED`.
+    /// @thread_safety Can be called from any thread.
+    static void RefreshCallback(GLFWwindow* Window);
+
   private:
     //////////////////////////////////////////////////
     //               Private Variables              //
@@ -203,45 +257,76 @@ class window_t
     /// @brief The Vulkan window surface.
     VkSurfaceKHR_T* surface = VK_NULL_HANDLE;
 
-    /// @brief The reset size of the window. This is the size of the window when
-    /// it exits full screen, maximization, or iconification.
-    gvw::area<int> resetSize = DEFAULT_WINDOW_SIZE;
-
     /// @brief The reset position of the window. This is the position of the
     /// window when it exits full screen, maximization, or iconification.
-    gvw::coordinate<int> resetPosition = DEFAULT_WINDOW_POSITION;
+    std::optional<coordinate<int>> resetPosition;
+
+    /// @brief The reset size of the window. This is the size of the window when
+    /// it exits full screen, maximization, or iconification.
+    std::optional<area<int>> resetSize;
 
     /// @brief Key events.
-    std::vector<gvw::key_event> keyEvents = {};
+    std::vector<key_event> keyEvents = {};
 
     /// @brief Character events.
-    std::vector<gvw::character_event> characterEvents = {};
+    std::vector<character_event> characterEvents = {};
 
     /// @brief Cursor position events.
-    std::vector<gvw::cursor_position_event> cursorPositionEvents = {};
+    std::vector<cursor_position_event> cursorPositionEvents = {};
 
     /// @brief Cursor enter events.
-    std::vector<gvw::cursor_enter_event> cursorEnterEvents = {};
+    std::vector<cursor_enter_event> cursorEnterEvents = {};
 
     /// @brief Mouse button events.
-    std::vector<gvw::mouse_button_event> mouseButtonEvents = {};
+    std::vector<mouse_button_event> mouseButtonEvents = {};
 
     /// @brief Scroll events.
-    std::vector<gvw::scroll_event> scrollEvents = {};
+    std::vector<scroll_event> scrollEvents = {};
 
     /// @brief File drop events.
-    std::vector<gvw::file_drop_event> fileDropEvents = {};
+    std::vector<file_drop_event> fileDropEvents = {};
+
+    /// @brief The number of close events.
+    size_t closeEvents = 0;
+
+    /// @brief Size events.
+    std::vector<size_event> sizeEvents = {};
+
+    /// @brief Framebuffer size events.
+    std::vector<framebuffer_size_event> framebufferSizeEvents = {};
+
+    /// @brief Content scale events.
+    std::vector<content_scale_event> contentScaleEvents = {};
+
+    /// @brief Position events.
+    std::vector<position_event> positionEvents = {};
+
+    /// @brief Iconify events.
+    std::vector<iconify_event> iconifyEvents = {};
+
+    /// @brief Maximize events.
+    std::vector<maximize_event> maximizeEvents = {};
+
+    /// @brief Focus events.
+    std::vector<focus_event> focusEvents = {};
+
+    /// @brief The number of refresh events.
+    size_t refreshEvents = 0;
 
     //////////////////////////////////////////////////
     //               Private Functions              //
     //////////////////////////////////////////////////
 
-    /// @brief Initializes all input buffers (key, character, cursor position,
-    /// cursor enter, mouse button, scroll input, and file drop).
-    /// @gvw_errors None.
-    /// @glfw_errors `GLFW_NOT_INITIALIZED`.
-    /// @thread_safety Must be called from the main thread.
-    void InitInputBuffers();
+    /// @todo Is InitInputBuffers even necessary? It might be... All input
+    /// buffers are initialized by default which may lead to bloat if they
+    /// aren't cleared...
+    // /// @brief Initializes all input buffers (key, character, cursor
+    // position,
+    // /// cursor enter, mouse button, scroll input, and file drop).
+    // /// @gvw_errors None.
+    // /// @glfw_errors `GLFW_NOT_INITIALIZED`.
+    // /// @thread_safety Must be called from the main thread.
+    // void InitInputBuffers();
 
     /// @brief Returns an attribute of the window.
     /// @param Attribute The GLFW window attribute.
@@ -268,145 +353,201 @@ class window_t
 
     /// @brief Creates a window, sets the GLFW and GVW error callbacks, and
     /// initializes GLFW if it hasn't already been initialized.
-    /// @remark The first 11 parameters are for window creation (position, size,
-    /// title, associatedMonitor, parentWindow, generalHInts, framebufferHints,
-    /// monitorHints, contextHints, macosWindowHints, linuxWindowHints).
-    /// @remark The last 4 parameters are for GVW initialization. If GVW is
-    /// already initialized (this function has been run once before), then
-    /// arguments passed to these parameters are ignored.
-    /// @param Position The initial position of the window. If this is set to
-    /// `DEFAULT_WINDOW_POSITION`, then the position of the window is
-    /// automatically determined by the operating system.
-    /// @param Size The initial size of the window. This can be set to
-    /// `DEFAULT_WINDOW_SIZE`.
-    /// @param Title The title of the window. This be an empty string, but
-    /// cannot be nullptr.
-    /// @param Full_Screen_Monitor The full screen monitor of the window.
-    /// Passing nullptr to this parameter creates the window without associating
-    /// it with any particular monitor.
-    /// @param Parent_Window The parent window. Passing nullptr to this
-    /// parameter creates the window independant of any other window.
-    /// @param General_Hints General hints for window creation. These hints
-    /// change the general appearance and behavior of the window.
-    /// @param Framebuffer_Hints Framebuffer hints for window creation. Changing
-    /// these hints is NOT recommended.
-    /// @param Monitor_Hints Monitor hints for window creation. Sets the
-    /// preferred refresh rate. Changing these hints is NOT recommended.
-    /// @param Context_Hints Context hints for window creation. These hints only
-    /// apply to OpenGL. These hints may be removed entirely in later versions
-    /// of GVW.
-    /// @param Macos_Window_Hints MacOS specific window creation hints.
-    /// @param Linux_Window_Hints Linux specific window creation hints.
-    /// @param GLFW_Error_Callback The GLFW error callback. The default GLFW
-    /// error callback throws all errors.
-    /// @param GVW_Error_Callback The GVW error callback. The default GVW error
-    /// callback throws all errors.
-    /// @param Shared_Init_Hints Shared initialization hints for GLFW. Ignored
-    /// if GLFW is already initialized.
-    /// @param Macos_Init_Hints MacOS specific initialization hints for GLFW.
-    /// Ignored if GLFW is already initialized.
-    /// @gvw_errors `ERROR_GLFW_INIT_FAILED` or `ERROR_VULKAN_NOT_SUPPORTED`.
+    /// @param Window_Info Initialization information for the window.
+    /// @gvw_errors `ERROR_GLFW_INIT_FAILED` or
+    /// `ERROR_VULKAN_NOT_SUPPORTED`.
     /// @glfw_errors `GLFW_NOT_INITIALIZED`, `GLFW_INVALID_ENUM`,
     /// `GLFW_INVALID_VALUE`, `GLFW_API_UNAVAILABLE`,
     /// `GLFW_VERSION_UNAVAILABLE`, `GLFW_FORMAT_UNAVAILABLE`, and
     /// `GLFW_PLATFORM_ERROR`.
     /// @thread_safety Must be called from the main thread.
-    window_t(const gvw::coordinate<int>& Position = DEFAULT_WINDOW_POSITION,
-             const gvw::area<int>& Size = DEFAULT_WINDOW_SIZE,
-             const char* Title = "",
-             GLFWmonitor* Full_Screen_Monitor = nullptr,
-             GLFWwindow* Parent_Window = nullptr,
-             const gvw::glfw_general_hints& General_Hints =
-                 DEFAULT_GLFW_GENERAL_HINTS,
-             const gvw::glfw_framebuffer_hints& Framebuffer_Hints =
-                 DEFAULT_GLFW_FRAMEBUFFER_HINTS,
-             const gvw::glfw_monitor_hints& Monitor_Hints =
-                 DEFAULT_GLFW_MONITOR_HINTS,
-             const gvw::glfw_context_hints& Context_Hints =
-                 DEFAULT_GLFW_CONTEXT_HINTS,
-             const gvw::glfw_macos_window_hints& MacOS_Window_Hints =
-                 DEFAULT_GLFW_MACOS_WINDOW_HINTS,
-             const gvw::glfw_linux_window_hints& Linux_Window_Hints =
-                 DEFAULT_GLFW_LINUX_WINDOW_HINTS,
-             GLFWerrorfun GLFW_Error_Callback = gvw::DefaultGlfwErrorCallback,
-             gvw::gvw_error_callback GVW_Error_Callback =
-                 gvw::DefaultGvwErrorCallback,
-             const gvw::glfw_shared_init_hints& Shared_Init_Hints =
-                 gvw::DEFAULT_GLFW_SHARED_INIT_HINTS,
-             const gvw::glfw_macos_init_hints& MacOS_Init_Hints =
-                 gvw::DEFAULT_GLFW_MACOS_INIT_HINTS);
+    window_t(const window_info& Window_Info = DEFAULT_WINDOW_INFO);
 
-    // Delete the copy constructor, copy assignment operator, move constructor,
+    // /// @brief Creates a window, sets the GLFW and GVW error callbacks, and
+    // /// initializes GLFW if it hasn't already been initialized.  /// @remark
+    // The first 11 parameters are for window creation (position, size, ///
+    // title, associatedMonitor, parentWindow, generalHInts, framebufferHints,
+    // /// monitorHints, contextHints, macosWindowHints, linuxWindowHints).  ///
+    // @remark The last 4 parameters are for GVW initialization. If GVW is ///
+    // already initialized (an initialization function has been run before), ///
+    // then arguments passed to these parameters are ignored.  /// @param
+    // Position The initial position of the window. Passing /// `std::nullopt`
+    // allows the initial position to be automatically set by /// the operating
+    // system.  /// @param Size The initial size of the window. Passing
+    // `std::nullopt` sets /// the initial size to `DEFAULT_WINDOW_SIZE`.  ///
+    // @param Title The title of the window. This be an empty string but cannot
+    // /// be nullptr. Passing `std::nullopt` sets the title to ///
+    // `DEFAULT_WINDOW_TITLE`.  /// @param EventCallbacks Event callbacks for
+    // the window. Passing /// `std::nullopt` sets all default event callbacks,
+    // which populate the /// event buffers.  /// @param Full_Screen_Monitor The
+    // full screen monitor of the window.  /// Passing nullptr to this parameter
+    // creates the window without associating /// it with any particular
+    // monitor.  /// @param Parent_Window The parent window. Passing nullptr to
+    // this /// parameter creates the window independant of any other window.
+    // /// @param General_Hints General hints for window creation. These hints
+    // /// change the general appearance and behavior of the window. Passing ///
+    // `std::nullopt` is equivalent to passing /// `DEFAULT_GLFW_GENERAL_HINTS`.
+    // /// @param Framebuffer_Hints Framebuffer hints for window creation.
+    // Changing /// these hints is NOT recommended. Passing `std::nullopt` is
+    // equivalent to /// passing `DEFAULT_GLFW_FRAMEBUFFER_HINTS`.  /// @param
+    // Monitor_Hints Monitor hints for window creation. Sets the /// preferred
+    // refresh rate. Changing these hints is NOT recommended. Passing ///
+    // `std::nullopt` is equivalent to passing /// `DEFAULT_GLFW_MONITOR_HINTS`.
+    // /// @param Context_Hints Context hints for window creation. These hints
+    // only
+    // /// apply to OpenGL. These hints may be removed entirely in later
+    // versions
+    // /// of GVW. Passing `std::nullopt` is equivalent to passing
+    // /// `DEFAULT_GLFW_CONTEXT_HINTS`.
+    // /// @param Macos_Window_Hints MacOS specific window creation hints.
+    // Passing
+    // /// `std::nullopt` is equivalent to passing
+    // /// `DEFAULT_GLFW_MACOS_WINDOW_HINTS`.
+    // /// @param Linux_Window_Hints Linux specific window creation hints.
+    // Passing
+    // /// `std::nullopt` is equivalent to passing
+    // /// `DEFAULT_GLFW_LINUX_WINDOW_HINTS`.
+    // /// @param GLFW_Error_Callback The GLFW error callback. The default GLFW
+    // /// error callback throws all errors and can be set by passing
+    // /// `std::nullopt` or `DefaultGlfwErrorCallback`.
+    // /// @param GVW_Error_Callback The GVW error callback. The default GVW
+    // error
+    // /// callback throws all errors and can be set by passing `std::nullopt`
+    // or
+    // /// `DefaultGvwErrorCallback`.
+    // /// @param Shared_Init_Hints Shared initialization hints for GLFW.
+    // Ignored
+    // /// if GLFW is already initialized. Passing `std::nullopt` is equivalent
+    // to
+    // /// passing `DEFAULT_GLFW_SHARED_INIT_HINTS`.
+    // /// @param Macos_Init_Hints MacOS specific initialization hints for GLFW.
+    // /// Ignored if GLFW is already initialized. Passing `std::nullopt` is
+    // /// equivalent to passing `DEFAULT_GLFW_MACOS_INIT_HINTS`.
+    // /// @gvw_errors `ERROR_GLFW_INIT_FAILED` or
+    // /// `ERROR_VULKAN_NOT_SUPPORTED`.
+    // /// @glfw_errors `GLFW_NOT_INITIALIZED`, `GLFW_INVALID_ENUM`,
+    // /// `GLFW_INVALID_VALUE`, `GLFW_API_UNAVAILABLE`,
+    // /// `GLFW_VERSION_UNAVAILABLE`, `GLFW_FORMAT_UNAVAILABLE`, and
+    // /// `GLFW_PLATFORM_ERROR`.
+    // /// @thread_safety Must be called from the main thread.
+    // window_t(
+    //     const std::optional<coordinate<int>>& Position = std::nullopt,
+    //     const std::optional<area<int>>& Size = std::nullopt,
+    //     const std::optional<const char*>& Title = std::nullopt,
+    //     const std::optional<glfw_input_event_callbacks>& EventCallbacks =
+    //         std::nullopt,
+    //     GLFWmonitor* Full_Screen_Monitor = nullptr,
+    //     GLFWwindow* Parent_Window = nullptr,
+    //     const std::optional<glfw_general_hints>& General_Hints =
+    //     std::nullopt, const std::optional<glfw_framebuffer_hints>&
+    //     Framebuffer_Hints =
+    //         std::nullopt,
+    //     const std::optional<glfw_monitor_hints>& Monitor_Hints =
+    //     std::nullopt, const std::optional<glfw_context_hints>& Context_Hints
+    //     = std::nullopt, const std::optional<glfw_macos_window_hints>&
+    //     MacOS_Window_Hints =
+    //         std::nullopt,
+    //     const std::optional<glfw_linux_window_hints>& Linux_Window_Hints =
+    //         std::nullopt,
+    //     std::optional<GLFWerrorfun> GLFW_Error_Callback = std::nullopt,
+    //     std::optional<gvw_error_callback> GVW_Error_Callback = std::nullopt,
+    //     const std::optional<glfw_shared_init_hints>& Shared_Init_Hints =
+    //         std::nullopt,
+    //     const std::optional<glfw_macos_init_hints>& MacOS_Init_Hints =
+    //         std::nullopt);
+
+    // Delete the copy constructor, move constructor, copy assignment operator,
     // and move assignment operator. It should not be possible to copy or move
     // this object.
     window_t(const window_t&) = delete;
+    window_t(window_t&&) noexcept = delete;
     window_t& operator=(const window_t&) = delete;
-    window_t(window_t&&) = delete;
-    window_t& operator=(window_t&&) = delete;
+    window_t& operator=(window_t&&) noexcept = delete;
 
-    /// @todo Make this function thread safe!
     /// @brief The destructor is public so as to allow explicit destruction
     /// using the delete operator.
     ~window_t();
+
+    /// @brief Sets GLFW input event callbacks. Passing no arguments sets all
+    /// default input event callbacks, which populate the event buffers.
+    /// @param InputEventCallbacks Passing `nullptr` as a callback unbinds the
+    /// previously set callback. Passing `std::nullopt` sets the default event
+    /// callback.
+    /// @gvw_errors None.
+    /// @glfw_errors `GLFW_NOT_INITIALIZED`.
+    /// @thread_safety Must be called from the main thread.
+    void InputEventCallbacks(
+        const glfw_input_event_callbacks& InputEventCallbacks =
+            NO_INPUT_EVENT_CALLBACKS);
+
+    /// @brief Sets GLFW window event callbacks. Passing no arguments sets all
+    /// default window event callbacks, which populate the event buffers.
+    /// @param WindowEventCallbacks Passing `nullptr` as a callback unbinds the
+    /// previously set callback. Passing `std::nullopt` sets the default event
+    /// callback.
+    /// @gvw_errors None.
+    /// @glfw_errors `GLFW_NOT_INITIALIZED`.
+    /// @thread_safety Must be called from the main thread.
+    void WindowEventCallbacks(
+        const glfw_window_event_callbacks& WindowEventCallbacks =
+            NO_WINDOW_EVENT_CALLBACKS);
 
     /// @brief Returns the handle to the underlying GLFW window object.
     /// @returns A pointer to a `GLFWwindow` object.
     /// @gvw_errors None.
     /// @glfw_errors None.
     /// @thread_safety Can be called from any thread.
-    [[nodiscard]] GLFWwindow* WindowHandle() const noexcept;
+    [[nodiscard]] GLFWwindow* Handle() const noexcept;
 
     /// @brief Returns the key event buffer.
     /// @returns A reference to a vector of key events.
     /// @gvw_errors None.
     /// @glfw_errors None.
-    /// @thread_safety Must be called from the main thread.
-    [[nodiscard]] std::vector<gvw::key_event>& KeyEvents() noexcept;
+    /// @thread_safety Can be called from any thread.
+    [[nodiscard]] std::vector<key_event>& KeyEvents() noexcept;
 
     /// @brief Returns the character event buffer.
     /// @returns A reference to a vector of character events.
     /// @gvw_errors None.
     /// @glfw_errors None.
-    /// @thread_safety Must be called from the main thread.
-    [[nodiscard]] std::vector<gvw::character_event>& CharacterEvents() noexcept;
+    /// @thread_safety Can be called from any thread.
+    [[nodiscard]] std::vector<character_event>& CharacterEvents() noexcept;
 
     /// @brief Returns the cursor position buffer.
     /// @returns A reference to a vector of cursor position events.
     /// @gvw_errors None.
     /// @glfw_errors None.
-    /// @thread_safety Must be called from the main thread.
-    [[nodiscard]] std::vector<gvw::cursor_position_event>&
+    /// @thread_safety Can be called from any thread.
+    [[nodiscard]] std::vector<cursor_position_event>&
     CursorPositionEvents() noexcept;
 
     /// @brief Returns the cursor enter event buffer.
     /// @returns A reference to a vector of cursor enter events.
     /// @gvw_errors None.
     /// @glfw_errors None.
-    /// @thread_safety Must be called from the main thread.
-    [[nodiscard]] std::vector<gvw::cursor_enter_event>&
-    CursorEnterEvents() noexcept;
+    /// @thread_safety Can be called from any thread.
+    [[nodiscard]] std::vector<cursor_enter_event>& CursorEnterEvents() noexcept;
 
     /// @brief Returns the mouse button event buffer.
     /// @returns A reference to a vector of mouse button events.
     /// @gvw_errors None.
     /// @glfw_errors None.
-    /// @thread_safety Must be called from the main thread.
-    [[nodiscard]] std::vector<gvw::mouse_button_event>&
-    MouseButtonEvents() noexcept;
+    /// @thread_safety Can be called from any thread.
+    [[nodiscard]] std::vector<mouse_button_event>& MouseButtonEvents() noexcept;
 
     /// @brief Returns the scroll event buffer.
     /// @returns A reference to a vector of scroll events.
     /// @gvw_errors None.
     /// @glfw_errors None.
-    /// @thread_safety Must be called from the main thread.
-    [[nodiscard]] std::vector<gvw::scroll_event>& ScrollEvents() noexcept;
+    /// @thread_safety Can be called from any thread.
+    [[nodiscard]] std::vector<scroll_event>& ScrollEvents() noexcept;
 
     /// @brief Returns the file drop event buffer.
     /// @returns A reference to a vector of file drop events.
     /// @gvw_errors None.
     /// @glfw_errors None.
-    /// @thread_safety Must be called from the main thread.
-    [[nodiscard]] std::vector<gvw::file_drop_event>& FileDropEvents() noexcept;
+    /// @thread_safety Can be called from any thread.
+    [[nodiscard]] std::vector<file_drop_event>& FileDropEvents() noexcept;
 
     /// @brief Clears the key event buffer.
     /// @gvw_errors None.
@@ -450,6 +591,138 @@ class window_t
     /// @thread_safety Must be called from the main thread.
     void ClearFileDropEvents() noexcept;
 
+    /// @brief Clears all input event buffers.
+    /// @gvw_errors None.
+    /// @glfw_errors None.
+    /// @thread_safety Must be called from the main thread.
+    void ClearInputEvents() noexcept;
+
+    /// @brief Returns the number of close events received by the window.
+    /// @returns A `size_t` object.
+    /// @gvw_errors None.
+    /// @glfw_errors None.
+    /// @thread_safety Can be called from any thread.
+    [[nodiscard]] size_t CloseEvents() const noexcept;
+
+    /// @brief Returns the size event buffer.
+    /// @returns A reference to a vector of size events.
+    /// @gvw_errors None.
+    /// @glfw_errors None.
+    /// @thread_safety Can be called from any thread.
+    [[nodiscard]] std::vector<size_event>& SizeEvents() noexcept;
+
+    /// @brief Returns the framebuffer size event buffer.
+    /// @returns A reference to a vector of framebuffer size events.
+    /// @gvw_errors None.
+    /// @glfw_errors None.
+    /// @thread_safety Can be called from any thread.
+    [[nodiscard]] std::vector<framebuffer_size_event>&
+    FramebufferSizeEvents() noexcept;
+
+    /// @brief Returns the content scale event buffer.
+    /// @returns A reference to a vector of content scale events.
+    /// @gvw_errors None.
+    /// @glfw_errors None.
+    /// @thread_safety Can be called from any thread.
+    [[nodiscard]] std::vector<content_scale_event>&
+    ContentScaleEvents() noexcept;
+
+    /// @brief Returns the position event buffer.
+    /// @returns A reference to a vector of position events.
+    /// @gvw_errors None.
+    /// @glfw_errors None.
+    /// @thread_safety Can be called from any thread.
+    [[nodiscard]] std::vector<position_event>& PositionEvents() noexcept;
+
+    /// @brief Returns the iconify event buffer.
+    /// @returns A reference to a vector of iconify events.
+    /// @gvw_errors None.
+    /// @glfw_errors None.
+    /// @thread_safety Can be called from any thread.
+    [[nodiscard]] std::vector<iconify_event>& IconifyEvents() noexcept;
+
+    /// @brief Returns the maximize event buffer.
+    /// @returns A reference to a vector of maximize events.
+    /// @gvw_errors None.
+    /// @glfw_errors None.
+    /// @thread_safety Can be called from any thread.
+    [[nodiscard]] std::vector<maximize_event>& MaximizeEvents() noexcept;
+
+    /// @brief Returns the focus event buffer.
+    /// @returns A reference to a vector of focus events.
+    /// @gvw_errors None.
+    /// @glfw_errors None.
+    /// @thread_safety Can be called from any thread.
+    [[nodiscard]] std::vector<focus_event>& FocusEvents() noexcept;
+
+    /// @brief Returns the number of refresh events received by the window.
+    /// @returns A `size_t` object.
+    /// @gvw_errors None.
+    /// @glfw_errors None.
+    /// @thread_safety Can be called from any thread.
+    [[nodiscard]] size_t RefreshEvents() const noexcept;
+
+    /// @brief Resets the number of close events received by the window to zero.
+    /// @gvw_errors None.
+    /// @glfw_errors None.
+    /// @thread_safety Must be called from the main thread.
+    void ClearCloseEvents() noexcept;
+
+    /// @brief Clears the size event buffer.
+    /// @gvw_errors None.
+    /// @glfw_errors None.
+    /// @thread_safety Must be called from the main thread.
+    void ClearSizeEvents() noexcept;
+
+    /// @brief Clears the framebuffer size event buffer.
+    /// @gvw_errors None.
+    /// @glfw_errors None.
+    /// @thread_safety Must be called from the main thread.
+    void ClearFramebufferSizeEvents() noexcept;
+
+    /// @brief Clears the content scale event buffer.
+    /// @gvw_errors None.
+    /// @glfw_errors None.
+    /// @thread_safety Must be called from the main thread.
+    void ClearContentScaleEvents() noexcept;
+
+    /// @brief Clears the position event buffer.
+    /// @gvw_errors None.
+    /// @glfw_errors None.
+    /// @thread_safety Must be called from the main thread.
+    void ClearPositionEvents() noexcept;
+
+    /// @brief Clears the iconify event buffer.
+    /// @gvw_errors None.
+    /// @glfw_errors None.
+    /// @thread_safety Must be called from the main thread.
+    void ClearIconifyEvents() noexcept;
+
+    /// @brief Clears the maximize event buffer.
+    /// @gvw_errors None.
+    /// @glfw_errors None.
+    /// @thread_safety Must be called from the main thread.
+    void ClearMaximizeEvents() noexcept;
+
+    /// @brief Clears the focus event buffer.
+    /// @gvw_errors None.
+    /// @glfw_errors None.
+    /// @thread_safety Must be called from the main thread.
+    void ClearFocusEvents() noexcept;
+
+    /// @brief Resets the number of refresh events received by the window to
+    /// zero.
+    /// @gvw_errors None.
+    /// @glfw_errors None.
+    /// @thread_safety Must be called from the main thread.
+    void ClearRefreshEvents() noexcept;
+
+    /// @brief Clears all window event buffers.
+    /// @gvw_errors None.
+    /// @glfw_errors None.
+    /// @thread_safety Must be called from the main thread.
+    void ClearWindowEvents() noexcept;
+
     /// @brief Clears all event buffers.
     /// @gvw_errors None.
     /// @glfw_errors None.
@@ -477,35 +750,35 @@ class window_t
     /// @gvw_errors None.
     /// @glfw_errors `GLFW_NOT_INITIALIZED` or `GLFW_PLATFORM_ERROR`.
     /// @thread_safety Must be called from the main thread.
-    [[nodiscard]] gvw::area<int> Size() const;
+    [[nodiscard]] area<int> Size() const;
 
     /// @brief Sets the size of the window.
     /// @param Size The new size of the window.
     /// @gvw_errors None.
     /// @glfw_errors `GLFW_NOT_INITIALIZED` or `GLFW_PLATFORM_ERROR`.
     /// @thread_safety Must be called from the main thread.
-    void Size(const gvw::area<int>& Size) const;
+    void Size(const area<int>& Size) const;
 
     /// @brief Returns the size of the content area of the window in pixels.
     /// @returns An `area` object of type int.
     /// @gvw_errors None.
     /// @glfw_errors `GLFW_NOT_INITIALIZED` or `GLFW_PLATFORM_ERROR`.
     /// @thread_safety Must be called from the main thread.
-    [[nodiscard]] gvw::area<int> SizeInPixels() const;
+    [[nodiscard]] area<int> SizeInPixels() const;
 
     /// @brief Returns the position of the window in screen coordinates.
     /// @returns A `coordinate` object of type int.
     /// @gvw_errors None.
     /// @glfw_errors `GLFW_NOT_INITIALIZED` or `GLFW_PLATFORM_ERROR`.
     /// @thread_safety Must be called from the main thread.
-    [[nodiscard]] gvw::coordinate<int> Position() const;
+    [[nodiscard]] coordinate<int> Position() const;
 
     /// @brief Sets the position of the window in screen coordinates.
     /// @param Position The new position of the window.
     /// @gvw_errors None.
     /// @glfw_errors `GLFW_NOT_INITIALIZED` or `GLFW_PLATFORM_ERROR`.
     /// @thread_safety Must be called from the main thread.
-    void Position(const gvw::coordinate<int>& Position) const;
+    void Position(const coordinate<int>& Position) const;
 
     /// @brief Returns the content scale of the window.
     /// @remark The content scale of the window is the ratio between the current
@@ -514,7 +787,7 @@ class window_t
     /// @gvw_errors None.
     /// @glfw_errors `GLFW_NOT_INITIALIZED` or `GLFW_PLATFORM_ERROR`.
     /// @thread_safety Must be called from the main thread.
-    [[nodiscard]] gvw::coordinate<float> ContentScale() const;
+    [[nodiscard]] coordinate<float> ContentScale() const;
 
     /// @brief Sets the minimum and maximum size limits of the window.
     /// @param Minimum_Size The minimum size of the window. If this is set to
@@ -526,8 +799,8 @@ class window_t
     /// `GLFW_PLATFORM_ERROR`.
     /// @thread_safety Must be called from the main thread.
     void SizeLimits(
-        const gvw::area<int>& Minimum_Size = DEFAULT_MINIMUM_WINDOW_SIZE,
-        const gvw::area<int>& Maximum_Size = DEFAULT_MAXIMUM_WINDOW_SIZE) const;
+        const area<int>& Minimum_Size = DEFAULT_MINIMUM_WINDOW_SIZE,
+        const area<int>& Maximum_Size = DEFAULT_MAXIMUM_WINDOW_SIZE) const;
 
     /// @brief Sets the aspect ratio of the window.
     /// @param Numerator The width of the window.
@@ -537,10 +810,6 @@ class window_t
     /// `GLFW_PLATFORM_ERROR`.
     /// @thread_safety Must be called from the main thread.
     void AspectRatio(int Numerator, int Denominator) const;
-
-    /// @todo Declare and define the GLFW full screen functions.
-
-    /// @todo Declare and define the GLFW image related functions.
 
     /// @brief Returns the cursor hovering state over the window.
     /// @returns True if the cursor is hovering over the window. False if the
@@ -760,17 +1029,17 @@ class window_t
                          const GLFWvidmode* Video_Mode = nullptr);
 
     /// @brief Exits full screen.
-    /// @param Position The position of the window when it exits full screen. If
-    /// set to `NULL_WINDOW_POSITION`, the previous position of the window is
-    /// used.
-    /// @param Size The size of the window when it exits full screen. If set to
-    /// `NULL_WINDOW_SIZE`, the previous size of the window is used.
+    /// @param Position The position of the window when it exits full screen.
+    /// Passing `std::nullopt` results in the previous position of the window
+    /// being used.
+    /// @param Size The size of the window when it exits full screen. Passing
+    /// `std::nullopt` results in the previous size of the window being used.
     /// @gvw_errors None.
     /// @glfw_errors `GLFW_NOT_INITIALIZED` or `GLFW_PLATFORM_ERROR`.
     /// @thread_safety Must be called from the main thread.
     void ExitFullScreen(
-        const gvw::coordinate<int>& Position = NULL_WINDOW_POSITION,
-        const gvw::area<int>& Size = NULL_WINDOW_SIZE);
+        const std::optional<coordinate<int>>& Position = std::nullopt,
+        const std::optional<area<int>>& Size = std::nullopt);
 
     /// @todo Declare and define the icon functions.
     /// @todo Declare and define the cursor customization functions.
@@ -778,3 +1047,5 @@ class window_t
     /// @todo Declare and define the GLFW Vulkan functions (currently present in
     /// deprecated GVW code).
 };
+
+} // namespace gvw
