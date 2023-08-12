@@ -1,37 +1,39 @@
 #include <iostream>
 #include <list>
 #include <thread>
-#include <vector>
 
 #include "../../gvw/gvw.hpp"
 
 int main() // NOLINT
 {
-    auto null = nullptr;
-    auto def = std::nullopt;
-
     std::this_thread::sleep_for(std::chrono::seconds(3));
 
-    gvw::glfw_general_hints generalHints = { GLFW_FALSE, GLFW_FALSE, GLFW_FALSE,
-                                             GLFW_TRUE,  GLFW_FALSE, GLFW_TRUE,
-                                             GLFW_FALSE, GLFW_FALSE, GLFW_FALSE,
-                                             GLFW_TRUE,  GLFW_FALSE };
+    gvw::ptr gvw = gvw::Get();
 
-    const gvw::glfw_input_event_callbacks EVENT_CALLBACKS = { def,  null, null,
-                                                              null, null, null,
-                                                              null };
+    gvw::window_event_callbacks eventCallbacks = gvw::NO_WINDOW_EVENT_CALLBACKS;
+    eventCallbacks.keyCallback = gvw::AppendToKeyEventBuffer;
 
-    std::vector<gvw::monitor_t> monitors = gvw::AllMonitors();
-    std::list<gvw::window_t> windows;
-    for (const auto& monitor : monitors) {
-        windows.emplace_back(
-            gvw::window_info{ .position = monitor.WorkAreaPosition(),
-                              .size = monitor.WorkAreaSize(),
-                              .title = " ",
-                              .inputEventCallbacks = EVENT_CALLBACKS,
-                              .fullScreenMonitor = monitor.Handle(),
-                              .parentWindow = nullptr,
-                              .generalHints = generalHints });
+    std::vector<gvw::monitor_ptr> monitors = gvw->AllMonitors();
+    std::vector<gvw::window_ptr> windows(monitors.size());
+    for (size_t i = 0; i < monitors.size(); ++i) {
+        const auto& monitor = monitors.at(i);
+        windows.at(i) = gvw->CreateWindow(
+            { .position = monitor->WorkAreaPosition(),
+              .size = monitor->WorkAreaSize(),
+              .title = " ",
+              .fullScreenMonitor = monitor->Handle(),
+              //   .creationHints = { { .resizable = GLFW_FALSE,
+              //                        .visible = GLFW_FALSE,
+              //                        .decorated = GLFW_FALSE,
+              //                        .focused = GLFW_TRUE,
+              //                        .autoIconify = GLFW_FALSE,
+              //                        .floating = GLFW_TRUE,
+              //                        .maximized = GLFW_FALSE,
+              //                        .centerCursor = GLFW_FALSE,
+              //                        .transparentFramebuffer = GLFW_FALSE,
+              //                        .focusOnShow = GLFW_TRUE,
+              //                        .scaleToMonitor = GLFW_FALSE } },
+              .eventCallbacks = eventCallbacks });
     }
 
     bool shouldClose = false;
@@ -41,12 +43,13 @@ int main() // NOLINT
 
     while (true) {
         for (auto& window : windows) {
-            window.ClearInputEvents();
+            window->ClearEvents();
         }
 
+        gvw->WaitThenPollEvents();
+
         for (auto& window : windows) {
-            window.ShouldClose(false);
-            auto keyEvents = window.KeyEvents();
+            auto keyEvents = window->KeyEvents();
             for (const auto& keyEvent : keyEvents) {
                 if (keyEvent.key == GLFW_KEY_LEFT_CONTROL) {
                     if (keyEvent.action == GLFW_PRESS) {

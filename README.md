@@ -2,9 +2,9 @@
 A C++ library for creating cross-platform desktop applications with GLFW and Vulkan. Started development on November 24th, 2022.
 
 ### **Build from source and install using Conan 2 (for Unix-like systems using X11)**
-**1.** Install a C++ compiler (Example: g++), Git, Python 3.6+, and the Python Virtual Environment using the system package manager (Example: apt).
+**1.** Install a C++ compiler (Example: g++), the LunarG Vulkan SDK, Git, Python 3.6+, and the Python Virtual Environment using the system package manager (Example: apt).
 ```bash
-$ sudo apt install g++ git python3 python3-venv
+$ sudo apt install g++ vulkan-sdk git python3 python3-venv
 ```
 **2.** Verify that your version of python is >= 3.6.
 ```bash
@@ -23,7 +23,7 @@ $ pip3 install "conan>=2.0.0"
 ```bash
 $ conan --version
 ```
-**6.** Create the default Conan profile (If you already have a conan profile, ignore this step).
+**6.** Create the default Conan profile. Ensure that it is configured to use C++20 or higher.
 ```bash
 $ conan profile detect
 ```
@@ -36,9 +36,13 @@ $ cd GLFW-and-Vulkan-wrapper
 ```bash
 $ conan create . -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=True -c tools.system.package_manager:tool=apt-get --build=missing -s build_type=Release
 ```
+To build this project with Conan 2 without installing it, swap out `conan create` with `conan build`.
+```bash
+$ conan build . -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=True -c tools.system.package_manager:tool=apt-get --build=missing -s build_type=Release
+```
 
 ### **Build from source using CMake (for Unix-like systems using X11)**
-**1.** Install a C++ compiler (Example: g++), Git, CMake 3.22.6+, and precompiled GLFW headers and library files using the system package manager (Example: apt).
+**1.** Install a C++ compiler (Example: g++), the LunarG Vulkan SDK, Git, CMake 3.22.6+, and precompiled GLFW headers and library files using the system package manager (Example: apt).
 ```bash
 $ sudo apt install g++ git cmake libglfw3-dev
 ```
@@ -85,18 +89,24 @@ To install the library after compilation, run this instead:
 $ sudo cmake --build . --install .
 ```
 
-### **TODO**
- * [X] Setup CMake
- * [X] Create a window using GLFW
- * [X] Finish most GLFW infrastructure
- * [X] Setup Doxygen and add comments
- * [X] Implement support for Conan 2.0
- * [ ] Create the necessary infrastructure to draw a triangle
- * [ ] (optional) Save space in the code by loading settings from a file
- * [ ] Make the triangle move
- * [ ] Draw two triangles to form a square
- * [ ] Move the square with the keyboard
- * [ ] Draw text on the screen
+### **Technical TODO**
+ * [ ] Create enums for GLFW integer values.
+ * [ ] Replace namespace-like classes with the types they represent.
+ * [ ] Further compartmentalize Vulkan functions and permit more customization at runtime.
+ * [ ] Ensure thread-safety for GLFW functions.
+
+### **Aspirational TODO**
+ * [X] Setup CMake.
+ * [X] Create a window using GLFW.
+ * [X] Finish most GLFW infrastructure.
+ * [X] Setup Doxygen and add comments.
+ * [X] Implement support for Conan 2.0.
+ * [X] Create the necessary infrastructure to draw a triangle.
+ * [x] Draw two triangles to form a square.
+ * [x] Make the triangle move.
+ * [x] Move the square with the keyboard
+ * [ ] Draw text
+ * [ ] Draw GUI elements
  * [ ] Implement rigid-body physics (collisions)
  * [ ] Create a simple 2D platformer
  * [ ] Draw a 3D cube

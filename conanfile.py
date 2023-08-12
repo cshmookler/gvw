@@ -2,6 +2,9 @@ from conan import ConanFile
 from conan.tools.cmake import CMake, CMakeToolchain, CMakeDeps, cmake_layout
 from conan.tools.build import check_min_cppstd
 
+def boolToCMake(bool):
+    return "ON" if bool else "OFF"
+
 class gvw(ConanFile):
     # Required
     name = "gvw"
@@ -17,14 +20,18 @@ class gvw(ConanFile):
     # Configuration
     settings = "os", "compiler", "build_type", "arch"
     options = {
+        "gvw_warning_as_error": [True, False],
         "gvw_static": [True, False],
         "gvw_shared": [True, False],
+        "gvw_tests": [True, False],
         "gvw_examples": [True, False],
         "fPIC": [True, False]
     }
     default_options = {
-        "gvw_static": True,
+        "gvw_warning_as_error": False,
+        "gvw_static": False,
         "gvw_shared": True,
+        "gvw_tests": True,
         "gvw_examples": True,
         "fPIC": True
     }
@@ -33,7 +40,7 @@ class gvw(ConanFile):
     exports_sources = "CMakeLists.txt", "gvw/*", "examples/*"
 
     def validate(self):
-        check_min_cppstd(self, "17")
+        check_min_cppstd(self, "20")
 
     def config_options(self):
         if self.settings.os == "Windows":
@@ -41,7 +48,8 @@ class gvw(ConanFile):
 
     def requirements(self):
         self.requires("glfw/3.3.8")
-        self.requires("vulkan-headers/1.3.243.0")
+        self.requires("glm/cci.20230113")
+        self.requires("boost/1.82.0")
 
     def build_requirements(self):
         self.tool_requires("cmake/3.22.6")
@@ -53,15 +61,18 @@ class gvw(ConanFile):
         deps = CMakeDeps(self)
         deps.generate()
         tc = CMakeToolchain(self)
-        tc.variable["GVW_CONAN"] = True
-        tc.variables["GVW_STATIC"] = self.options.gvw_static
-        tc.variables["GVW_SHARED"] = self.options.gvw_shared
-        tc.variables["GVW_EXAMPLES"] = self.options.gvw_examples
         tc.generate()
 
     def build(self):
         cmake = CMake(self)
-        cmake.configure()
+        cmake.configure(cli_args = [
+            "-D GVW_CONAN=ON",
+            "-D GVW_WARNING_AS_ERROR=" + boolToCMake(self.options.gvw_warning_as_error),
+            "-D GVW_STATIC=" + boolToCMake(self.options.gvw_static),
+            "-D GVW_SHARED=" + boolToCMake(self.options.gvw_shared),
+            "-D GVW_TESTS=" + boolToCMake(self.options.gvw_tests),
+            "-D GVW_EXAMPLES=" + boolToCMake(self.options.gvw_examples)
+        ])
         cmake.build()
     
     def package(self):

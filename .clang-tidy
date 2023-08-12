@@ -7,7 +7,10 @@ Checks: '
     modernize-*,
     performance-*,
     readability-*,
-    -modernize-use-trailing-return-type
+    -modernize-use-trailing-return-type,
+    -cppcoreguidelines-avoid-const-or-ref-data-members,
+    -cppcoreguidelines-interfaces-global-init,
+    -readability-simplify-boolean-expr
 '
 CheckOptions: [
     { key: readability-identifier-naming.NamespaceCase,         value: lower_case },
