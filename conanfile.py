@@ -21,6 +21,7 @@ class gvw(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     options = {
         "gvw_warning_as_error": [True, False],
+        "vulkan_validation_layers": [True, False],
         "gvw_static": [True, False],
         "gvw_shared": [True, False],
         "gvw_tests": [True, False],
@@ -29,6 +30,7 @@ class gvw(ConanFile):
     }
     default_options = {
         "gvw_warning_as_error": False,
+        "gvw_vulkan_validation_layers": False,
         "gvw_static": False,
         "gvw_shared": True,
         "gvw_tests": True,
@@ -70,6 +72,7 @@ class gvw(ConanFile):
         cmake.configure(cli_args = [
             "-D GVW_CONAN=ON",
             "-D GVW_WARNING_AS_ERROR=" + boolToCMake(self.options.gvw_warning_as_error),
+            "-D GVW_VULKAN_VALIDATION_LAYERS=" + boolToCMake(self.options.gvw_vulkan_validation_layers),
             "-D GVW_STATIC=" + boolToCMake(self.options.gvw_static),
             "-D GVW_SHARED=" + boolToCMake(self.options.gvw_shared),
             "-D GVW_TESTS=" + boolToCMake(self.options.gvw_tests),

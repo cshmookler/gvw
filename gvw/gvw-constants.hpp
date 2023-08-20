@@ -4,7 +4,9 @@
 #include "gvw.hpp"
 
 const gvw::instance_layers gvw::instance_layers_constants::VALIDATION = {
+#ifdef GVW_VULKAN_VALIDATION_LAYERS
     { "VK_LAYER_KHRONOS_validation" }
+#endif
 };
 
 const gvw::instance_extensions

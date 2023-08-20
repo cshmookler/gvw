@@ -15,10 +15,16 @@ endif()
 
 # Compile options
 option(GVW_WARNING_AS_ERROR "build with warnings treated as errors" OFF)
+option(GVW_VULKAN_VALIDATION_LAYERS "build with validation layers enabled" OFF)
 option(GVW_STATIC "build as a static library" OFF)
 option(GVW_SHARED "build as a shared/dynamic library" ON)
 option(GVW_TESTS "build test programs" ON)
 option(GVW_EXAMPLES "build example programs" ON)
+
+# Compile definitions
+if (GVW_VULKAN_VALIDATION_LAYERS)
+    add_compile_definitions(GVW_VULKAN_VALIDATION_LAYERS=${GVW_VULKAN_VALIDATION_LAYERS})
+endif()
 
 # Set compilation flags
 if(MSVC)

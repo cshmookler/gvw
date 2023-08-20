@@ -442,7 +442,8 @@ gvw::gvw(const info& Init_Info)
     this->vulkanDispatchLoaderDynamic = { vulkanInstance.get(),
                                           vkGetInstanceProcAddr };
 
-    // Finish setting up the debug callback
+    // Debug callback setup
+#ifdef GVW_VULKAN_VALIDATION_LAYERS
     this->vulkanDebugUtilsMessenger =
         this->vulkanInstance->createDebugUtilsMessengerEXTUnique(
             // NOLINTNEXTLINE
@@ -450,6 +451,7 @@ gvw::gvw(const info& Init_Info)
                 &Init_Info.debugUtilsMessengerInfo),
             nullptr,
             this->vulkanDispatchLoaderDynamic);
+#endif
 }
 
 gvw::ptr gvw::Get(const info& Init_Info)

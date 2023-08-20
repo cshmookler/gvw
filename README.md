@@ -41,54 +41,6 @@ To build this project with Conan 2 without installing it, swap out `conan create
 $ conan build . -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=True -c tools.system.package_manager:tool=apt-get --build=missing -s build_type=Release
 ```
 
-### **Build from source using CMake (for Unix-like systems using X11)**
-**1.** Install a C++ compiler (Example: g++), the LunarG Vulkan SDK, Git, CMake 3.22.6+, and precompiled GLFW headers and library files using the system package manager (Example: apt).
-```bash
-$ sudo apt install g++ git cmake libglfw3-dev
-```
-**2.** Verify that your version of cmake is >= 3.22.6.
-```bash
-$ cmake --version
-```
-**3.** Clone the GVW git repository and enter the root directory of the project.
-```bash
-$ git clone https://github.com/cshmookler/GLFW-and-Vulkan-wrapper.git
-$ cd GLFW-and-Vulkan-wrapper
-```
-**4.** Create the build directory and enter it.
-```bash
-$ mkdir build
-$ cd build
-```
-**5.** Generate CMake information for the build system. By default, GVW is built as a shared library along with some example programs.
-```bash
-$ cmake ..
-```
-To build GVW as a static library, set the `GVW_STATIC` option to `ON`. GVW will also be built as a shared library.
-```bash
-$ cmake .. -D GVW_STATIC=ON
-```
-To only build a static library, set the `GVW_SHARED` option to `OFF`.
-```bash
-$ cmake .. -D GVW_STATIC=ON -D GVW_SHARED=OFF
-```
-To NOT build the example programs, set the `GVW_EXAMPLES` option to `OFF`.
-```bash
-$ cmake .. -D GVW_EXAMPLES=OFF
-```
-To build the library in debug mode, set the `CMAKE_BUILD_TYPE` option to `Debug`.
-```bash
-$ cmake .. -D CMAKE_BUILD_TYPE=Debug
-```
-**6.** Finally, build the project.
-```bash
-$ cmake --build .
-```
-To install the library after compilation, run this instead:
-```bash
-$ sudo cmake --build . --install .
-```
-
 ### **Technical TODO**
  * [ ] Create enums for GLFW integer values.
  * [X] Replace namespace-like classes with the types they represent.
