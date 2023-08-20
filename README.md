@@ -4,7 +4,7 @@ A C++ library for creating cross-platform desktop applications with GLFW and Vul
 ### **Build from source and install using Conan 2 (for Unix-like systems using X11)**
 **1.** Install a C++ compiler (Example: g++), the LunarG Vulkan SDK, Git, Python 3.6+, and the Python Virtual Environment using the system package manager (Example: apt).
 ```bash
-$ sudo apt install g++ vulkan-sdk git python3 python3-venv
+$ sudo apt install g++ git python3 python3-venv
 ```
 **2.** Verify that your version of python is >= 3.6.
 ```bash
