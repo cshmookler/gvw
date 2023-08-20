@@ -217,11 +217,11 @@ int main() // NOLINT
                     ballPosition.x + BALL_WINDOW_SIZE->width,
                     ballPosition.y + BALL_WINDOW_SIZE->height
                 };
-                const uint LEFT_SIDE = 1;
-                const uint RIGHT_SIDE = 2;
-                const uint TOP_SIDE = 4;
-                const uint BOTTOM_SIDE = 8;
-                uint possibleCollisionSides =
+                const unsigned int LEFT_SIDE = 1;
+                const unsigned int RIGHT_SIDE = 2;
+                const unsigned int TOP_SIDE = 4;
+                const unsigned int BOTTOM_SIDE = 8;
+                unsigned int possibleCollisionSides =
                     LEFT_SIDE | RIGHT_SIDE | TOP_SIDE | BOTTOM_SIDE;
                 if (ballVelocity.x == 0) {
                     possibleCollisionSides &= TOP_SIDE | BOTTOM_SIDE;

@@ -21,7 +21,7 @@ class gvw(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     options = {
         "gvw_warning_as_error": [True, False],
-        "vulkan_validation_layers": [True, False],
+        "gvw_vulkan_validation_layers": [True, False],
         "gvw_static": [True, False],
         "gvw_shared": [True, False],
         "gvw_tests": [True, False],

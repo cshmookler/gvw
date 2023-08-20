@@ -6,7 +6,7 @@
 template<typename Type, typename Base>
 gvw::strong_typedef<Type, Base>::strong_typedef() noexcept(
     (std::is_nothrow_default_constructible<Type>::value))
-    : value()
+// : value()
 {
 }
 template<typename Type, typename Base>

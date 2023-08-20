@@ -2,7 +2,7 @@
 A C++ library for creating cross-platform desktop applications with GLFW and Vulkan. Started development on November 24th, 2022.
 
 ### **Build from source and install using Conan 2 (for Unix-like systems using X11)**
-**1.** Install a C++ compiler (Example: g++), the LunarG Vulkan SDK, Git, Python 3.6+, and the Python Virtual Environment using the system package manager (Example: apt).
+**1.** Install a C++ compiler (Example: g++), Git, Python 3.6+, and the Python Virtual Environment using the system package manager (Example: apt).
 ```bash
 $ sudo apt install g++ git python3 python3-venv
 ```
@@ -39,6 +39,41 @@ $ conan create . -c tools.system.package_manager:mode=install -c tools.system.pa
 To build this project with Conan 2 without installing it, swap out `conan create` with `conan build`.
 ```bash
 $ conan build . -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=True -c tools.system.package_manager:tool=apt-get --build=missing -s build_type=Release
+```
+
+### **Build from source and install using Conan 2 (for Windows)**
+**1.** Download the GVW source code from https://github.com/cshmookler/GLFW-and-Vulkan-wrapper/archive/refs/heads/main.zip and extract it.
+**2.** Download and install Python 3.6+ from https://www.python.org/downloads/ (Make sure you add python.exe to your PATH during installation!).
+**3.** Download and install a C++ compiler that supports C++20 or higher (Example: MSVC).
+**4.** Open a new command prompt window by pressing the super key, typing `cmd` and pressing enter. Then use the `cd` command to navigate to the extracted GVW source code.
+**5.** Verify that Python was successfully added to your PATH and has a version >= 3.6.
+```shell
+> python --version
+```
+**6.** Create a Python 3.6+ virtual environment and activate it.
+```shell
+> python -m venv venv
+> .\\venv\\Scripts\\Activate
+```
+**7.** Install Conan 2.
+```shell
+> pip install "conan>=2.0.0"
+```
+**8.** Verify that Conan 2 was successfully installed.
+```shell
+> conan --version
+```
+**9.** Create the default Conan profile. It should detect the C++ compiler you installed earlier. Ensure that it is configured to use C++20 or higher.
+```shell
+> conan profile detect
+```
+**10.** Build and install this project with Conan 2. To build in debug mode, change the last option (`build_type`) to Debug.
+```shell
+> conan create . --build=missing -s build_type=Release
+```
+To build this project with Conan 2 without installing it, swap out `conan create` with `conan build`.
+```shell
+> conan build . --build=missing -s build_type=Release
 ```
 
 ### **Technical TODO**

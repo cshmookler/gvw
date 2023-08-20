@@ -1,6 +1,7 @@
 // Standard includes
 #include <iostream>
 #include <numeric>
+#include <sstream>
 
 // Local includes
 #include "gvw.hpp"

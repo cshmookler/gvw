@@ -107,7 +107,7 @@ gvw::device_selection::MinimumForPresentation( // NOLINT
         // Find queue families that supports both graphics and presentation.
         std::optional<uint32_t> viableGraphicsQueueFamilyIndex;
         std::optional<uint32_t> viablePresentationQueueFamilyIndex;
-        for (size_t i = 0; i < queueFamilyProperties.size(); ++i) {
+        for (uint32_t i = 0; i < uint32_t(queueFamilyProperties.size()); ++i) {
             vk::QueueFlags queueFlags = queueFamilyProperties.at(i).queueFlags;
             if (viableGraphicsQueueFamilyIndex.has_value() == false) {
                 if (bool(queueFlags & vk::QueueFlagBits::eGraphics)) {
@@ -207,7 +207,8 @@ std::vector<gvw::shader> gvw::device::LoadShadersFromSpirVFiles(
                 ? shaderInfo.code
                 : (executableDirectory / shaderInfo.code);
 
-        auto charBuffer = ReadFile<std::vector<char>>(absolutePath.c_str());
+        auto charBuffer =
+            ReadFile<std::vector<char>>((const char*)absolutePath.c_str());
 
         vk::ShaderModuleCreateInfo shaderModuleCreateInfo = {
             .codeSize = charBuffer.size(),
