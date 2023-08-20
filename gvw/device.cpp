@@ -2,145 +2,10 @@
 #include <fstream>
 
 // External includes
-#include <glslang/Public/resource_limits_c.h>
 #include <boost/dll/runtime_symbol_info.hpp>
 
 // Local includes
 #include "device.hpp"
-
-gvw::glsl_compiler::glsl_compiler()
-{
-    if (glslang_initialize_process() == 0) {
-        gvwErrorCallback("GLSL compiler initialization failed.");
-    }
-}
-
-gvw::glsl_compiler::~glsl_compiler()
-{
-    glslang_finalize_process();
-}
-
-glslang_stage_t gvw::glsl_compiler::VulkanStageToGlslStage(
-    vk::ShaderStageFlagBits Vulkan_Shader_Stage)
-{
-    switch (Vulkan_Shader_Stage) {
-        case vk::ShaderStageFlagBits::eVertex:
-            return GLSLANG_STAGE_VERTEX;
-        case vk::ShaderStageFlagBits::eTessellationControl:
-            return GLSLANG_STAGE_TESSCONTROL;
-        case vk::ShaderStageFlagBits::eTessellationEvaluation:
-            return GLSLANG_STAGE_TESSEVALUATION;
-        case vk::ShaderStageFlagBits::eGeometry:
-            return GLSLANG_STAGE_GEOMETRY;
-        case vk::ShaderStageFlagBits::eFragment:
-            return GLSLANG_STAGE_FRAGMENT;
-        case vk::ShaderStageFlagBits::eCompute:
-            return GLSLANG_STAGE_COMPUTE;
-        case vk::ShaderStageFlagBits::eRaygenKHR:
-            return GLSLANG_STAGE_RAYGEN;
-        case vk::ShaderStageFlagBits::eAnyHitKHR:
-            return GLSLANG_STAGE_ANYHIT;
-        case vk::ShaderStageFlagBits::eClosestHitKHR:
-            return GLSLANG_STAGE_CLOSESTHIT;
-        case vk::ShaderStageFlagBits::eMissKHR:
-            return GLSLANG_STAGE_MISS;
-        case vk::ShaderStageFlagBits::eIntersectionKHR:
-            return GLSLANG_STAGE_INTERSECT;
-        case vk::ShaderStageFlagBits::eCallableKHR:
-            return GLSLANG_STAGE_CALLABLE;
-        case vk::ShaderStageFlagBits::eTaskEXT:
-            return GLSLANG_STAGE_TASK;
-        case vk::ShaderStageFlagBits::eMeshEXT:
-            return GLSLANG_STAGE_MESH;
-        default:
-            gvwErrorCallback("Unable to convert type enumeration of type "
-                             "vk::ShaderStageFlagBits to glslang_stage_t. Try "
-                             "a different enumeration value.");
-            return GLSLANG_STAGE_COUNT;
-    }
-}
-
-// NOLINTNEXTLINE
-std::vector<uint32_t> gvw::glsl_compiler::Compile(const char* Source,
-                                                  glslang_stage_t Stage,
-                                                  const char* Output_File_Name)
-{
-    std::vector<uint32_t> binary;
-
-    const glslang_input_t INPUT = { .language = GLSLANG_SOURCE_GLSL,
-                                    .stage = Stage,
-                                    .client = GLSLANG_CLIENT_VULKAN,
-                                    .client_version = GLSLANG_TARGET_VULKAN_1_3,
-                                    .target_language = GLSLANG_TARGET_SPV,
-                                    .target_language_version =
-                                        GLSLANG_TARGET_SPV_1_6,
-                                    .code = Source,
-                                    .default_version = 100,
-                                    .default_profile = GLSLANG_NO_PROFILE,
-                                    .force_default_version_and_profile = 0,
-                                    .forward_compatible = 0,
-                                    .messages = GLSLANG_MSG_DEFAULT_BIT,
-                                    .resource = glslang_default_resource(),
-                                    .callbacks = {},
-                                    .callbacks_ctx = {} };
-
-    glslang_shader_t* shader = glslang_shader_create(&INPUT);
-
-    if (glslang_shader_preprocess(shader, &INPUT) == 0) {
-        std::string error =
-            "GLSL preprocessor failed: " + std::string(Output_File_Name) +
-            "\n" + std::string(glslang_shader_get_info_log(shader)) + "\n" +
-            std::string(glslang_shader_get_info_debug_log(shader)) + "\n" +
-            INPUT.code + "\n";
-        glslang_shader_delete(shader);
-        gvwErrorCallback(error.c_str());
-        return binary;
-    }
-
-    if (glslang_shader_parse(shader, &INPUT) == 0) {
-        std::string error =
-            "GLSL parsing failed: " + std::string(Output_File_Name) + "\n" +
-            std::string(glslang_shader_get_info_log(shader)) + "\n" +
-            std::string(glslang_shader_get_info_debug_log(shader)) + "\n" +
-            std::string(glslang_shader_get_preprocessed_code(shader)) + "\n";
-        glslang_shader_delete(shader);
-        gvwErrorCallback(error.c_str());
-        return binary;
-    }
-
-    glslang_program_t* program = glslang_program_create();
-    glslang_program_add_shader(program, shader);
-
-    if (glslang_program_link(program,
-                             GLSLANG_MSG_SPV_RULES_BIT |
-                                 GLSLANG_MSG_VULKAN_RULES_BIT) == 0) {
-        std::string error =
-            "GLSL linking failed: " + std::string(Output_File_Name) + "\n" +
-            std::string(glslang_program_get_info_log(program)) + "\n" +
-            std::string(glslang_program_get_info_debug_log(program)) + "\n";
-        glslang_program_delete(program);
-        glslang_shader_delete(shader);
-        gvwErrorCallback(error.c_str());
-        return binary;
-    }
-
-    glslang_program_SPIRV_generate(program, INPUT.stage);
-
-    binary.resize(glslang_program_SPIRV_get_size(program) * sizeof(uint32_t));
-    glslang_program_SPIRV_get(program, binary.data());
-
-    const char* const SPIRV_MESSAGES =
-        glslang_program_SPIRV_get_messages(program);
-
-    if (SPIRV_MESSAGES != nullptr) {
-        std::cout << SPIRV_MESSAGES << std::endl;
-    }
-
-    glslang_program_delete(program);
-    glslang_shader_delete(shader);
-
-    return binary;
-}
 
 std::vector<gvw::device_selection::returns>
 gvw::device_selection::MinimumForPresentation( // NOLINT
@@ -183,7 +48,7 @@ gvw::device_selection::MinimumForPresentation( // NOLINT
         // Select the first available surface format.
         vk::SurfaceFormatKHR selectedPhysicalDeviceSurfaceFormat = {};
         if (surfaceFormats.has_value()) {
-            selectedPhysicalDeviceSurfaceFormat = surfaceFormats->at(0);
+            selectedPhysicalDeviceSurfaceFormat = surfaceFormats.value()->at(0);
         }
 
         vk::PresentModeKHR selectedPhysicalDevicePresentMode = {};
@@ -191,7 +56,7 @@ gvw::device_selection::MinimumForPresentation( // NOLINT
             int selectedPresentModeScore = -1;
             vk::PresentModeKHR currentPhysicalDevicePresentMode = {};
             int currentPresentModeScore = 0;
-            for (const auto& presentMode : presentModes.value()) {
+            for (const auto& presentMode : presentModes.value().Get()) {
                 switch (presentMode) {
                     case vk::PresentModeKHR::eMailbox:
                         currentPresentModeScore = 5; // NOLINT
@@ -285,7 +150,8 @@ gvw::device_selection::MinimumForPresentation( // NOLINT
                 .createInfo = { .queueFamilyIndex =
                                     viableGraphicsQueueFamilyIndex.value(),
                                 .queueCount = 1,
-                                .pQueuePriorities = &queue_priority::HIGH },
+                                .pQueuePriorities =
+                                    &queue_priority::HIGH.Get() },
                 .properties = queueFamilyProperties.at(
                     viableGraphicsQueueFamilyIndex.value())
             };
@@ -298,7 +164,8 @@ gvw::device_selection::MinimumForPresentation( // NOLINT
                                         viablePresentationQueueFamilyIndex
                                             .value(),
                                     .queueCount = 1,
-                                    .pQueuePriorities = &queue_priority::HIGH },
+                                    .pQueuePriorities =
+                                        &queue_priority::HIGH.Get() },
                     .properties = queueFamilyProperties.at(
                         viablePresentationQueueFamilyIndex.value())
                 };
@@ -324,40 +191,6 @@ gvw::device::device(
     , presentMode(Present_Mode)
     , queueInfos(Queue_Infos)
 {
-}
-
-std::vector<gvw::shader> gvw::device::LoadShadersFromSourceStrings(
-    const std::vector<shader_info>& Shader_Infos)
-{
-    std::vector<shader> shaders;
-
-    glsl_compiler compiler;
-
-    for (const auto& shaderInfo : Shader_Infos) {
-        std::vector<uint32_t> spirVCode = compiler.Compile(
-            shaderInfo.code,
-            glsl_compiler::VulkanStageToGlslStage(shaderInfo.stage),
-            shaderInfo.name);
-
-        vk::ShaderModuleCreateInfo shaderModuleCreateInfo = {
-            .codeSize = spirVCode.size(), .pCode = spirVCode.data()
-        };
-
-        std::shared_ptr<vk::UniqueShaderModule> shaderModule =
-            std::make_shared<vk::UniqueShaderModule>(
-                this->logicalDevice->get().createShaderModuleUnique(
-                    shaderModuleCreateInfo));
-
-        vk::PipelineShaderStageCreateInfo pipelineShaderStageCreateInfo = {
-            .stage = shaderInfo.stage,
-            .module = shaderModule->get(),
-            .pName = shaderInfo.entryPoint
-        };
-
-        shaders.emplace_back(shaderModule, pipelineShaderStageCreateInfo);
-    }
-
-    return shaders;
 }
 
 std::vector<gvw::shader> gvw::device::LoadShadersFromSpirVFiles(
@@ -506,11 +339,11 @@ gvw::swapchain_ptr gvw::device::CreateSwapchain(
         this->physicalDevice.getSurfaceCapabilitiesKHR(Swapchain_Info.surface);
     vk::Extent2D framebufferExtent = {
         .width = std::clamp(
-            static_cast<uint32_t>(Swapchain_Info.framebufferSize.width),
+            static_cast<uint32_t>(Swapchain_Info.framebufferSize->width),
             surfaceCapabilities.minImageExtent.width,
             surfaceCapabilities.maxImageExtent.width),
         .height = std::clamp(
-            static_cast<uint32_t>(Swapchain_Info.framebufferSize.height),
+            static_cast<uint32_t>(Swapchain_Info.framebufferSize->height),
             surfaceCapabilities.minImageExtent.height,
             surfaceCapabilities.maxImageExtent.height)
     };
@@ -632,8 +465,8 @@ gvw::pipeline_ptr gvw::device::CreatePipeline(
     // creation).
     vk::PipelineDynamicStateCreateInfo dynamicState = {
         .dynamicStateCount =
-            static_cast<uint32_t>(Pipeline_Info.dynamicStates.size()),
-        .pDynamicStates = Pipeline_Info.dynamicStates.data()
+            static_cast<uint32_t>(Pipeline_Info.dynamicStates->size()),
+        .pDynamicStates = Pipeline_Info.dynamicStates->data()
     };
 
     // Binds vertex buffers to the vertex shader.

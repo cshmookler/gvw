@@ -43,9 +43,6 @@ class gvw::device
     ///                Public Member Functions               ///
     ////////////////////////////////////////////////////////////
 
-    [[nodiscard]] std::vector<shader> LoadShadersFromSourceStrings(
-        const std::vector<shader_info>& Shader_Infos);
-
     [[nodiscard]] std::vector<shader> LoadShadersFromSpirVFiles(
         const std::vector<shader_info>& Shader_Infos);
 

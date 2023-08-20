@@ -38,24 +38,19 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Find dependencies
 find_package(Vulkan REQUIRED)
-# find_package(Vulkan COMPONENTS glslang REQUIRED)
-find_package(glslang REQUIRED)
-find_package(Boost COMPONENTS filesystem REQUIRED)
+find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
+find_package(Boost COMPONENTS filesystem REQUIRED)
+message("-- Vulkan Libraries: ${Vulkan_LIBRARIES}")
+message("-- GLFW3 Libraries: ${glfw3_LIBRARIES}")
+message("-- GLM Libraries: ${glm_LIBRARIES}")
+message("-- BOOST Libraries: ${Boost_LIBRARIES}")
 set(GVW_DEPENDENCIES
     ${Vulkan_LIBRARIES}
-    # Vulkan::glslang
-    glslang::glslang
-    glslang::SPIRV
-    glslang::glslang-default-resource-limits
-    Boost::filesystem
-    glm::glm)
-if (GVW_CONAN)
-    find_package(glfw3 REQUIRED)
-    set(GVW_DEPENDENCIES ${GVW_DEPENDENCIES} ${glfw3_LIBRARIES})
-else()
-    set(GVW_DEPENDENCIES ${GVW_DEPENDENCIES} glfw)
-endif()
+    ${glfw3_LIBRARIES}
+    ${glm_LIBRARIES}
+    ${Boost_LIBRARIES}
+)
 
 # GVW source files
 set(GVW_SOURCE_FILES
@@ -124,9 +119,9 @@ if(GVW_EXAMPLES)
 
     set(CMAKE_CXX_STANDARD 20)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
-    add_executable(minimal examples/minimal/main.cpp)
-    target_link_libraries(minimal PRIVATE ${GVW_AVAILABLE})
-    set_target_properties(minimal PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/examples/minimal")
-    configure_file(examples/minimal/vert.spv "${CMAKE_BINARY_DIR}/examples/minimal/vert.spv" COPYONLY)
-    configure_file(examples/minimal/frag.spv "${CMAKE_BINARY_DIR}/examples/minimal/frag.spv" COPYONLY)
+    add_executable(breakout examples/breakout/main.cpp)
+    target_link_libraries(breakout PRIVATE ${GVW_AVAILABLE})
+    set_target_properties(breakout PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/examples/breakout")
+    configure_file(examples/breakout/vert.spv "${CMAKE_BINARY_DIR}/examples/breakout/vert.spv" COPYONLY)
+    configure_file(examples/breakout/frag.spv "${CMAKE_BINARY_DIR}/examples/breakout/frag.spv" COPYONLY)
 endif()

@@ -53,6 +53,13 @@ gvw::window_creation_hints::window_creation_hints(const info& Creation_Hints)
 {
 }
 
+// NOLINTNEXTLINE
+void gvw::window::DestroyGlfwWindow(ptr GVW, GLFWwindow* Window_Handle) noexcept
+{
+    std::scoped_lock<std::mutex> lock(GVW->glfwMutex);
+    glfwDestroyWindow(Window_Handle);
+}
+
 gvw::window::window(ptr GVW,
                     const window_info& Window_Info,
                     GLFWwindow* Parent_Window,
@@ -72,11 +79,14 @@ gvw::window::window(ptr GVW,
     }
 
     // Create the window
-    this->windowHandle = glfwCreateWindow(Window_Info.size.width,
-                                          Window_Info.size.height,
+    this->windowHandle = glfwCreateWindow(Window_Info.size->width,
+                                          Window_Info.size->height,
                                           Window_Info.title,
                                           Window_Info.fullScreenMonitor,
                                           Parent_Window);
+
+    this->glfwWindowDestroyer = std::make_unique<terminator<ptr, GLFWwindow*>>(
+        DestroyGlfwWindow, this->gvw, this->windowHandle);
 
     // Link this window object with the underlying GLFW window object
     glfwSetWindowUserPointer(this->windowHandle, this);
@@ -173,30 +183,28 @@ gvw::window::window(ptr GVW,
     this->CreateSwapchain();
 
     // Load shaders
-    // std::vector<gvw::shader_info> shaderInfo = {
-    //     { .code = "vert.spv", .stage = vk::ShaderStageFlagBits::eVertex },
-    //     { .code = "frag.spv", .stage = vk::ShaderStageFlagBits::eFragment }
-    // };
-    // this->shaders =
-    //     this->logicalDeviceInfo->LoadShadersFromSpirVFiles(shaderInfo);
     std::vector<gvw::shader_info> shaderInfo = {
-        { .name = "basic_vertex",
-          .code = gvw::shader::VERTEX_BASIC,
-          .stage = vk::ShaderStageFlagBits::eVertex },
-        { .name = "basic_fragment",
-          .code = gvw::shader::FRAGMENT_BASIC,
-          .stage = vk::ShaderStageFlagBits::eFragment }
+        { .code = "vert.spv", .stage = vk::ShaderStageFlagBits::eVertex },
+        { .code = "frag.spv", .stage = vk::ShaderStageFlagBits::eFragment }
     };
     this->shaders =
-        this->logicalDeviceInfo->LoadShadersFromSourceStrings(shaderInfo);
+        this->logicalDeviceInfo->LoadShadersFromSpirVFiles(shaderInfo);
 
     std::vector<vk::VertexInputBindingDescription> bindingDescriptions = {
-        vertex::BindingDescription()
+        { .binding = 0,
+          .stride = sizeof(vertex),
+          .inputRate = vk::VertexInputRate::eVertex }
     };
-    std::array<vk::VertexInputAttributeDescription, 2>
-        attributeDescriptionsArray = vertex::AttributeDescriptions();
-    std::vector<vk::VertexInputAttributeDescription> attributeDescriptions(
-        attributeDescriptionsArray.begin(), attributeDescriptionsArray.end());
+    std::vector<vk::VertexInputAttributeDescription> attributeDescriptions = {
+        { { .location = 0,
+            .binding = 0,
+            .format = vk::Format::eR32G32Sfloat,
+            .offset = offsetof(vertex, position) },
+          { .location = 1,
+            .binding = 0,
+            .format = vk::Format::eR32G32B32Sfloat,
+            .offset = offsetof(vertex, color) } }
+    };
 
     this->CreatePipeline(dynamic_states::VIEWPORT_AND_SCISSOR,
                          bindingDescriptions,
@@ -284,41 +292,7 @@ gvw::window::window(ptr GVW,
 
 gvw::window::~window()
 {
-    // for (auto& framebuffer : this->swapchainInfo->swapchainFramebuffers) {
-    //     framebuffer.reset();
-    // }
-
-    // for (auto& imageView : this->swapchainInfo->swapchainImageViews) {
-    //     imageView.reset();
-    // }
-
-    // this->swapchainInfo->swapchain.reset();
-
-    // this->pipeline.reset();
-    // this->pipelineLayout.reset();
-
-    // this->renderPass.reset();
-
-    // for (size_t i = 0; i < this->MAX_FRAMES_IN_FLIGHT; ++i) {
-    //     this->inFlightFences.at(i).reset();
-    //     this->finishedRenderingSemaphores.at(i).reset();
-    //     this->nextImageAvailableSemaphores.at(i).reset();
-    //     this->commandBuffers.at(i).reset();
-    // }
-
-    // this->commandPool.reset();
-
-    // for (auto& shader : this->shaders) {
-    //     shader.shaderModule.reset();
-    // }
-
-    // this->logicalDeviceInfo->logicalDevice->reset();
-
-    // this->surface.reset();
-
-    this->gvw->glfwMutex.lock();
-    glfwDestroyWindow(this->windowHandle);
-    this->gvw->glfwMutex.unlock();
+    this->logicalDevice.waitIdle();
 }
 
 void gvw::window::CreateSwapchain()
@@ -818,7 +792,7 @@ int gvw::window::KeyState(int Key) noexcept
 
 bool gvw::window::ShouldClose() const
 {
-    return (glfwWindowShouldClose(this->windowHandle) != GLFW_FALSE);
+    return bool(glfwWindowShouldClose(this->windowHandle) != GLFW_FALSE);
 }
 
 void gvw::window::ShouldClose(bool State) const
@@ -905,7 +879,7 @@ void gvw::window::Undecorate()
 
 bool gvw::window::IsDecorated()
 {
-    return static_cast<bool>(this->WindowAttribute(GLFW_DECORATED));
+    return bool(this->WindowAttribute(GLFW_DECORATED));
 }
 
 void gvw::window::MinimizeOnFocusLoss()
@@ -920,7 +894,7 @@ void gvw::window::DontMinimizeOnFocusLoss()
 
 bool gvw::window::IsMinimizedOnFocusLoss()
 {
-    return static_cast<bool>(this->WindowAttribute(GLFW_AUTO_ICONIFY));
+    return bool(this->WindowAttribute(GLFW_AUTO_ICONIFY));
 }
 
 void gvw::window::AlwaysOnTop()

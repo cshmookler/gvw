@@ -91,8 +91,9 @@ $ sudo cmake --build . --install .
 
 ### **Technical TODO**
  * [ ] Create enums for GLFW integer values.
- * [ ] Replace namespace-like classes with the types they represent.
+ * [X] Replace namespace-like classes with the types they represent.
  * [ ] Further compartmentalize Vulkan functions and permit more customization at runtime.
+ * [ ] Replace Vulkan-Hpp with Vulkan to improve compiletime (?).
  * [ ] Ensure thread-safety for GLFW functions.
 
 ### **Aspirational TODO**

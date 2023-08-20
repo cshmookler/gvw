@@ -21,7 +21,6 @@
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
-#include <glslang/Include/glslang_c_interface.h>
 #include <glm/glm.hpp>
 
 // Leading local includes
@@ -47,13 +46,19 @@ class gvw
     class monitor_public_constructor;
     class device_public_constructor;
 
-    /// @brief Compiles GLSL source code to SPIR-V binary code.
-    struct glsl_compiler;
-
   public:
     ////////////////////////////////////////////////////////////
     ///                     Public Types                     ///
     ////////////////////////////////////////////////////////////
+
+    /// @brief Creates a strong typedef of a type and inheriting from a separate
+    /// base class.
+    template<typename Type, typename Base>
+    class strong_typedef;
+
+    // Manages destruction of non-unique objects.
+    template<typename... Args>
+    class terminator;
 
     /// @brief Version major, minor, and revision.
     struct version;
@@ -245,17 +250,31 @@ class gvw
     /// @brief Default initialization hints as initially set by GLFW.
     static const init_hints DEFAULT_INIT_HINTS;
 
+  private:
     /// @brief Vulkan instance layer presets.
-    struct instance_layers : no_constructor
+    struct instance_layers_constants
     {
-        static const std::vector<const char*> VALIDATION;
+        using public_interface =
+            strong_typedef<std::vector<const char*>, instance_layers_constants>;
+
+        static const public_interface VALIDATION;
     };
 
+  public:
+    using instance_layers = instance_layers_constants::public_interface;
+
+  private:
     /// @brief Vulkan instance extension presets.
-    struct instance_extensions : no_constructor
+    struct instance_extensions_constants
     {
-        static const std::vector<const char*> PORTABILITY_AND_DEBUG_UTILS;
+        using public_interface = strong_typedef<std::vector<const char*>,
+                                                instance_extensions_constants>;
+
+        static const public_interface PORTABILITY_AND_DEBUG_UTILS;
     };
+
+  public:
+    using instance_extensions = instance_extensions_constants::public_interface;
 
     /*************** Monitor Related Constants ****************/
 
@@ -273,26 +292,47 @@ class gvw
     /// @brief Default creation hints as initially set by GLFW.
     static const window_creation_hints DEFAULT_WINDOW_CREATION_HINTS;
 
+  private:
     /// @brief Window title presets.
-    struct window_title : no_constructor
+    struct window_title_constants
     {
-        static const char* const BLANK;
-        static const char* const UNTITLED;
+        using public_interface =
+            strong_typedef<const char*, window_title_constants>;
+
+        static const public_interface BLANK;
+        static const public_interface UNTITLED;
     };
 
+  public:
+    using window_title = window_title_constants::public_interface;
+
+  private:
     /// @brief Window size presets.
-    struct window_size : no_constructor
+    struct window_size_constants
     {
-        static const area<int> W_500_H_500;
-        static const area<int> W_640_H_360;
+        using public_interface =
+            strong_typedef<area<int>, window_size_constants>;
+
+        static const public_interface W_500_H_500;
+        static const public_interface W_640_H_360;
     };
 
+  public:
+    using window_size = window_size_constants::public_interface;
+
+  private:
     /// @brief Window size limit presets.
-    struct window_size_limit : no_constructor
+    struct window_size_limit_constants
     {
-        static const area<int> NO_MINIMUM;
-        static const area<int> NO_MAXIMUM;
+        using public_interface =
+            strong_typedef<area<int>, window_size_limit_constants>;
+
+        static const public_interface NO_MINIMUM;
+        static const public_interface NO_MAXIMUM;
     };
+
+  public:
+    using window_size_limit = window_size_limit_constants::public_interface;
 
     /**************** Device Related Constants ****************/
 
@@ -311,46 +351,93 @@ class gvw
     /// @brief Default pipeline information.
     static const pipeline_info DEFAULT_PIPELINE_INFO;
 
+  private:
     /// @brief Window surface formats presets.
-    struct surface_formats : no_constructor
+    struct surface_formats_constants
     {
+        using public_interface =
+            strong_typedef<std::vector<vk::SurfaceFormatKHR>,
+                           surface_formats_constants>;
+
         // static const std::optional<std::vector<vk::SurfaceFormatKHR>>
         // STANDARD;
-        static const std::vector<vk::SurfaceFormatKHR> STANDARD;
+        static const public_interface STANDARD;
     };
 
+  public:
+    using surface_formats = surface_formats_constants::public_interface;
+
+  private:
     /// @brief Present modes presets.
-    struct present_modes : no_constructor
+    struct present_modes_constants
     {
-        static const std::vector<vk::PresentModeKHR> FIFO;
-        static const std::vector<vk::PresentModeKHR> MAILBOX;
-        static const std::vector<vk::PresentModeKHR> MAILBOX_OR_FIFO;
+        using public_interface = strong_typedef<std::vector<vk::PresentModeKHR>,
+                                                present_modes_constants>;
+
+        static const public_interface FIFO;
+        static const public_interface MAILBOX;
+        static const public_interface MAILBOX_OR_FIFO;
     };
 
+  public:
+    using present_modes = present_modes_constants::public_interface;
+
+  private:
     /// @brief Physical device features presets.
-    struct physical_device_features : no_constructor
+    struct physical_device_features_constants
     {
-        static const vk::PhysicalDeviceFeatures NONE;
+        using public_interface =
+            strong_typedef<vk::PhysicalDeviceFeatures,
+                           physical_device_features_constants>;
+
+        static const public_interface NONE;
     };
 
+  public:
+    using physical_device_features =
+        physical_device_features_constants::public_interface;
+
+  private:
     /// @brief Logical device extension presets.
-    struct logical_device_extensions : no_constructor
+    struct logical_device_extensions_constants
     {
-        static const std::vector<const char*> SWAPCHAIN;
+        using public_interface =
+            strong_typedef<std::vector<const char*>,
+                           logical_device_extensions_constants>;
+
+        static const public_interface SWAPCHAIN;
     };
 
+  public:
+    using logical_device_extensions =
+        logical_device_extensions_constants::public_interface;
+
+  private:
     /// @brief Queue priority presets.
-    struct queue_priority : no_constructor
+    struct queue_priority_constants
     {
-        static const float HIGH;
+        using public_interface =
+            strong_typedef<float, queue_priority_constants>;
+
+        static const public_interface HIGH;
     };
 
+  public:
+    using queue_priority = queue_priority_constants::public_interface;
+
+  private:
     /// @brief Dynamic states presets.
-    struct dynamic_states : no_constructor
+    struct dynamic_states_constants
     {
-        static const std::vector<vk::DynamicState> VIEWPORT;
-        static const std::vector<vk::DynamicState> VIEWPORT_AND_SCISSOR;
+        using public_interface = strong_typedef<std::vector<vk::DynamicState>,
+                                                dynamic_states_constants>;
+
+        static const public_interface VIEWPORT;
+        static const public_interface VIEWPORT_AND_SCISSOR;
     };
+
+  public:
+    using dynamic_states = dynamic_states_constants::public_interface;
 
     static const std::vector<shader> NO_SHADERS;
 
@@ -380,8 +467,10 @@ class gvw
 
     // NOLINTEND
 
-    /// @todo Determine if these vulkan related variables need to be
+    /// @todo Determine if these Vulkan related variables need to be
     /// thread-safe.
+
+    std::unique_ptr<terminator<>> glfwTerminator;
 
     std::vector<const char*> vulkanInstanceExtensions;
     std::vector<const char*> vulkanInstanceLayers;
@@ -394,6 +483,9 @@ class gvw
     ////////////////////////////////////////////////////////////
     ///               Private Static Functions               ///
     ////////////////////////////////////////////////////////////
+
+    /// @brief Deinitializes the GLFW library.
+    static void TerminateGlfw() noexcept;
 
     /// @brief Returns a vector containing all the items present in the user
     /// array that were missing in the vulkan array.
@@ -552,7 +644,7 @@ class gvw
 
     /// @brief The destructor is public so as to allow explicit destruction
     /// using the delete operator.
-    ~gvw();
+    ~gvw() = default;
 
     ////////////////////////////////////////////////////////////
     ///                Public Member Functions               ///

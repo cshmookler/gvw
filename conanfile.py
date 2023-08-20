@@ -47,6 +47,7 @@ class gvw(ConanFile):
             del self.options.fPIC
 
     def requirements(self):
+        self.requires("vulkan-loader/1.3.243.0")
         self.requires("glfw/3.3.8")
         self.requires("glm/cci.20230113")
         self.requires("boost/1.82.0")

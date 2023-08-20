@@ -19,6 +19,8 @@ class gvw::window
     ///                   Private Variables                  ///
     ////////////////////////////////////////////////////////////
 
+    std::unique_ptr<terminator<ptr, GLFWwindow*>> glfwWindowDestroyer;
+
     /// @brief The parent GVW instance.
     ptr gvw;
 
@@ -150,6 +152,13 @@ class gvw::window
     /// @brief The number of refresh events.
     size_t refreshEvents = 0;
     std::mutex refreshEventsMutex;
+
+    ////////////////////////////////////////////////////////////
+    ///               Private Static Functions               ///
+    ////////////////////////////////////////////////////////////
+
+    /// @brief Destroys the GLFW window.
+    static void DestroyGlfwWindow(ptr GVW, GLFWwindow* Window_Handle) noexcept;
 
     ////////////////////////////////////////////////////////////
     ///       Constructors, Operators, and Destructors       ///

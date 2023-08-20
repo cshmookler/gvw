@@ -10,6 +10,84 @@
 // Leading local includes
 #include "gvw.hpp"
 
+template<typename Type, typename Base>
+class gvw::strong_typedef : public Base
+{
+    ////////////////////////////////////////////////////////////
+    ///                   Private Variables                  ///
+    ////////////////////////////////////////////////////////////
+
+    Type value; // NOLINT
+
+  public:
+    ////////////////////////////////////////////////////////////
+    ///       Constructors, Operators, and Destructors       ///
+    ////////////////////////////////////////////////////////////
+
+    strong_typedef() noexcept(
+        (std::is_nothrow_default_constructible<Type>::value));
+    strong_typedef(const Type& Value) noexcept(
+        (std::is_nothrow_constructible<Type>::value));
+    strong_typedef(const strong_typedef& Derived) noexcept(
+        (std::is_nothrow_copy_constructible<Type>::value));
+    strong_typedef(Type&& Value) noexcept(
+        (std::is_nothrow_move_constructible<Type>::value));
+    strong_typedef(strong_typedef&& Derived) noexcept(
+        (std::is_nothrow_move_constructible<Type>::value));
+    strong_typedef& operator=(const Type& Value) noexcept(
+        (std::is_nothrow_assignable<Type, Type>::value));
+    strong_typedef& operator=(const strong_typedef& Derived) noexcept(
+        (std::is_nothrow_assignable<Type, Type>::value));
+    strong_typedef& operator=(Type&& Value) noexcept(
+        (std::is_nothrow_move_assignable<Type>::value));
+    strong_typedef& operator=(strong_typedef&& Derived) noexcept(
+        (std::is_nothrow_move_assignable<Type>::value));
+    ~strong_typedef() = default;
+    operator const Type&() const;
+    operator Type&();
+    bool operator==(const strong_typedef& Derived) const;
+    bool operator<(const strong_typedef& Derived) const;
+    bool operator>(const strong_typedef& Derived) const;
+    bool operator<=(const strong_typedef& Derived) const;
+    bool operator>=(const strong_typedef& Derived) const;
+    bool operator!=(const strong_typedef& Derived) const;
+    bool operator<=(const Type& Value) const;
+    bool operator>=(const Type& Value) const;
+    bool operator!=(const Type& Value) const;
+
+    ////////////////////////////////////////////////////////////
+    ///                   Public Functions                   ///
+    ////////////////////////////////////////////////////////////
+
+    [[nodiscard]] Type& Get();
+    [[nodiscard]] const Type& Get() const;
+    [[nodiscard]] Type* operator->();
+    [[nodiscard]] const Type* operator->() const;
+};
+
+template<typename... Args>
+class gvw::terminator
+{
+  public:
+    using deleter_signature = void (*)(Args...);
+
+  private:
+    deleter_signature deleter;
+    std::tuple<Args...> args;
+
+  public:
+    terminator(deleter_signature Deleter, Args... Arguments)
+        : deleter(Deleter)
+        , args(Arguments...)
+    {
+    }
+    terminator(const terminator&) = default;
+    terminator(terminator&&) noexcept = default;
+    terminator& operator=(const terminator&) = default;
+    terminator& operator=(terminator&&) noexcept = default;
+    ~terminator() { std::apply(this->deleter, this->args); }
+};
+
 struct gvw::version
 {
     int major;
@@ -168,9 +246,8 @@ struct gvw::info
     vk::InstanceCreateFlags instanceFlags =
         vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
     gvw::application_info applicationInfo = DEFAULT_APPLICATION_INFO;
-    const std::vector<const char*>& instanceLayers =
-        instance_layers::VALIDATION;
-    const std::vector<const char*>& instanceExtensions =
+    const instance_layers& instanceLayers = instance_layers::VALIDATION;
+    const instance_extensions& instanceExtensions =
         instance_extensions::PORTABILITY_AND_DEBUG_UTILS;
     const gvw::debug_utils_messenger_info& debugUtilsMessengerInfo =
         DEFAULT_UTILS_MESSENGER_INFO;
@@ -189,10 +266,6 @@ struct gvw::shader_info
 
 struct gvw::shader
 {
-    /// @brief Sample shaders.
-    static const char* const VERTEX_BASIC;
-    static const char* const FRAGMENT_BASIC;
-
     std::shared_ptr<vk::UniqueShaderModule> shaderModule;
     vk::PipelineShaderStageCreateInfo pipelineShaderStageCreateInfo;
 };
@@ -201,33 +274,6 @@ struct gvw::vertex
 {
     glm::vec2 position;
     glm::vec3 color;
-
-    static vk::VertexInputBindingDescription BindingDescription()
-    {
-        vk::VertexInputBindingDescription bindingDescription = {
-            .binding = 0,
-            .stride = sizeof(vertex),
-            .inputRate = vk::VertexInputRate::eVertex
-        };
-        return bindingDescription;
-    }
-
-    static std::array<vk::VertexInputAttributeDescription, 2>
-    AttributeDescriptions()
-    {
-        std::array<vk::VertexInputAttributeDescription, 2>
-            attributeDescriptions = {
-                { { .location = 0,
-                    .binding = 0,
-                    .format = vk::Format::eR32G32Sfloat,
-                    .offset = offsetof(vertex, position) },
-                  { .location = 1,
-                    .binding = 0,
-                    .format = vk::Format::eR32G32B32Sfloat,
-                    .offset = offsetof(vertex, color) } }
-            };
-        return attributeDescriptions;
-    }
 };
 
 struct gvw::window_event_callbacks
@@ -371,13 +417,11 @@ struct gvw::device_info
 {
     device_selection::signature selectPhysicalDevicesAndQueues =
         device_selection::MinimumForPresentation;
-    std::optional<std::vector<vk::SurfaceFormatKHR>> surfaceFormats =
-        surface_formats::STANDARD;
-    std::optional<std::vector<vk::PresentModeKHR>> presentModes =
-        present_modes::FIFO;
-    vk::PhysicalDeviceFeatures physicalDeviceFeatures =
+    std::optional<surface_formats> surfaceFormats = surface_formats::STANDARD;
+    std::optional<present_modes> presentModes = present_modes::FIFO;
+    physical_device_features physicalDeviceFeatures =
         physical_device_features::NONE;
-    const std::vector<const char*>& logicalDeviceExtensions =
+    const logical_device_extensions& logicalDeviceExtensions =
         logical_device_extensions::SWAPCHAIN;
 };
 
@@ -407,7 +451,7 @@ struct gvw::render_pass_info
 
 struct gvw::swapchain_info
 {
-    const area<int>& framebufferSize = window_size::W_640_H_360;
+    const window_size& framebufferSize = window_size::W_640_H_360;
     uint32_t graphicsQueueIndex = 0;
     uint32_t presentQueueIndex = 0;
     vk::SurfaceKHR surface;
@@ -434,8 +478,7 @@ struct gvw::swapchain
 struct gvw::pipeline_info
 {
     const std::vector<shader>& shaders = NO_SHADERS;
-    const std::vector<vk::DynamicState>& dynamicStates =
-        dynamic_states::VIEWPORT_AND_SCISSOR;
+    const dynamic_states& dynamicStates = dynamic_states::VIEWPORT_AND_SCISSOR;
     const std::vector<vk::VertexInputBindingDescription>&
         vertexInputBindingDescriptions = NO_VERTEX_BINDING_DESCRIPTIONS;
     const std::vector<vk::VertexInputAttributeDescription>&
@@ -452,8 +495,8 @@ struct gvw::pipeline
 struct gvw::window_info
 {
     std::optional<const coordinate<int>> position = std::nullopt;
-    const area<int>& size = window_size::W_640_H_360;
-    const char* title = window_title::UNTITLED;
+    const window_size& size = window_size::W_640_H_360;
+    const window_title& title = window_title::UNTITLED;
     GLFWmonitor* fullScreenMonitor = nullptr;
     const window_creation_hints& creationHints = DEFAULT_WINDOW_CREATION_HINTS;
     const window_event_callbacks& eventCallbacks = NO_WINDOW_EVENT_CALLBACKS;
@@ -482,25 +525,6 @@ struct gvw::window_event::file_drop
     const char** paths;
 };
 
-struct gvw::glsl_compiler
-{
-    glsl_compiler();
-    glsl_compiler(const glsl_compiler&) = default;
-    glsl_compiler(glsl_compiler&&) noexcept = default;
-    glsl_compiler& operator=(const glsl_compiler&) = default;
-    glsl_compiler& operator=(glsl_compiler&&) noexcept = default;
-    ~glsl_compiler();
-
-    /// @brief Convert Vulkan shader stage to GLSL shader stage.
-    static glslang_stage_t VulkanStageToGlslStage(
-        vk::ShaderStageFlagBits Vulkan_Shader_Stage);
-
-    /// @brief Compile GLSL source code to SPIR-V binary code.
-    std::vector<uint32_t> Compile(const char* Source,
-                                  glslang_stage_t Stage,
-                                  const char* Output_File_Name);
-};
-
 struct gvw::device_selection::queue_family_info
 {
     vk::DeviceQueueCreateInfo createInfo;
@@ -510,8 +534,8 @@ struct gvw::device_selection::queue_family_info
 struct gvw::device_selection::parameters
 {
     vk::PhysicalDevice physicalDevice;
-    std::optional<std::vector<vk::SurfaceFormatKHR>> surfaceFormats;
-    std::optional<std::vector<vk::PresentModeKHR>> presentModes;
+    std::optional<surface_formats> surfaceFormats;
+    std::optional<present_modes> presentModes;
 };
 
 struct gvw::device_selection::returns

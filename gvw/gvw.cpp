@@ -47,6 +47,20 @@ class gvw::device_public_constructor : public device
     }
 };
 
+// template<typename... Args>
+// gvw::terminator<Args...>::terminator::terminator(deleter_signature Deleter,
+//                                                  Args... Arguments)
+//     : deleter(Deleter)
+//     , args(Arguments...)
+// {
+// }
+
+// template<typename... Args>
+// gvw::terminator<Args...>::terminator::~terminator()
+// {
+//     std::apply(this->deleter, this->args);
+// }
+
 gvw::init_hints::init_hints(const info& Init_Hints)
     : glfw_hints(
           { { { GLFW_JOYSTICK_HAT_BUTTONS, Init_Hints.joystickHatButtons },
@@ -66,6 +80,12 @@ std::mutex gvw::gvwErrorCallbackMutex = {};
 std::vector<gvw::joystick_event> gvw::joystickEvents = {};
 std::mutex gvw::joystickEventsMutex = {};
 // NOLINTEND
+
+void gvw::TerminateGlfw() noexcept
+{
+    std::scoped_lock<std::mutex> lock(glfwMutex);
+    glfwTerminate();
+}
 
 void gvw::ThrowOnGvwError(const char* Description)
 {
@@ -316,6 +336,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL gvw::PrintDebugMessagesToConsole(
 }
 
 gvw::gvw(const info& Init_Info)
+    : glfwTerminator(std::make_unique<terminator<>>(TerminateGlfw))
 {
     // Set error callbacks
     SetGvwErrorCallback(Init_Info.gvwErrorCallback);
@@ -435,17 +456,6 @@ gvw::ptr gvw::Get(const info& Init_Info)
 {
     static ptr gvw = std::make_unique<gvw_public_constructor>(Init_Info);
     return gvw;
-}
-
-gvw::~gvw()
-{
-    // this->vulkanDebugUtilsMessenger.reset();
-
-    // this->vulkanInstance.reset();
-
-    glfwMutex.lock();
-    glfwTerminate();
-    glfwMutex.unlock();
 }
 
 // NOLINTNEXTLINE
@@ -620,10 +630,10 @@ std::vector<gvw::device_ptr> gvw::SelectPhysicalDevices(
                 static_cast<uint32_t>(this->vulkanInstanceLayers.size()),
             .ppEnabledLayerNames = this->vulkanInstanceLayers.data(),
             .enabledExtensionCount = static_cast<uint32_t>(
-                Device_Info.logicalDeviceExtensions.size()),
+                Device_Info.logicalDeviceExtensions->size()),
             .ppEnabledExtensionNames =
-                Device_Info.logicalDeviceExtensions.data(),
-            .pEnabledFeatures = &Device_Info.physicalDeviceFeatures
+                Device_Info.logicalDeviceExtensions->data(),
+            .pEnabledFeatures = &Device_Info.physicalDeviceFeatures.Get()
         };
 
         logicalDevices.emplace_back(std::make_shared<device_public_constructor>(
