@@ -39,6 +39,11 @@ else()
     endif()
 endif()
 
+# Required for building shared libraries on Windows
+if(WIN32)
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
+
 # Export compile commands for clang tools
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

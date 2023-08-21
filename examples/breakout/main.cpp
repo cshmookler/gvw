@@ -35,10 +35,15 @@ int main() // NOLINT
     // std::cout << isCLeftOfLineAB({ 1, 1 }, { 0, 0 }, { -1, 0 }) << std::endl;
     // std::cout << isCLeftOfLineAB({ 1, 1 }, { 0, 0 }, { 0, -1 }) << std::endl;
 
-    gvw::ptr gvw =
-        gvw::Get({ .applicationInfo = { .pApplicationName = "breakout",
-                                        .applicationVersion =
-                                            VK_MAKE_VERSION(1, 0, 0) } });
+    gvw::ptr gvw = gvw::Get(
+        { .applicationInfo = { .pApplicationName = "breakout",
+                               .applicationVersion = VK_MAKE_VERSION(1, 0, 0) },
+          .debugUtilsMessengerInfo = {
+              .messageSeverity =
+                  vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
+                  vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
+                  vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
+                  vk::DebugUtilsMessageSeverityFlagBitsEXT::eError } });
     gvw::monitor_ptr primaryMonitor = gvw->PrimaryMonitor();
 
     const gvw::area<int> PRIMARY_MONITOR_SIZE = primaryMonitor->WorkAreaSize();
@@ -119,6 +124,7 @@ int main() // NOLINT
                   .sizeOfVerticesInBytes =
                       (sizeof(gvw::vertex) * blockVertices.size()) });
             block->DrawFrame(blockVertices);
+            return 0;
         }
     }
 

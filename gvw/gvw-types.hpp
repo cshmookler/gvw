@@ -17,7 +17,7 @@ class gvw::strong_typedef : public Base
     ///                   Private Variables                  ///
     ////////////////////////////////////////////////////////////
 
-    Type value; // NOLINT
+    Type internal; // NOLINT
 
   public:
     ////////////////////////////////////////////////////////////
@@ -437,7 +437,7 @@ struct gvw::buffer_info
 struct gvw::buffer
 {
     vk::DeviceSize size;
-    vk::UniqueBuffer buffer;
+    vk::UniqueBuffer handle;
     vk::UniqueDeviceMemory memory;
 };
 

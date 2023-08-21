@@ -93,7 +93,9 @@ void gvw::ThrowOnGvwError(const char* Description)
     std::stringstream error;
     error << ansiec::BOLD << ansiec::RED_FG << "GVW error: " << Description
           << ansiec::RESET;
-    throw std::runtime_error(error.str());
+    std::string errorString = error.str();
+    std::cout << errorString << std::endl;
+    throw std::runtime_error(errorString);
 }
 
 void gvw::ThrowOnGlfwError(int Error_Code, const char* Description)
@@ -101,7 +103,9 @@ void gvw::ThrowOnGlfwError(int Error_Code, const char* Description)
     std::stringstream error;
     error << ansiec::BOLD << ansiec::RED_FG << "GLFW error [" << Error_Code
           << "]: " << Description << ansiec::RESET;
-    throw std::runtime_error(error.str());
+    std::string errorString = error.str();
+    std::cout << errorString << std::endl;
+    throw std::runtime_error(errorString);
 }
 
 gvw::version gvw::GetGlfwRuntimeVersion() noexcept
@@ -439,12 +443,12 @@ gvw::gvw(const info& Init_Info)
     // Create the vulkan instance
     this->vulkanInstance = vk::createInstanceUnique(instanceInfo);
 
+#ifdef GVW_VULKAN_VALIDATION_LAYERS
     // Automatically look up instance extension function addresses
     this->vulkanDispatchLoaderDynamic = { vulkanInstance.get(),
                                           vkGetInstanceProcAddr };
 
     // Debug callback setup
-#ifdef GVW_VULKAN_VALIDATION_LAYERS
     this->vulkanDebugUtilsMessenger =
         this->vulkanInstance->createDebugUtilsMessengerEXTUnique(
             // NOLINTNEXTLINE

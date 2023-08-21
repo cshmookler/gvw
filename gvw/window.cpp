@@ -254,8 +254,8 @@ gvw::window::window(ptr GVW,
     this->stagingCommandBuffer->begin(stagingCommandBufferBeginInfo);
 
     this->stagingCommandBuffer->copyBuffer(
-        this->vertexStagingBuffer.buffer.get(),
-        this->vertexBuffer.buffer.get(),
+        this->vertexStagingBuffer.handle.get(),
+        this->vertexBuffer.handle.get(),
         { vk::BufferCopy{
             .srcOffset = 0, .dstOffset = 0, .size = vertexBuffer.size } });
 
@@ -406,7 +406,7 @@ void gvw::window::DrawFrame(const std::vector<vertex>& Vertices)
         commandBuffer.setViewport(0, this->swapchainInfo->viewport);
         commandBuffer.setScissor(0, this->swapchainInfo->scissor);
         commandBuffer.bindVertexBuffers(
-            0, { this->vertexBuffer.buffer.get() }, { 0 });
+            0, { this->vertexBuffer.handle.get() }, { 0 });
         // NOLINTNEXTLINE
         commandBuffer.draw(static_cast<uint32_t>(Vertices.size()), 1, 0, 0);
         commandBuffer.endRenderPass();

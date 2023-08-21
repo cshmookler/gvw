@@ -208,7 +208,7 @@ std::vector<gvw::shader> gvw::device::LoadShadersFromSpirVFiles(
                 : (executableDirectory / shaderInfo.code);
 
         auto charBuffer =
-            ReadFile<std::vector<char>>((const char*)absolutePath.c_str());
+            ReadFile<std::vector<char>>(absolutePath.string().c_str());
 
         vk::ShaderModuleCreateInfo shaderModuleCreateInfo = {
             .codeSize = charBuffer.size(),
@@ -235,8 +235,10 @@ std::vector<gvw::shader> gvw::device::LoadShadersFromSpirVFiles(
 
 gvw::buffer gvw::device::CreateBuffer(const buffer_info& Buffer_Info)
 {
-    buffer buffer;
-    buffer.size = Buffer_Info.sizeInBytes;
+    buffer buffer = { .size = Buffer_Info.sizeInBytes,
+                      .handle = vk::UniqueBuffer(nullptr),
+                      .memory = vk::UniqueDeviceMemory(nullptr) };
+    // buffer.size = Buffer_Info.sizeInBytes;
 
     vk::BufferCreateInfo bufferCreateInfo = {
         .size = buffer.size,
@@ -244,12 +246,12 @@ gvw::buffer gvw::device::CreateBuffer(const buffer_info& Buffer_Info)
         // Sharing is exclusive when only one queue has access to the buffer.
         .sharingMode = vk::SharingMode::eExclusive
     };
-    buffer.buffer =
+    buffer.handle =
         this->logicalDevice->get().createBufferUnique(bufferCreateInfo);
 
     vk::MemoryRequirements memoryRequirements =
         this->logicalDevice->get().getBufferMemoryRequirements(
-            buffer.buffer.get());
+            buffer.handle.get());
 
     vk::PhysicalDeviceMemoryProperties memoryProperties =
         this->physicalDevice.getMemoryProperties();
@@ -276,7 +278,7 @@ gvw::buffer gvw::device::CreateBuffer(const buffer_info& Buffer_Info)
         this->logicalDevice->get().allocateMemoryUnique(memoryAllocateInfo);
 
     this->logicalDevice->get().bindBufferMemory(
-        buffer.buffer.get(), buffer.memory.get(), 0);
+        buffer.handle.get(), buffer.memory.get(), 0);
 
     return buffer;
 }

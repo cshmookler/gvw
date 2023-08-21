@@ -6,40 +6,40 @@
 template<typename Type, typename Base>
 gvw::strong_typedef<Type, Base>::strong_typedef() noexcept(
     (std::is_nothrow_default_constructible<Type>::value))
-// : value()
+    : internal()
 {
 }
 template<typename Type, typename Base>
 gvw::strong_typedef<Type, Base>::strong_typedef(const Type& Value) noexcept(
     (std::is_nothrow_constructible<Type>::value))
-    : value(Value)
+    : internal(Value)
 {
 }
 template<typename Type, typename Base>
 gvw::strong_typedef<Type, Base>::strong_typedef(
     const strong_typedef&
         Derived) noexcept((std::is_nothrow_copy_constructible<Type>::value))
-    : value(Derived.value)
+    : internal(Derived.internal)
 {
 }
 template<typename Type, typename Base>
 gvw::strong_typedef<Type, Base>::strong_typedef(Type&& Value) noexcept(
     (std::is_nothrow_move_constructible<Type>::value))
-    : value(std::move(Value))
+    : internal(std::move(Value))
 {
 }
 template<typename Type, typename Base>
 gvw::strong_typedef<Type, Base>::strong_typedef(
     strong_typedef&&
         Derived) noexcept((std::is_nothrow_move_constructible<Type>::value))
-    : value(std::move(Derived.value))
+    : internal(std::move(Derived.internal))
 {
 }
 template<typename Type, typename Base>
 gvw::strong_typedef<Type, Base>& gvw::strong_typedef<Type, Base>::operator=(
     const Type& Value) noexcept((std::is_nothrow_assignable<Type, Type>::value))
 {
-    this->value = Value;
+    this->internal = Value;
     return *this;
 }
 template<typename Type, typename Base>
@@ -47,14 +47,14 @@ gvw::strong_typedef<Type, Base>& gvw::strong_typedef<Type, Base>::operator=(
     const strong_typedef&
         Derived) noexcept((std::is_nothrow_assignable<Type, Type>::value))
 {
-    this->value = Derived.value;
+    this->internal = Derived.internal;
     return *this;
 }
 template<typename Type, typename Base>
 gvw::strong_typedef<Type, Base>& gvw::strong_typedef<Type, Base>::operator=(
     Type&& Value) noexcept((std::is_nothrow_move_assignable<Type>::value))
 {
-    this->value = std::move(Value);
+    this->internal = std::move(Value);
     return *this;
 }
 template<typename Type, typename Base>
@@ -62,125 +62,125 @@ gvw::strong_typedef<Type, Base>&
 gvw::strong_typedef<Type, Base>::operator=(strong_typedef&& Derived) noexcept(
     (std::is_nothrow_move_assignable<Type>::value))
 {
-    this->value = std::move(Derived.value);
+    this->internal = std::move(Derived.internal);
     return *this;
 }
 template<typename Type, typename Base>
 gvw::strong_typedef<Type, Base>::operator const Type&() const
 {
-    return this->value;
+    return this->internal;
 }
 template<typename Type, typename Base>
 gvw::strong_typedef<Type, Base>::operator Type&()
 {
-    return this->value;
+    return this->internal;
 }
 template<typename Type, typename Base>
 bool gvw::strong_typedef<Type, Base>::operator==(
     const strong_typedef& Derived) const
 {
-    return this->value == Derived.value;
+    return this->internal == Derived.internal;
 }
 template<typename Type, typename Base>
 bool gvw::strong_typedef<Type, Base>::operator<(
     const strong_typedef& Derived) const
 {
-    return this->value < Derived.value;
+    return this->internal < Derived.internal;
 }
 template<typename Type, typename Base>
 bool gvw::strong_typedef<Type, Base>::operator>(
     const strong_typedef& Derived) const
 {
-    return this->value > Derived.value;
+    return this->internal > Derived.internal;
 }
 template<typename Type, typename Base>
 bool gvw::strong_typedef<Type, Base>::operator<=(
     const strong_typedef& Derived) const
 {
-    return !bool(this->value > Derived.value);
+    return !bool(this->internal > Derived.internal);
 }
 template<typename Type, typename Base>
 bool gvw::strong_typedef<Type, Base>::operator>=(
     const strong_typedef& Derived) const
 {
-    return !bool(this->value < Derived.value);
+    return !bool(this->internal < Derived.internal);
 }
 template<typename Type, typename Base>
 bool gvw::strong_typedef<Type, Base>::operator!=(
     const strong_typedef& Derived) const
 {
-    return !bool(this->value == Derived.value);
+    return !bool(this->internal == Derived.internal);
 }
 template<typename Type, typename Base>
 bool gvw::strong_typedef<Type, Base>::operator<=(const Type& Value) const
 {
-    return !bool(this->value > Value);
+    return !bool(this->internal > Value);
 }
 template<typename Type, typename Base>
 bool gvw::strong_typedef<Type, Base>::operator>=(const Type& Value) const
 {
-    return !bool(this->value < Value);
+    return !bool(this->internal < Value);
 }
 template<typename Type, typename Base>
 bool gvw::strong_typedef<Type, Base>::operator!=(const Type& Value) const
 {
-    return !bool(this->value == Value);
+    return !bool(this->internal == Value);
 }
 template<typename Type, typename Base>
 Type& gvw::strong_typedef<Type, Base>::Get()
 {
-    return this->value;
+    return this->internal;
 }
 template<typename Type, typename Base>
 const Type& gvw::strong_typedef<Type, Base>::Get() const
 {
-    return this->value;
+    return this->internal;
 }
 template<typename Type, typename Base>
 Type* gvw::strong_typedef<Type, Base>::operator->()
 {
-    return &this->value;
+    return &this->internal;
 }
 template<typename Type, typename Base>
 const Type* gvw::strong_typedef<Type, Base>::operator->() const
 {
-    return &this->value;
+    return &this->internal;
 }
 template<typename Type, typename Base>
 constexpr bool operator>(const Type& Value,
                          const gvw::strong_typedef<Type, Base>& Derived)
 {
-    return Value > Derived.value;
+    return Value > Derived.internal;
 }
 template<typename Type, typename Base>
 constexpr bool operator<(const Type& Value,
                          const gvw::strong_typedef<Type, Base>& Derived)
 {
-    return Value < Derived.value;
+    return Value < Derived.internal;
 }
 template<typename Type, typename Base>
 constexpr bool operator<=(const Type& Value,
                           const gvw::strong_typedef<Type, Base>& Derived)
 {
-    return !bool(Value > Derived.value);
+    return !bool(Value > Derived.internal);
 }
 template<typename Type, typename Base>
 constexpr bool operator>=(const Type& Value,
                           const gvw::strong_typedef<Type, Base>& Derived)
 {
-    return !bool(Value < Derived.value);
+    return !bool(Value < Derived.internal);
 }
 template<typename Type, typename Base>
 constexpr bool operator==(const Type& Value,
                           const gvw::strong_typedef<Type, Base>& Derived)
 {
-    return Value == Derived.value;
+    return Value == Derived.internal;
 }
 template<typename Type, typename Base>
 constexpr bool operator!=(const Type& Value,
                           const gvw::strong_typedef<Type, Base>& Derived)
 {
-    return !bool(Value == Derived.value);
+    return !bool(Value == Derived.internal);
 }
 
 template<typename T>

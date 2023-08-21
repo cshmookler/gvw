@@ -50,7 +50,8 @@ class gvw(ConanFile):
 
     def requirements(self):
         self.requires("vulkan-loader/1.3.239.0")
-        self.requires("vulkan-validationlayers/1.3.239.0")
+        if self.options.gvw_vulkan_validation_layers:
+            self.requires("vulkan-validationlayers/1.3.239.0")
         self.requires("glfw/3.3.8")
         self.requires("glm/cci.20230113")
         self.requires("boost/1.82.0")
