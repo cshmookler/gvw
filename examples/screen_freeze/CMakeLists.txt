@@ -1,0 +1,7 @@
+set(GVW_CURRENT_TARGET screen_freeze)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+add_executable(${GVW_CURRENT_TARGET} "main.cpp")
+target_link_libraries(${GVW_CURRENT_TARGET} PRIVATE ${GVW_AVAILABLE})
+configure_file("vert.spv" "vert.spv" COPYONLY)
+configure_file("frag.spv" "frag.spv" COPYONLY)

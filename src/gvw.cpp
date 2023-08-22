@@ -8,60 +8,6 @@
 #include "gvw-constants.hpp"
 #include "../utils/ansiec/ansiec.hpp"
 
-class gvw::gvw_public_constructor : public gvw
-{
-  public:
-    template<typename... Args>
-    gvw_public_constructor(Args&&... Arguments)
-        : gvw(std::forward<Args>(Arguments)...)
-    {
-    }
-};
-
-class gvw::window_public_constructor : public window
-{
-  public:
-    template<typename... Args>
-    window_public_constructor(Args&&... Arguments)
-        : window(std::forward<Args>(Arguments)...)
-    {
-    }
-};
-
-class gvw::monitor_public_constructor : public monitor
-{
-  public:
-    template<typename... Args>
-    monitor_public_constructor(Args&&... Arguments)
-        : monitor(std::forward<Args>(Arguments)...)
-    {
-    }
-};
-
-class gvw::device_public_constructor : public device
-{
-  public:
-    template<typename... Args>
-    device_public_constructor(Args&&... Arguments)
-        : device(std::forward<Args>(Arguments)...)
-    {
-    }
-};
-
-// template<typename... Args>
-// gvw::terminator<Args...>::terminator::terminator(deleter_signature Deleter,
-//                                                  Args... Arguments)
-//     : deleter(Deleter)
-//     , args(Arguments...)
-// {
-// }
-
-// template<typename... Args>
-// gvw::terminator<Args...>::terminator::~terminator()
-// {
-//     std::apply(this->deleter, this->args);
-// }
-
 gvw::init_hints::init_hints(const info& Init_Hints)
     : glfw_hints(
           { { { GLFW_JOYSTICK_HAT_BUTTONS, Init_Hints.joystickHatButtons },
@@ -86,6 +32,17 @@ void gvw::TerminateGlfw() noexcept
 {
     std::scoped_lock<std::mutex> lock(glfwMutex);
     glfwTerminate();
+}
+
+void gvw::SetGvwErrorCallbackNoMutex(
+    gvw_error_callback GVW_Error_Callback) noexcept
+{
+    gvwErrorCallback = GVW_Error_Callback;
+}
+
+void gvw::SetGlfwErrorCallbackNoMutex(GLFWerrorfun GLFW_Error_Callback) noexcept
+{
+    glfwSetErrorCallback(GLFW_Error_Callback);
 }
 
 void gvw::ThrowOnGvwError(const char* Description)
@@ -126,13 +83,13 @@ gvw::version gvw::GetGlfwCompiletimeVersion() noexcept
 void gvw::SetGvwErrorCallback(gvw_error_callback GVW_Error_Callback) noexcept
 {
     std::scoped_lock<std::mutex> lock(gvwErrorCallbackMutex);
-    gvwErrorCallback = GVW_Error_Callback;
+    SetGvwErrorCallbackNoMutex(GVW_Error_Callback);
 }
 
 void gvw::SetGlfwErrorCallback(GLFWerrorfun GLFW_Error_Callback) noexcept
 {
     std::scoped_lock<std::mutex> lock(glfwMutex);
-    glfwSetErrorCallback(GLFW_Error_Callback);
+    SetGlfwErrorCallbackNoMutex(GLFW_Error_Callback);
 }
 
 void gvw::AppendToJoystickEventBuffer(int JID, int Event)
@@ -343,11 +300,11 @@ VKAPI_ATTR VkBool32 VKAPI_CALL gvw::PrintDebugMessagesToConsole(
 gvw::gvw(const info& Init_Info)
     : glfwTerminator(std::make_unique<terminator<>>(TerminateGlfw))
 {
-    // Set error callbacks
-    SetGvwErrorCallback(Init_Info.gvwErrorCallback);
-    SetGlfwErrorCallback(Init_Info.glfwErrorCallback);
-
     std::scoped_lock<std::mutex> lock(glfwMutex);
+
+    // Set error callbacks
+    SetGvwErrorCallbackNoMutex(Init_Info.gvwErrorCallback);
+    SetGlfwErrorCallbackNoMutex(Init_Info.glfwErrorCallback);
 
     // Apply GLFW initialization hints
     Init_Info.initHints.Apply();
@@ -519,8 +476,8 @@ void gvw::ApplyWindowCreationHints(
 // NOLINTNEXTLINE
 gvw::window_ptr gvw::CreateWindow(const window_info& Window_Info)
 {
-    return std::make_shared<window_public_constructor>(
-        Get(), Window_Info, nullptr);
+    return std::make_shared<window_public_constructor>(this->Get(),
+                                                       Window_Info);
 }
 
 std::vector<gvw::device_ptr> gvw::SelectPhysicalDevices(

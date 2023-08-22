@@ -99,3 +99,13 @@ class gvw::monitor
     /// @brief Resets the gamma ramp of the monitor.
     void ResetGammaRamp() const;
 };
+
+class gvw::monitor_public_constructor : public monitor
+{
+  public:
+    template<typename... Args>
+    monitor_public_constructor(Args&&... Arguments)
+        : monitor(std::forward<Args>(Arguments)...)
+    {
+    }
+};

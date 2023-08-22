@@ -1,6 +1,8 @@
 // Local includes
 #include "window.hpp"
 
+// Standard includes
+#include <algorithm>
 #include <utility>
 
 gvw::window_creation_hints::window_creation_hints(const info& Creation_Hints)
@@ -62,13 +64,12 @@ void gvw::window::DestroyGlfwWindow(ptr GVW, GLFWwindow* Window_Handle) noexcept
 
 gvw::window::window(ptr GVW,
                     const window_info& Window_Info,
-                    GLFWwindow* Parent_Window,
-                    const std::optional<device_ptr>& Logical_Device)
+                    window* Parent_Window)
     : gvw(std::move(GVW))
 {
     std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
 
-    // Apply window creation hints
+    // Apply window creation hints.
     Window_Info.creationHints.Apply();
 
     // Briefly hide the window if an initial position was specified. If this is
@@ -78,17 +79,18 @@ gvw::window::window(ptr GVW,
         glfwWindowHint(Window_Info.creationHints.visible.HINT, GLFW_FALSE);
     }
 
-    // Create the window
-    this->windowHandle = glfwCreateWindow(Window_Info.size->width,
-                                          Window_Info.size->height,
-                                          Window_Info.title,
-                                          Window_Info.fullScreenMonitor,
-                                          Parent_Window);
+    // Create the window.
+    this->windowHandle =
+        glfwCreateWindow(Window_Info.size->width,
+                         Window_Info.size->height,
+                         Window_Info.title,
+                         Window_Info.fullScreenMonitor,
+                         nullptr); // "We use Vulkan in this household!"
 
     this->glfwWindowDestroyer = std::make_unique<terminator<ptr, GLFWwindow*>>(
         DestroyGlfwWindow, this->gvw, this->windowHandle);
 
-    // Link this window object with the underlying GLFW window object
+    // Link this window object with the underlying GLFW window object.
     glfwSetWindowUserPointer(this->windowHandle, this);
 
     // Set an initial position if one was specified.
@@ -104,10 +106,10 @@ gvw::window::window(ptr GVW,
     this->resetSize = SizeNoMutex();
     this->resetMutex.unlock();
 
-    // Set callbacks
+    // Set window event callbacks.
     this->EventCallbacksNoMutex(Window_Info.eventCallbacks);
 
-    // Create window surface
+    // Create window surface.
     VkSurfaceKHR tempSurface = nullptr;
     if (glfwCreateWindowSurface(*this->gvw->vulkanInstance,
                                 this->windowHandle,
@@ -118,17 +120,21 @@ gvw::window::window(ptr GVW,
     this->surface =
         vk::UniqueSurfaceKHR(tempSurface, *this->gvw->vulkanInstance);
 
-    // Select physical device and create logical device.
-    if (Logical_Device.has_value()) {
-        this->logicalDeviceInfo = Logical_Device.value();
+    // Use an already existing logical device or create a new one.
+    if (Window_Info.device != nullptr) {
+        this->logicalDeviceInfo = Window_Info.device;
+    } else if (Parent_Window != nullptr) {
+        this->logicalDeviceInfo = Parent_Window->logicalDeviceInfo;
     } else {
         this->logicalDeviceInfo =
             gvw->SelectPhysicalDevices(Window_Info.deviceInfo,
                                        this->surface.get())
                 .at(0);
     }
-    this->logicalDevice = logicalDeviceInfo->logicalDevice->get();
+    /// @todo Remove this. Rename `logicalDeviceInfo` to `logicalDevice`.
+    this->logicalDevice = this->logicalDeviceInfo->logicalDevice->get();
 
+    // Find indicies for the graphics and present queue families.
     std::optional<uint32_t> viableGraphicsQueueFamilyIndex;
     std::optional<uint32_t> viablePresentationQueueFamilyIndex;
     const auto& queueInfos = this->logicalDeviceInfo->queueInfos;
@@ -165,50 +171,68 @@ gvw::window::window(ptr GVW,
         gvwErrorCallback("The selected physical device does not offer a queue "
                          "family that supports presentation.");
     }
-
     this->graphicsQueueIndex = viableGraphicsQueueFamilyIndex.value();
     this->presentQueueIndex = viablePresentationQueueFamilyIndex.value();
 
+    /// @todo Allow selection of specific queue indicies.
     this->graphicsQueue =
         this->logicalDeviceInfo->logicalDevice->get().getQueue(
             this->graphicsQueueIndex, 0);
     this->presentQueue = this->logicalDeviceInfo->logicalDevice->get().getQueue(
         this->presentQueueIndex, 0);
 
-    // Create render pass.
-    this->renderPass = this->logicalDeviceInfo->CreateRenderPass(
-        { .format = this->logicalDeviceInfo->surfaceFormat.format });
+    // Use an already existing render pass or create a new one.
+    if (Window_Info.renderPass != nullptr) {
+        if (Window_Info.renderPass->handle.getOwner() != this->logicalDevice) {
+            gvwErrorCallback("Cannot use a render pass created with a "
+                             "different logical device.");
+        }
+        this->renderPass = Window_Info.renderPass;
+    } else {
+        this->renderPass = this->logicalDeviceInfo->CreateRenderPass(
+            { .format = this->logicalDeviceInfo->surfaceFormat.format });
+    }
 
     // Create swapchain.
     this->CreateSwapchain();
 
-    // Load shaders
-    std::vector<gvw::shader_info> shaderInfo = {
-        { .code = "vert.spv", .stage = vk::ShaderStageFlagBits::eVertex },
-        { .code = "frag.spv", .stage = vk::ShaderStageFlagBits::eFragment }
-    };
-    this->shaders =
-        this->logicalDeviceInfo->LoadShadersFromSpirVFiles(shaderInfo);
+    // Use an already existing pipeline or create a new one.
+    if (Window_Info.pipeline != nullptr) {
+        if (Window_Info.pipeline->pipeline.getOwner() != this->logicalDevice) {
+            gvwErrorCallback("Cannot use a pipeline created with a different "
+                             "logical device.");
+        }
+        this->shaders = Window_Info.shaders;
+        this->pipeline = Window_Info.pipeline;
+    } else {
+        // Attempt to load the default shaders.
+        std::vector<gvw::shader_info> shaderInfo = {
+            { .code = "vert.spv", .stage = vk::ShaderStageFlagBits::eVertex },
+            { .code = "frag.spv", .stage = vk::ShaderStageFlagBits::eFragment }
+        };
+        this->shaders =
+            this->logicalDeviceInfo->LoadShadersFromSpirVFiles(shaderInfo);
 
-    std::vector<vk::VertexInputBindingDescription> bindingDescriptions = {
-        { .binding = 0,
-          .stride = sizeof(vertex),
-          .inputRate = vk::VertexInputRate::eVertex }
-    };
-    std::vector<vk::VertexInputAttributeDescription> attributeDescriptions = {
-        { { .location = 0,
-            .binding = 0,
-            .format = vk::Format::eR32G32Sfloat,
-            .offset = offsetof(vertex, position) },
-          { .location = 1,
-            .binding = 0,
-            .format = vk::Format::eR32G32B32Sfloat,
-            .offset = offsetof(vertex, color) } }
-    };
-
-    this->CreatePipeline(dynamic_states::VIEWPORT_AND_SCISSOR,
-                         bindingDescriptions,
-                         attributeDescriptions);
+        std::vector<vk::VertexInputBindingDescription> bindingDescriptions = {
+            { .binding = 0,
+              .stride = sizeof(vertex),
+              .inputRate = vk::VertexInputRate::eVertex }
+        };
+        std::vector<vk::VertexInputAttributeDescription>
+            attributeDescriptions = {
+                { { .location = 0,
+                    .binding = 0,
+                    .format = vk::Format::eR32G32Sfloat,
+                    .offset = offsetof(vertex, position) },
+                  { .location = 1,
+                    .binding = 0,
+                    .format = vk::Format::eR32G32B32Sfloat,
+                    .offset = offsetof(vertex, color) } }
+            };
+        this->CreatePipeline(dynamic_states::VIEWPORT_AND_SCISSOR,
+                             bindingDescriptions,
+                             attributeDescriptions);
+    }
 
     // Create the command pool.
     vk::CommandPoolCreateInfo commandPoolCreateInfo = {
@@ -220,7 +244,7 @@ gvw::window::window(ptr GVW,
 
     // Create vertex staging buffer.
     this->vertexStagingBuffer = this->logicalDeviceInfo->CreateBuffer(
-        { .sizeInBytes = Window_Info.sizeOfVerticesInBytes,
+        { .sizeInBytes = Window_Info.sizeOfDynamicVerticesInBytes,
           .usage = vk::BufferUsageFlagBits::eTransferSrc,
           .memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
                               vk::MemoryPropertyFlagBits::eHostCoherent });
@@ -307,7 +331,7 @@ void gvw::window::CreateSwapchain()
           .graphicsQueueIndex = this->graphicsQueueIndex,
           .presentQueueIndex = this->presentQueueIndex,
           .surface = this->surface.get(),
-          .renderPass = this->renderPass.get(),
+          .renderPass = this->renderPass->handle.get(),
           .oldSwapchain = oldSwapchain });
 }
 
@@ -324,7 +348,7 @@ void gvw::window::CreatePipeline(
           .vertexInputBindingDescriptions = Vertex_Input_Binding_Descriptions,
           .vertexInputAttributeDescriptions =
               Vertex_Input_Attribute_Description,
-          .renderPass = this->renderPass.get() });
+          .renderPass = this->renderPass->handle.get() });
 }
 
 void gvw::window::DrawFrame(const std::vector<vertex>& Vertices)
@@ -334,13 +358,13 @@ void gvw::window::DrawFrame(const std::vector<vertex>& Vertices)
             this->inFlightFences.at(this->currentFrameIndex).get(),
             VK_TRUE,
             UINT64_MAX) != vk::Result::eSuccess) {
-        throw std::runtime_error("Failed to wait for the previous "
-                                 "frame to finish rendering.");
+        gvwErrorCallback("Failed to wait for the previous "
+                         "frame to finish rendering.");
     }
 
     // Get an image from the swapchain to render to.
     vk::ResultValue<uint32_t> imageIndex = logicalDevice.acquireNextImageKHR(
-        this->swapchainInfo->swapchain.get(),
+        this->swapchainInfo->handle.get(),
         UINT64_MAX,
         nextImageAvailableSemaphores.at(currentFrameIndex).get());
 
@@ -349,8 +373,7 @@ void gvw::window::DrawFrame(const std::vector<vertex>& Vertices)
         this->CreateSwapchain();
     } else if (imageIndex.result != vk::Result::eSuccess &&
                imageIndex.result != vk::Result::eSuboptimalKHR) {
-        throw std::runtime_error(
-            "Failed to acquire next image from the swapchain.");
+        gvwErrorCallback("Failed to acquire next image from the swapchain.");
     } else {
         logicalDevice.resetFences(inFlightFences.at(currentFrameIndex).get());
 
@@ -388,7 +411,7 @@ void gvw::window::DrawFrame(const std::vector<vertex>& Vertices)
         vk::ClearValue clearValue(clearColor);
 
         vk::RenderPassBeginInfo renderPassBeginInfo = {
-            .renderPass = this->renderPass.get(),
+            .renderPass = this->renderPass->handle.get(),
             .framebuffer =
                 this->swapchainInfo->swapchainFramebuffers.at(imageIndex.value)
                     .get(),
@@ -435,7 +458,7 @@ void gvw::window::DrawFrame(const std::vector<vertex>& Vertices)
             .pWaitSemaphores =
                 &finishedRenderingSemaphores.at(currentFrameIndex).get(),
             .swapchainCount = 1,
-            .pSwapchains = &this->swapchainInfo->swapchain.get(),
+            .pSwapchains = &this->swapchainInfo->handle.get(),
             .pImageIndices = &imageIndex.value,
             .pResults = nullptr // optional
         };
@@ -448,7 +471,7 @@ void gvw::window::DrawFrame(const std::vector<vertex>& Vertices)
             logicalDevice.waitIdle();
             this->CreateSwapchain();
         } else if (presentResult != vk::Result::eSuccess) {
-            throw std::runtime_error("Presentation failed.");
+            gvwErrorCallback("Presentation failed.");
         }
 
         currentFrameIndex = (currentFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -550,10 +573,10 @@ void gvw::window::EventCallbacks(const window_event_callbacks& Event_Callbacks)
     this->EventCallbacksNoMutex(Event_Callbacks);
 }
 
-gvw::window gvw::window::CreateChildWindow(
-    const window_info& Window_Info) // NOLINT
+gvw::window_ptr gvw::window::CreateChildWindow(const window_info& Window_Info)
 {
-    return { this->gvw, Window_Info, this->windowHandle };
+    return std::make_shared<window_public_constructor>(
+        this->gvw, Window_Info, this);
 }
 
 GLFWwindow* gvw::window::Handle() const noexcept

@@ -47,7 +47,7 @@ class gvw::window
     uint32_t presentQueueIndex;
     vk::Queue presentQueue;
 
-    vk::UniqueRenderPass renderPass;
+    render_pass_ptr renderPass;
 
     swapchain_ptr swapchainInfo;
 
@@ -169,8 +169,7 @@ class gvw::window
     /// from outside of GVW.
     window(ptr GVW,
            const window_info& Window_Info = DEFAULT_WINDOW_INFO,
-           GLFWwindow* Parent_Window = nullptr,
-           const std::optional<device_ptr>& Logical_Device = std::nullopt);
+           window* Parent_Window = nullptr);
 
     // Allow the private constructor to be called by the parent class.
     friend class gvw;
@@ -266,7 +265,7 @@ class gvw::window
                             NO_WINDOW_EVENT_CALLBACKS);
 
     /// @brief Creates a child window.
-    [[nodiscard]] window CreateChildWindow(
+    [[nodiscard]] window_ptr CreateChildWindow(
         const window_info& Window_Info = DEFAULT_WINDOW_INFO);
 
     /// @brief Returns the handle to the underlying GLFW window object.
@@ -516,4 +515,14 @@ class gvw::window
 
     /// @todo Declare and define the icon functions.
     /// @todo Declare and define the cursor customization functions.
+};
+
+class gvw::window_public_constructor : public window
+{
+  public:
+    template<typename... Args>
+    window_public_constructor(Args&&... Arguments)
+        : window(std::forward<Args>(Arguments)...)
+    {
+    }
 };

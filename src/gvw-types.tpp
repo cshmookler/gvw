@@ -183,34 +183,43 @@ constexpr bool operator!=(const Type& Value,
     return !bool(Value == Derived.internal);
 }
 
+template<typename... Args>
+gvw::terminator<Args...>::terminator::terminator(deleter_signature Deleter,
+                                                 Args... Arguments)
+    : deleter(Deleter)
+    , args(Arguments...)
+{
+}
+template<typename... Args>
+gvw::terminator<Args...>::terminator::~terminator()
+{
+    std::apply(this->deleter, this->args);
+}
+
 template<typename T>
 gvw::glfw_hint<T>::glfw_hint(int Hint, T Value)
     : HINT(Hint)
     , value(Value)
 {
 }
-
 template<typename T>
 gvw::glfw_hint<T>::glfw_hint(const glfw_hint<T>& GLFW_Hint)
     : HINT(GLFW_Hint.HINT)
     , value(GLFW_Hint.value)
 {
 }
-
 template<typename T>
 gvw::glfw_hint<T>::glfw_hint(glfw_hint<T>&& GLFW_Hint) noexcept
     : HINT(std::move(GLFW_Hint.HINT))
     , value(std::move(GLFW_Hint.value))
 {
 }
-
 template<typename T>
 gvw::glfw_hint<T>& gvw::glfw_hint<T>::operator=(T Value)
 {
     this->value = Value;
     return *this;
 }
-
 template<gvw::int_hint_function IntHintFunc,
          gvw::string_hint_function StringHintFunc,
          size_t IntHints,
@@ -222,7 +231,6 @@ gvw::glfw_hints<IntHintFunc, StringHintFunc, IntHints, StringHints>::glfw_hints(
     , stringHints(std::move(String_Hints))
 {
 }
-
 template<gvw::int_hint_function IntHintFunc,
          gvw::string_hint_function StringHintFunc,
          size_t IntHints,
@@ -233,7 +241,6 @@ gvw::glfw_hints<IntHintFunc, StringHintFunc, IntHints, StringHints>::glfw_hints(
     , stringHints(GLFW_Hints.stringHints)
 {
 }
-
 template<gvw::int_hint_function IntHintFunc,
          gvw::string_hint_function StringHintFunc,
          size_t IntHints,
@@ -246,7 +253,6 @@ gvw::glfw_hints<IntHintFunc, StringHintFunc, IntHints, StringHints>::operator=(
     this->stringHints = GLFW_Hints.stringHints;
     return *this;
 }
-
 template<gvw::int_hint_function IntHintFunc,
          gvw::string_hint_function StringHintFunc,
          size_t IntHints,
@@ -259,7 +265,6 @@ gvw::glfw_hints<IntHintFunc, StringHintFunc, IntHints, StringHints>::operator=(
     this->stringHints = std::move(GLFW_Hints.stringHints);
     return *this;
 }
-
 template<gvw::int_hint_function IntHintFunc,
          gvw::string_hint_function StringHintFunc,
          size_t IntHints,
@@ -281,21 +286,18 @@ gvw::coordinate<T>::coordinate(T X, T Y) // NOLINT
     , y(Y)
 {
 }
-
 template<typename T>
 gvw::coordinate<T>::coordinate(const area<T>& Area)
     : x(Area.width)
     , y(Area.height)
 {
 }
-
 template<typename T>
 gvw::coordinate<T>::coordinate(area<T>&& Area) noexcept
     : x(std::move(Area.width))
     , y(std::move(Area.height))
 {
 }
-
 template<typename T>
 gvw::coordinate<T>& gvw::coordinate<T>::operator=(const area<T>& Area)
 {
@@ -303,7 +305,6 @@ gvw::coordinate<T>& gvw::coordinate<T>::operator=(const area<T>& Area)
     this->y = Area.height;
     return *this;
 }
-
 template<typename T>
 gvw::coordinate<T>& gvw::coordinate<T>::operator=(area<T>&& Area) noexcept
 {
@@ -311,13 +312,11 @@ gvw::coordinate<T>& gvw::coordinate<T>::operator=(area<T>&& Area) noexcept
     this->y = std::move(Area.height);
     return *this;
 }
-
 template<typename T>
 bool gvw::coordinate<T>::operator==(const coordinate<T>& Coordinate) const
 {
     return (this->x == Coordinate.x) && (this->y == Coordinate.y);
 }
-
 template<typename T>
 bool gvw::coordinate<T>::operator!=(const coordinate<T>& Coordinate) const
 {
@@ -330,21 +329,18 @@ gvw::area<T>::area(T Width, T Height)
     , height(Height)
 {
 }
-
 template<typename T>
 gvw::area<T>::area(const coordinate<T>& Coordinate)
     : width(Coordinate.X)
     , height(Coordinate.Y)
 {
 }
-
 template<typename T>
 gvw::area<T>::area(coordinate<T>&& Coordinate) noexcept
     : width(std::move(Coordinate.X))
     , height(std::move(Coordinate.Y))
 {
 }
-
 template<typename T>
 gvw::area<T>& gvw::area<T>::operator=(const coordinate<T>& Coordinate)
 {
@@ -352,7 +348,6 @@ gvw::area<T>& gvw::area<T>::operator=(const coordinate<T>& Coordinate)
     this->height = Coordinate.y;
     return *this;
 }
-
 template<typename T>
 gvw::area<T>& gvw::area<T>::operator=(coordinate<T>&& Coordinate) noexcept
 {
@@ -360,13 +355,11 @@ gvw::area<T>& gvw::area<T>::operator=(coordinate<T>&& Coordinate) noexcept
     this->height = std::move(Coordinate.y);
     return *this;
 }
-
 template<typename T>
 bool gvw::area<T>::operator==(const area<T>& Area) const
 {
     return (this->width == Area.width) && (this->height == Area.height);
 }
-
 template<typename T>
 bool gvw::area<T>::operator!=(const area<T>& Area) const
 {

@@ -51,24 +51,21 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(Vulkan REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
-find_package(Boost COMPONENTS filesystem REQUIRED)
 message("-- Vulkan Libraries: ${Vulkan_LIBRARIES}")
 message("-- GLFW3 Libraries: ${glfw3_LIBRARIES}")
 message("-- GLM Libraries: ${glm_LIBRARIES}")
-message("-- BOOST Libraries: ${Boost_LIBRARIES}")
 set(GVW_DEPENDENCIES
     ${Vulkan_LIBRARIES}
     ${glfw3_LIBRARIES}
     ${glm_LIBRARIES}
-    ${Boost_LIBRARIES}
 )
 
 # GVW source files
 set(GVW_SOURCE_FILES
-    gvw/gvw.cpp
-    gvw/monitor.cpp
-    gvw/window.cpp
-    gvw/device.cpp)
+    src/gvw.cpp
+    src/monitor.cpp
+    src/window.cpp
+    src/device.cpp)
 
 # The name of an available GVW library file.
 set(GVW_AVAILABLE)
@@ -105,12 +102,7 @@ if(GVW_TESTS)
             "\"-D GVW_SHARED=ON\" to your CMake command.")
     endif()
 
-    # set(CMAKE_CXX_STANDARD 20)
-    # set(CMAKE_CXX_STANDARD_REQUIRED ON)
-    # add_executable(threads tests/threads/main.cpp)
-    # target_link_libraries(threads PRIVATE ${GVW_AVAILABLE})
-    # set_target_properties(threads PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests/threads")
-    # add_custom_command(TARGET threads POST_BUILD COMMAND $<TARGET_FILE:threads>)
+    add_subdirectory("tests")
 endif()
 
 # Build GVW examples
@@ -122,17 +114,5 @@ if(GVW_EXAMPLES)
             "\"-D GVW_SHARED=ON\" to your CMake command.")
     endif()
 
-    set(CMAKE_CXX_STANDARD 20)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-    add_executable(screen_freeze examples/screen_freeze/main.cpp)
-    target_link_libraries(screen_freeze PRIVATE ${GVW_AVAILABLE})
-    set_target_properties(screen_freeze PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/examples/screen_freeze")
-
-    set(CMAKE_CXX_STANDARD 20)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-    add_executable(breakout examples/breakout/main.cpp)
-    target_link_libraries(breakout PRIVATE ${GVW_AVAILABLE})
-    set_target_properties(breakout PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/examples/breakout")
-    configure_file(examples/breakout/vert.spv "${CMAKE_BINARY_DIR}/examples/breakout/vert.spv" COPYONLY)
-    configure_file(examples/breakout/frag.spv "${CMAKE_BINARY_DIR}/examples/breakout/frag.spv" COPYONLY)
+    add_subdirectory("examples")
 endif()

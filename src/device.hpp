@@ -49,7 +49,7 @@ class gvw::device
     [[nodiscard]] buffer CreateBuffer(
         const buffer_info& Buffer_Info = DEFAULT_BUFFER_INFO);
 
-    [[nodiscard]] vk::UniqueRenderPass CreateRenderPass(
+    [[nodiscard]] render_pass_ptr CreateRenderPass(
         const render_pass_info& Render_Pass_Info = DEFAULT_RENDER_PASS_INFO);
 
     [[nodiscard]] swapchain_ptr CreateSwapchain(
@@ -57,4 +57,14 @@ class gvw::device
 
     [[nodiscard]] pipeline_ptr CreatePipeline(
         const pipeline_info& Pipeline_Info = DEFAULT_PIPELINE_INFO);
+};
+
+class gvw::device_public_constructor : public device
+{
+  public:
+    template<typename... Args>
+    device_public_constructor(Args&&... Arguments)
+        : device(std::forward<Args>(Arguments)...)
+    {
+    }
 };

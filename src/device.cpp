@@ -1,9 +1,6 @@
 // Standard includes
 #include <fstream>
 
-// External includes
-#include <boost/dll/runtime_symbol_info.hpp>
-
 // Local includes
 #include "device.hpp"
 
@@ -196,19 +193,10 @@ gvw::device::device(
 std::vector<gvw::shader> gvw::device::LoadShadersFromSpirVFiles(
     const std::vector<shader_info>& Shader_Infos)
 {
-    boost::filesystem::path executableDirectory =
-        boost::dll::program_location().parent_path();
-
     std::vector<shader> shaders;
 
     for (const auto& shaderInfo : Shader_Infos) {
-        boost::filesystem::path absolutePath =
-            boost::filesystem::path(shaderInfo.code).is_absolute()
-                ? shaderInfo.code
-                : (executableDirectory / shaderInfo.code);
-
-        auto charBuffer =
-            ReadFile<std::vector<char>>(absolutePath.string().c_str());
+        auto charBuffer = ReadFile<std::vector<char>>(shaderInfo.code);
 
         vk::ShaderModuleCreateInfo shaderModuleCreateInfo = {
             .codeSize = charBuffer.size(),
@@ -238,7 +226,6 @@ gvw::buffer gvw::device::CreateBuffer(const buffer_info& Buffer_Info)
     buffer buffer = { .size = Buffer_Info.sizeInBytes,
                       .handle = vk::UniqueBuffer(nullptr),
                       .memory = vk::UniqueDeviceMemory(nullptr) };
-    // buffer.size = Buffer_Info.sizeInBytes;
 
     vk::BufferCreateInfo bufferCreateInfo = {
         .size = buffer.size,
@@ -283,7 +270,7 @@ gvw::buffer gvw::device::CreateBuffer(const buffer_info& Buffer_Info)
     return buffer;
 }
 
-vk::UniqueRenderPass gvw::device::CreateRenderPass(
+gvw::render_pass_ptr gvw::device::CreateRenderPass(
     const render_pass_info& Render_Pass_Info)
 {
     // Describe how to use the attachment.
@@ -331,8 +318,9 @@ vk::UniqueRenderPass gvw::device::CreateRenderPass(
         .pDependencies = &subpassDependency
     };
 
-    return this->logicalDevice->get().createRenderPassUnique(
-        renderPassCreateInfo);
+    return std::make_shared<render_pass>(
+        this->logicalDevice->get().createRenderPassUnique(
+            renderPassCreateInfo));
 }
 
 gvw::swapchain_ptr gvw::device::CreateSwapchain(
@@ -404,14 +392,13 @@ gvw::swapchain_ptr gvw::device::CreateSwapchain(
         .clipped = VK_TRUE,
         .oldSwapchain = nullptr
     };
-    swapchainInfo->swapchain =
-        this->logicalDevice->get().createSwapchainKHRUnique(
-            swapchainCreateInfo);
+    swapchainInfo->handle = this->logicalDevice->get().createSwapchainKHRUnique(
+        swapchainCreateInfo);
 
     // Get handles to swapchain images.
     swapchainInfo->swapchainImages =
         this->logicalDevice->get().getSwapchainImagesKHR(
-            swapchainInfo->swapchain.get());
+            swapchainInfo->handle.get());
 
     // Get handles to swapchain image views.
     swapchainInfo->swapchainImageViews

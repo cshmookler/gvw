@@ -76,16 +76,12 @@ class gvw::terminator
     std::tuple<Args...> args;
 
   public:
-    terminator(deleter_signature Deleter, Args... Arguments)
-        : deleter(Deleter)
-        , args(Arguments...)
-    {
-    }
+    terminator(deleter_signature Deleter, Args... Arguments);
     terminator(const terminator&) = default;
     terminator(terminator&&) noexcept = default;
     terminator& operator=(const terminator&) = default;
     terminator& operator=(terminator&&) noexcept = default;
-    ~terminator() { std::apply(this->deleter, this->args); }
+    ~terminator();
 };
 
 struct gvw::version
@@ -449,6 +445,11 @@ struct gvw::render_pass_info
     vk::ImageLayout graphicsLayout = vk::ImageLayout::eColorAttachmentOptimal;
 };
 
+struct gvw::render_pass
+{
+    vk::UniqueRenderPass handle;
+};
+
 struct gvw::swapchain_info
 {
     const window_size& framebufferSize = window_size::W_640_H_360;
@@ -469,7 +470,7 @@ struct gvw::swapchain
                               .maxDepth = 1.0F };
     vk::Rect2D scissor = { .offset = { .x = 0, .y = 0 },
                            .extent = { .width = 0, .height = 0 } };
-    vk::UniqueSwapchainKHR swapchain;
+    vk::UniqueSwapchainKHR handle;
     std::vector<vk::Image> swapchainImages;
     std::vector<vk::UniqueImageView> swapchainImageViews;
     std::vector<vk::UniqueFramebuffer> swapchainFramebuffers;
@@ -501,7 +502,17 @@ struct gvw::window_info
     const window_creation_hints& creationHints = DEFAULT_WINDOW_CREATION_HINTS;
     const window_event_callbacks& eventCallbacks = NO_WINDOW_EVENT_CALLBACKS;
     const device_info& deviceInfo = DEFAULT_DEVICE_INFO;
-    vk::DeviceSize sizeOfVerticesInBytes = 0;
+    device_ptr device = nullptr;
+    render_pass_ptr renderPass = nullptr;
+    // swapchain_ptr swapchain = nullptr;
+    const std::vector<shader>& shaders = NO_SHADERS;
+    // const std::vector<vk::VertexInputBindingDescription>&
+    //     shaderBindingDescriptions;
+    // const std::vector<vk::VertexInputAttributeDescription>&
+    //     shaderAttributeDescriptions;
+    // const std::vector<gvw::vertex>& staticVertices;
+    vk::DeviceSize sizeOfDynamicVerticesInBytes = 0;
+    pipeline_ptr pipeline = nullptr;
 };
 
 struct gvw::window_event::key

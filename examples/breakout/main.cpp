@@ -102,6 +102,17 @@ int main() // NOLINT
         { { 1.0F, -1.0F }, { 1.0F, 0.0F, 0.0F } },
         { { 1.0F, 1.0F }, { 0.0F, 0.0F, 1.0F } }
     };
+
+    gvw::window_ptr plat = gvw->CreateWindow(
+        { .position = PLAT_WINDOW_POSITION,
+          .size = PLAT_WINDOW_SIZE,
+          .title = gvw::window_title::BLANK,
+          .creationHints = CREATION_HINTS,
+          .eventCallbacks = platWindowEventCallbacks,
+          .sizeOfDynamicVerticesInBytes =
+              (sizeof(gvw::vertex) * WHITE_VERTICES.size()) });
+    plat->DrawFrame(WHITE_VERTICES);
+
     std::vector<gvw::window_ptr> blocks;
     blocks.resize(BLOCK_WINDOW_TOTAL_COUNT);
     for (int yIndex = 0; yIndex < BLOCK_WINDOW_COUNT.y; ++yIndex) {
@@ -115,37 +126,26 @@ int main() // NOLINT
                 vertex.color = ColorCascadeGenerator(colorCascadeScale);
             }
 
-            block = gvw->CreateWindow(
+            block = plat->CreateChildWindow(
                 { .position = { { BLOCK_WINDOW_SIZE->width * xIndex,
                                   BLOCK_WINDOW_SIZE->height * yIndex } },
                   .size = BLOCK_WINDOW_SIZE,
                   .title = gvw::window_title::BLANK,
                   .creationHints = CREATION_HINTS,
-                  .sizeOfVerticesInBytes =
+                  .sizeOfDynamicVerticesInBytes =
                       (sizeof(gvw::vertex) * blockVertices.size()) });
             block->DrawFrame(blockVertices);
-            return 0;
         }
     }
 
-    gvw::window_ptr ball =
-        gvw->CreateWindow({ .position = BALL_WINDOW_POSITION,
-                            .size = BALL_WINDOW_SIZE,
-                            .title = gvw::window_title::BLANK,
-                            .creationHints = CREATION_HINTS,
-                            .sizeOfVerticesInBytes = (sizeof(gvw::vertex) *
-                                                      WHITE_VERTICES.size()) });
+    gvw::window_ptr ball = plat->CreateChildWindow(
+        { .position = BALL_WINDOW_POSITION,
+          .size = BALL_WINDOW_SIZE,
+          .title = gvw::window_title::BLANK,
+          .creationHints = CREATION_HINTS,
+          .sizeOfDynamicVerticesInBytes =
+              (sizeof(gvw::vertex) * WHITE_VERTICES.size()) });
     ball->DrawFrame(WHITE_VERTICES);
-
-    gvw::window_ptr plat =
-        gvw->CreateWindow({ .position = PLAT_WINDOW_POSITION,
-                            .size = PLAT_WINDOW_SIZE,
-                            .title = gvw::window_title::BLANK,
-                            .creationHints = CREATION_HINTS,
-                            .eventCallbacks = platWindowEventCallbacks,
-                            .sizeOfVerticesInBytes = (sizeof(gvw::vertex) *
-                                                      WHITE_VERTICES.size()) });
-    plat->DrawFrame(WHITE_VERTICES);
 
     const gvw::coordinate<float> BALL_VELOCITY_INIT = { -230.F, 120.F };
     float ballVelocityModifier = 1;
