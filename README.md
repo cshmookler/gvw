@@ -43,9 +43,13 @@ $ conan build . -c tools.system.package_manager:mode=install -c tools.system.pac
 
 ### **Build from source and install using Conan 2 (for Windows)**
 **1.** Download the GVW source code from https://github.com/cshmookler/GLFW-and-Vulkan-wrapper/archive/refs/heads/main.zip and extract it.
+
 **2.** Download and install Python 3.6+ from https://www.python.org/downloads/ (Make sure you add python.exe to your PATH during installation!).
+
 **3.** Download and install a C++ compiler that supports C++20 or higher (Example: MSVC).
+
 **4.** Open a new command prompt window by pressing the super key, typing `cmd` and pressing enter. Then use the `cd` command to navigate to the extracted GVW source code.
+
 **5.** Verify that Python was successfully added to your PATH and has a version >= 3.6.
 ```shell
 > python --version
@@ -75,6 +79,15 @@ To build this project with Conan 2 without installing it, swap out `conan create
 ```shell
 > conan build . --build=missing -s build_type=Release
 ```
+
+### **GVW Programming Guidelines**
+ 1. Conform to the formatting rules defined in `.clang-tidy` and `.clang-format`.
+ 2. Header files (ending with .hpp) must begin with `#pragma once` and a comment providing general information about the file.
+ 3. Header files may only contain declarations and implementation files may only contain implementations. Type definitions are the only exception.
+ 4. Public identifiers must be declared within the GVW namespace, but not within a subnamespace. Constant variables representing type configurations are the only exception, but their subnamespace must be directly below GVW and must end with `_config`.
+ 5. Private identifiers must be declared within a subnamespace of GVW named `internal`.
+ 6. Documenting public and private identifiers with comments is both recommended and optional.
+ 7. Prefer RAII over C-style resource management.
 
 ### **Technical TODO**
  * [ ] Create enums for GLFW integer values.

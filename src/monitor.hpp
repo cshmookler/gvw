@@ -10,102 +10,90 @@
 // Local includes
 #include "gvw.hpp"
 
-class gvw::monitor
+namespace gvw {
+
+class monitor : internal::uncopyable_unmovable // NOLINT
 {
-    ////////////////////////////////////////////////////////////
-    ///                   Private Variables                  ///
-    ////////////////////////////////////////////////////////////
+    friend internal::monitor_public_constructor;
 
-    /// @brief The GVW instance.
-    ptr gvw;
-
-    /// @brief The underlying GLFW monitor handle.
-    std::atomic<GLFWmonitor*> monitorHandle = nullptr;
-
-    ////////////////////////////////////////////////////////////
-    ///       Constructors, Operators, and Destructors       ///
-    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    ///                Constructors, Operators, and Destructor               ///
+    ////////////////////////////////////////////////////////////////////////////
 
     /// @brief Initializes the monitor object.
     /// @remark This constructor is made private to prevent if from being called
     /// from outside of GVW.
-    monitor(ptr GVW, GLFWmonitor* Monitor_Handle) noexcept;
-
-    // Allow the private constructor to be called by the parent class.
-    friend class gvw;
+    monitor(GLFWmonitor* Monitor_Handle);
 
   public:
-    // Delete the copy constructor, move constructor, copy assignment operator,
-    // and move assignment operator. It should not be possible to copy or move
-    // this object.
-    monitor(const monitor&) = delete;
-    monitor(monitor&&) noexcept = delete;
-    monitor& operator=(const monitor&) = delete;
-    monitor& operator=(monitor&&) = delete;
-
     /// @brief The destructor is public so as to allow explicit destruction
     /// using the delete operator.
     ~monitor() = default;
 
-    ////////////////////////////////////////////////////////////
-    ///                Public Member Functions               ///
-    ////////////////////////////////////////////////////////////
+  private:
+    ////////////////////////////////////////////////////////////////////////////
+    ///                           Private Variables                          ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    instance_ptr gvwInstance;
+
+    /// @brief The underlying GLFW monitor handle.
+    GLFWmonitor* monitorHandle = nullptr;
+    std::mutex monitorMutex;
+
+  public:
+    ////////////////////////////////////////////////////////////////////////////
+    ///                        Public Member Functions                       ///
+    ////////////////////////////////////////////////////////////////////////////
 
     /// @brief Returns the handle to the underlying GLFW monitor object.
-    [[nodiscard]] GLFWmonitor* Handle() const noexcept;
-
-    /// @brief Returns the handle to the underlying GLFW monitor object.
-    void Handle(GLFWmonitor* Handle) noexcept;
+    [[nodiscard]] GLFWmonitor* GetHandle() const noexcept;
 
     /// @brief Returns the video mode of the monitor.
-    [[nodiscard]] const GLFWvidmode* VideoMode();
+    [[nodiscard]] const GLFWvidmode* GetVideoMode();
 
     /// @brief Returns a vector of video modes supported by the monitor.
-    [[nodiscard]] std::vector<const GLFWvidmode*> SupportedVideoModes() const;
+    [[nodiscard]] std::vector<const GLFWvidmode*> GetSupportedVideoModes()
+        const;
 
     /// @brief Returns the physical size of the monitor in millimeters.
-    [[nodiscard]] area<int> PhysicalSize() const;
+    [[nodiscard]] area<int> GetPhysicalSize() const;
 
     /// @brief Returns the content scale of the monitor.
     /// @remark The content scale of the monitor is the ratio between the
     /// current DPI and the platform's default DPI.
-    [[nodiscard]] coordinate<float> ContentScale() const;
+    [[nodiscard]] coordinate<float> GetContentScale() const;
 
     /// @brief Returns the position of the upper-left corner of the monitor on
     /// the virtual screen in screen coordinates.
-    [[nodiscard]] coordinate<int> VirtualPosition() const;
+    [[nodiscard]] coordinate<int> GetVirtualPosition() const;
 
     /// @brief Returns the origin of the work area in screen coordinates.
     /// @remark The position of the work area may differ from the monitor
     /// virtual position if a toolbar is placed on top or on the left of the
     /// monitor.
-    [[nodiscard]] coordinate<int> WorkAreaPosition() const;
+    [[nodiscard]] coordinate<int> GetWorkAreaPosition() const;
 
     /// @brief Returns the size of the work area in screen coordinates.
     /// @remark The size of the work area may not be the same as the size of the
     /// monitor if there are toolbars present.
-    [[nodiscard]] area<int> WorkAreaSize() const;
+    [[nodiscard]] area<int> GetWorkAreaSize() const;
 
     /// @brief Returns the name of the monitor.
-    [[nodiscard]] const char* Name() const;
+    [[nodiscard]] const char* GetName() const;
 
     /// @brief Returns the gamma ramp of the monitor.
-    [[nodiscard]] const GLFWgammaramp* GammaRamp() const;
+    [[nodiscard]] const GLFWgammaramp* GetGammaRamp() const;
 
     /// @brief Sets the gamma ramp of the monitor.
     /// @param Gamma_Ramp The new gamma ramp of the monitor.
-    void GammaRamp(const GLFWgammaramp& Gamma_Ramp) const;
+    void SetGammaRamp(const GLFWgammaramp& Gamma_Ramp) const;
 
-    /// @brief Resets the gamma ramp of the monitor.
-    void ResetGammaRamp() const;
+    /// @brief Sets the gamma of the monitor.
+    void SetGamma(const monitor_gamma& Gamma) const;
+
+    /// @brief Resets the gamma of the monitor.
+    void ResetGamma() const;
 };
 
-class gvw::monitor_public_constructor : public monitor
-{
-  public:
-    template<typename... Args>
-    monitor_public_constructor(Args&&... Arguments)
-        : monitor(std::forward<Args>(Arguments)...)
-    {
-    }
-};
+} // namespace gvw

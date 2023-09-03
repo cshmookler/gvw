@@ -62,10 +62,13 @@ set(GVW_DEPENDENCIES
 
 # GVW source files
 set(GVW_SOURCE_FILES
-    src/gvw.cpp
-    src/monitor.cpp
-    src/window.cpp
-    src/device.cpp)
+    "src/constants.cpp"
+    "src/internal.cpp"
+    "src/gvw.cpp"
+    "src/instance.cpp"
+    "src/monitor.cpp"
+    "src/window.cpp"
+    "src/device.cpp")
 
 # The name of an available GVW library file.
 set(GVW_AVAILABLE)
@@ -97,8 +100,8 @@ install(DIRECTORY gvw DESTINATION include)
 if(GVW_TESTS)
     if("${GVW_AVAILABLE}" STREQUAL "")
         message(FATAL_ERROR
-            "Cannot build tests without also building GVW as either a"
-            "static or shared library. Add \"-D GVW_STATIC=ON\" and/or"
+            "Cannot build tests without also building GVW as either a "
+            "static or shared library. Add \"-D GVW_STATIC=ON\" and/or "
             "\"-D GVW_SHARED=ON\" to your CMake command.")
     endif()
 
@@ -109,8 +112,8 @@ endif()
 if(GVW_EXAMPLES)
     if("${GVW_AVAILABLE}" STREQUAL "")
         message(FATAL_ERROR
-            "Cannot build examples without also building GVW as either a"
-            "static or shared library. Add \"-D GVW_STATIC=ON\" and/or"
+            "Cannot build examples without also building GVW as either a "
+            "static or shared library. Add \"-D GVW_STATIC=ON\" and/or "
             "\"-D GVW_SHARED=ON\" to your CMake command.")
     endif()
 

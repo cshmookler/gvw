@@ -8,20 +8,22 @@ int main() // NOLINT
 {
     std::this_thread::sleep_for(std::chrono::seconds(3));
 
-    gvw::ptr gvw = gvw::Get();
+    gvw::instance_ptr gvw = gvw::CreateInstance();
 
-    gvw::window_event_callbacks eventCallbacks = gvw::NO_WINDOW_EVENT_CALLBACKS;
-    eventCallbacks.keyCallback = gvw::AppendToKeyEventBuffer;
+    gvw::window_event_callbacks eventCallbacks = {
+        .keyCallback =
+            gvw::window_key_event_callback_config::APPEND_TO_KEY_EVENT_BUFFER
+    };
 
     std::vector<gvw::monitor_ptr> monitors = gvw->AllMonitors();
     std::vector<gvw::window_ptr> windows(monitors.size());
     for (size_t i = 0; i < monitors.size(); ++i) {
         const auto& monitor = monitors.at(i);
         windows.at(i) = gvw->CreateWindow(
-            { .position = monitor->WorkAreaPosition(),
-              .size = monitor->WorkAreaSize(),
+            { .position = monitor->GetWorkAreaPosition(),
+              .size = monitor->GetWorkAreaSize(),
               .title = " ",
-              .fullScreenMonitor = monitor->Handle(),
+              .fullScreenMonitor = monitor,
               //   .creationHints = { { .resizable = GLFW_FALSE,
               //                        .visible = GLFW_FALSE,
               //                        .decorated = GLFW_FALSE,
@@ -49,7 +51,7 @@ int main() // NOLINT
         gvw->WaitThenPollEvents();
 
         for (auto& window : windows) {
-            auto keyEvents = window->KeyEvents();
+            auto keyEvents = window->GetKeyEvents();
             for (const auto& keyEvent : keyEvents) {
                 if (keyEvent.key == GLFW_KEY_LEFT_CONTROL) {
                     if (keyEvent.action == GLFW_PRESS) {

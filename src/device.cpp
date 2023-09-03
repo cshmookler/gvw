@@ -1,244 +1,130 @@
 // Standard includes
+#include <iostream>
 #include <fstream>
 
 // Local includes
 #include "device.hpp"
 
-std::vector<gvw::device_selection::returns>
-gvw::device_selection::MinimumForPresentation( // NOLINT
-    const std::vector<parameters>& Physical_Device_Infos,
-    const std::optional<vk::SurfaceKHR>& Window_Surface)
+namespace gvw {
+
+device::device(const device_info& Device_Info)
+    : gvwInstance(internal::global::GVW_INSTANCE)
+    , physicalDevice(Device_Info.physicalDevice)
+    , surfaceFormat(Device_Info.surfaceFormat)
+    , presentMode(Device_Info.presentMode)
+    , queueFamilyInfos(Device_Info.queueFamilyInfos)
 {
-    vk::PhysicalDevice selectedPhysicalDevice;
-    vk::SurfaceFormatKHR selectedSurfaceFormat;
-    vk::PresentModeKHR selectedPresentMode = {};
-    std::vector<queue_family_info> selectedQueueFamilyInfos(1);
+    internal::AssertInitialization();
 
-    int selectedPhysicalDeviceScore = -1;
-    int currentPhysicalDeviceScore = 0;
-    for (const auto& physicalDeviceInfo : Physical_Device_Infos) {
-        const auto& physicalDevice = physicalDeviceInfo.physicalDevice;
-        const auto& surfaceFormats = physicalDeviceInfo.surfaceFormats;
-        const auto& presentModes = physicalDeviceInfo.presentModes;
+    /// @todo Get queue create infos out of selection::queue_family_info
+    /// without copying the data here.
+    std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
+    queueCreateInfos.reserve(this->queueFamilyInfos.size());
+    std::transform(
+        queueFamilyInfos.begin(),
+        queueFamilyInfos.end(),
+        std::back_inserter(queueCreateInfos),
+        [](const device_selection_queue_family_info& Queue_Family_Info) {
+            return Queue_Family_Info.createInfo;
+        });
 
-        // Score different types of devices based on assumed performance.
-        vk::PhysicalDeviceProperties physicalDeviceProperties =
-            physicalDevice.getProperties();
-        switch (physicalDeviceProperties.deviceType) {
-            case vk::PhysicalDeviceType::eDiscreteGpu:
-                currentPhysicalDeviceScore = 4;
-                break;
-            case vk::PhysicalDeviceType::eIntegratedGpu:
-                currentPhysicalDeviceScore = 3;
-                break;
-            case vk::PhysicalDeviceType::eVirtualGpu:
-                currentPhysicalDeviceScore = 2;
-                break;
-            case vk::PhysicalDeviceType::eOther:
-                currentPhysicalDeviceScore = 1;
-                break;
-            case vk::PhysicalDeviceType::eCpu:
-                currentPhysicalDeviceScore = 0;
-                break;
-        }
-
-        // Select the first available surface format.
-        vk::SurfaceFormatKHR selectedPhysicalDeviceSurfaceFormat = {};
-        if (surfaceFormats.has_value()) {
-            selectedPhysicalDeviceSurfaceFormat = surfaceFormats.value()->at(0);
-        }
-
-        vk::PresentModeKHR selectedPhysicalDevicePresentMode = {};
-        if (presentModes.has_value()) {
-            int selectedPresentModeScore = -1;
-            vk::PresentModeKHR currentPhysicalDevicePresentMode = {};
-            int currentPresentModeScore = 0;
-            for (const auto& presentMode : presentModes.value().Get()) {
-                switch (presentMode) {
-                    case vk::PresentModeKHR::eMailbox:
-                        currentPresentModeScore = 5; // NOLINT
-                        currentPhysicalDevicePresentMode =
-                            vk::PresentModeKHR::eMailbox;
-                        break;
-                    case vk::PresentModeKHR::eFifo:
-                        currentPresentModeScore = 4;
-                        currentPhysicalDevicePresentMode =
-                            vk::PresentModeKHR::eFifo;
-                        break;
-                    case vk::PresentModeKHR::eFifoRelaxed:
-                        currentPresentModeScore = 3;
-                        currentPhysicalDevicePresentMode =
-                            vk::PresentModeKHR::eFifoRelaxed;
-                        break;
-                    case vk::PresentModeKHR::eImmediate:
-                        currentPresentModeScore = 2;
-                        currentPhysicalDevicePresentMode =
-                            vk::PresentModeKHR::eImmediate;
-                        break;
-                    case vk::PresentModeKHR::eSharedContinuousRefresh:
-                        currentPresentModeScore = 1;
-                        currentPhysicalDevicePresentMode =
-                            vk::PresentModeKHR::eSharedContinuousRefresh;
-                        break;
-                    case vk::PresentModeKHR::eSharedDemandRefresh:
-                        currentPresentModeScore = 0;
-                        currentPhysicalDevicePresentMode =
-                            vk::PresentModeKHR::eSharedDemandRefresh;
-                        break;
-                }
-
-                if (currentPresentModeScore > selectedPresentModeScore) {
-                    selectedPresentModeScore = currentPresentModeScore;
-                    selectedPhysicalDevicePresentMode =
-                        currentPhysicalDevicePresentMode;
-                }
-            }
-        }
-
-        std::vector<vk::QueueFamilyProperties> queueFamilyProperties =
-            physicalDevice.getQueueFamilyProperties();
-        if (queueFamilyProperties.empty()) {
-            continue;
-        }
-
-        // Find queue families that supports both graphics and presentation.
-        std::optional<uint32_t> viableGraphicsQueueFamilyIndex;
-        std::optional<uint32_t> viablePresentationQueueFamilyIndex;
-        for (uint32_t i = 0; i < uint32_t(queueFamilyProperties.size()); ++i) {
-            vk::QueueFlags queueFlags = queueFamilyProperties.at(i).queueFlags;
-            if (viableGraphicsQueueFamilyIndex.has_value() == false) {
-                if (bool(queueFlags & vk::QueueFlagBits::eGraphics)) {
-                    viableGraphicsQueueFamilyIndex = i;
-                }
-            }
-            if (Window_Surface.has_value() &&
-                (viablePresentationQueueFamilyIndex.has_value() == false)) {
-                if (physicalDevice.getSurfaceSupportKHR(
-                        i, Window_Surface.value()) != VK_FALSE) {
-                    viablePresentationQueueFamilyIndex = i;
-                }
-            }
-
-            if (viableGraphicsQueueFamilyIndex.has_value() &&
-                viablePresentationQueueFamilyIndex.has_value()) {
-                if (viableGraphicsQueueFamilyIndex.value() ==
-                    viablePresentationQueueFamilyIndex.value()) {
-                    break;
-                }
-            }
-        }
-        if ((viableGraphicsQueueFamilyIndex.has_value() == false) ||
-            (viablePresentationQueueFamilyIndex.has_value() == false)) {
-            continue;
-        }
-
-        if (currentPhysicalDeviceScore > selectedPhysicalDeviceScore) {
-            selectedPhysicalDeviceScore = currentPhysicalDeviceScore;
-            selectedPhysicalDevice = physicalDevice;
-            selectedSurfaceFormat = selectedPhysicalDeviceSurfaceFormat;
-            selectedPresentMode = selectedPhysicalDevicePresentMode;
-
-            if (viableGraphicsQueueFamilyIndex.value() ==
-                viablePresentationQueueFamilyIndex.value()) {
-                selectedQueueFamilyInfos.resize(1);
-            }
-
-            selectedQueueFamilyInfos.at(0) = {
-                .createInfo = { .queueFamilyIndex =
-                                    viableGraphicsQueueFamilyIndex.value(),
-                                .queueCount = 1,
-                                .pQueuePriorities =
-                                    &queue_priority::HIGH.Get() },
-                .properties = queueFamilyProperties.at(
-                    viableGraphicsQueueFamilyIndex.value())
-            };
-
-            if (viableGraphicsQueueFamilyIndex !=
-                viablePresentationQueueFamilyIndex) {
-                selectedQueueFamilyInfos.resize(2);
-                selectedQueueFamilyInfos.at(1) = {
-                    .createInfo = { .queueFamilyIndex =
-                                        viablePresentationQueueFamilyIndex
-                                            .value(),
-                                    .queueCount = 1,
-                                    .pQueuePriorities =
-                                        &queue_priority::HIGH.Get() },
-                    .properties = queueFamilyProperties.at(
-                        viablePresentationQueueFamilyIndex.value())
-                };
-            }
-        }
-    }
-
-    return { { selectedPhysicalDevice,
-               selectedSurfaceFormat,
-               selectedPresentMode,
-               selectedQueueFamilyInfos } };
+    vk::DeviceCreateInfo logicalDeviceCreateInfo = {
+        .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),
+        .pQueueCreateInfos = queueCreateInfos.data(),
+        .enabledLayerCount = static_cast<uint32_t>(
+            this->gvwInstance->vulkanInstanceLayers.size()),
+        .ppEnabledLayerNames = this->gvwInstance->vulkanInstanceLayers.data(),
+        .enabledExtensionCount =
+            static_cast<uint32_t>(Device_Info.logicalDeviceExtensions.size()),
+        .ppEnabledExtensionNames = Device_Info.logicalDeviceExtensions.data(),
+        .pEnabledFeatures = &Device_Info.physicalDeviceFeatures
+    };
+    this->handle = physicalDevice.createDeviceUnique(logicalDeviceCreateInfo);
 }
 
-gvw::device::device(
-    std::shared_ptr<vk::UniqueDevice> Logical_Device,
-    const vk::PhysicalDevice& Physical_Device,
-    const vk::SurfaceFormatKHR& Surface_Format,
-    const vk::PresentModeKHR& Present_Mode,
-    const std::vector<device_selection::queue_family_info>& Queue_Infos)
-    : logicalDevice(std::move(Logical_Device))
-    , physicalDevice(Physical_Device)
-    , surfaceFormat(Surface_Format)
-    , presentMode(Present_Mode)
-    , queueInfos(Queue_Infos)
+vk::Device device::GetHandle() const
 {
+    return this->handle.get();
 }
 
-std::vector<gvw::shader> gvw::device::LoadShadersFromSpirVFiles(
-    const std::vector<shader_info>& Shader_Infos)
+vk::PhysicalDevice device::GetPhysicalDevice() const
 {
-    std::vector<shader> shaders;
-
-    for (const auto& shaderInfo : Shader_Infos) {
-        auto charBuffer = ReadFile<std::vector<char>>(shaderInfo.code);
-
-        vk::ShaderModuleCreateInfo shaderModuleCreateInfo = {
-            .codeSize = charBuffer.size(),
-            // NOLINTNEXTLINE
-            .pCode = reinterpret_cast<const uint32_t*>(charBuffer.data())
-        };
-
-        std::shared_ptr<vk::UniqueShaderModule> shaderModule =
-            std::make_shared<vk::UniqueShaderModule>(
-                this->logicalDevice->get().createShaderModuleUnique(
-                    shaderModuleCreateInfo));
-
-        vk::PipelineShaderStageCreateInfo pipelineShaderStageCreateInfo = {
-            .stage = shaderInfo.stage,
-            .module = shaderModule->get(),
-            .pName = shaderInfo.entryPoint,
-        };
-
-        shaders.emplace_back(shaderModule, pipelineShaderStageCreateInfo);
-    }
-
-    return shaders;
+    return this->physicalDevice;
 }
 
-gvw::buffer gvw::device::CreateBuffer(const buffer_info& Buffer_Info)
+vk::SurfaceFormatKHR device::GetSurfaceFormat() const
 {
-    buffer buffer = { .size = Buffer_Info.sizeInBytes,
-                      .handle = vk::UniqueBuffer(nullptr),
-                      .memory = vk::UniqueDeviceMemory(nullptr) };
+    return this->surfaceFormat;
+}
+
+vk::PresentModeKHR device::GetPresentMode() const
+{
+    return this->presentMode;
+}
+
+std::vector<device_selection_queue_family_info> device::GetQueueFamilyInfos()
+    const
+{
+    return this->queueFamilyInfos;
+}
+
+shader_ptr device::LoadShaderFromSpirVFile(const shader_info& Shader_Info)
+{
+    auto charBuffer = ReadFile(Shader_Info.code);
+
+    vk::ShaderModuleCreateInfo shaderModuleCreateInfo = {
+        .codeSize = charBuffer.size(),
+        .pCode = reinterpret_cast<const uint32_t*>(charBuffer.data()) // NOLINT
+    };
+    return std::make_shared<internal::shader_public_constructor>(
+        this->handle->createShaderModuleUnique(shaderModuleCreateInfo),
+        Shader_Info.stage,
+        Shader_Info.entryPoint);
+}
+
+vertex_shader_ptr device::LoadVertexShaderFromSpirVFile(
+    const vertex_shader_info& Vertex_Shader_Info)
+{
+    shader_ptr genericShader =
+        LoadShaderFromSpirVFile(Vertex_Shader_Info.general);
+    return std::make_shared<internal::vertex_shader_public_constructor>(
+        std::move(genericShader->handle),
+        genericShader->stage,
+        genericShader->entryPoint,
+        Vertex_Shader_Info.bindingDescriptions,
+        Vertex_Shader_Info.attributeDescriptions);
+}
+
+fragment_shader_ptr device::LoadFragmentShaderFromSpirVFile(
+    const fragment_shader_info& Fragment_Shader_Info)
+{
+    // NOLINTBEGIN
+    shader_ptr genericShader =
+        LoadShaderFromSpirVFile(Fragment_Shader_Info.general);
+    // NOLINTEND
+    return std::make_shared<internal::fragment_shader_public_constructor>(
+        std::move(genericShader->handle),
+        genericShader->stage,
+        genericShader->entryPoint);
+}
+
+buffer_ptr device::CreateBuffer(const buffer_info& Buffer_Info)
+{
+    buffer_ptr buffer = std::make_shared<internal::buffer_public_constructor>(
+        Buffer_Info.sizeInBytes,
+        vk::UniqueBuffer(nullptr),
+        vk::UniqueDeviceMemory(nullptr));
 
     vk::BufferCreateInfo bufferCreateInfo = {
-        .size = buffer.size,
+        .size = buffer->size,
         .usage = Buffer_Info.usage,
         // Sharing is exclusive when only one queue has access to the buffer.
         .sharingMode = vk::SharingMode::eExclusive
     };
-    buffer.handle =
-        this->logicalDevice->get().createBufferUnique(bufferCreateInfo);
+    buffer->handle = this->handle->createBufferUnique(bufferCreateInfo);
 
     vk::MemoryRequirements memoryRequirements =
-        this->logicalDevice->get().getBufferMemoryRequirements(
-            buffer.handle.get());
+        this->handle->getBufferMemoryRequirements(buffer->handle.get());
 
     vk::PhysicalDeviceMemoryProperties memoryProperties =
         this->physicalDevice.getMemoryProperties();
@@ -253,7 +139,7 @@ gvw::buffer gvw::device::CreateBuffer(const buffer_info& Buffer_Info)
     }
 
     if (memoryTypeIndex.has_value() == false) {
-        gvwErrorCallback(
+        ErrorCallback(
             "Failed to find a viable memory type for a Vulkan buffer.");
     }
 
@@ -261,16 +147,15 @@ gvw::buffer gvw::device::CreateBuffer(const buffer_info& Buffer_Info)
                                                       memoryRequirements.size,
                                                   .memoryTypeIndex =
                                                       memoryTypeIndex.value() };
-    buffer.memory =
-        this->logicalDevice->get().allocateMemoryUnique(memoryAllocateInfo);
+    buffer->memory = this->handle->allocateMemoryUnique(memoryAllocateInfo);
 
-    this->logicalDevice->get().bindBufferMemory(
-        buffer.handle.get(), buffer.memory.get(), 0);
+    this->handle->bindBufferMemory(
+        buffer->handle.get(), buffer->memory.get(), 0);
 
     return buffer;
 }
 
-gvw::render_pass_ptr gvw::device::CreateRenderPass(
+render_pass_ptr device::CreateRenderPass(
     const render_pass_info& Render_Pass_Info)
 {
     // Describe how to use the attachment.
@@ -318,30 +203,29 @@ gvw::render_pass_ptr gvw::device::CreateRenderPass(
         .pDependencies = &subpassDependency
     };
 
-    return std::make_shared<render_pass>(
-        this->logicalDevice->get().createRenderPassUnique(
-            renderPassCreateInfo));
+    return std::make_shared<internal::render_pass_public_constructor>(
+        this->handle->createRenderPassUnique(renderPassCreateInfo));
 }
 
-gvw::swapchain_ptr gvw::device::CreateSwapchain(
-    const swapchain_info& Swapchain_Info)
+swapchain_ptr device::CreateSwapchain(const swapchain_info& Swapchain_Info)
 {
     vk::SurfaceCapabilitiesKHR surfaceCapabilities =
         this->physicalDevice.getSurfaceCapabilitiesKHR(Swapchain_Info.surface);
     vk::Extent2D framebufferExtent = {
         .width = std::clamp(
-            static_cast<uint32_t>(Swapchain_Info.framebufferSize->width),
+            static_cast<uint32_t>(Swapchain_Info.framebufferSize.width),
             surfaceCapabilities.minImageExtent.width,
             surfaceCapabilities.maxImageExtent.width),
         .height = std::clamp(
-            static_cast<uint32_t>(Swapchain_Info.framebufferSize->height),
+            static_cast<uint32_t>(Swapchain_Info.framebufferSize.height),
             surfaceCapabilities.minImageExtent.height,
             surfaceCapabilities.maxImageExtent.height)
     };
 
     swapchain_ptr swapchainInfo;
     if (Swapchain_Info.oldSwapchain == nullptr) {
-        swapchainInfo = std::make_shared<swapchain>();
+        swapchainInfo =
+            std::make_shared<internal::swapchain_public_constructor>();
     } else {
         swapchainInfo = Swapchain_Info.oldSwapchain;
     }
@@ -392,13 +276,12 @@ gvw::swapchain_ptr gvw::device::CreateSwapchain(
         .clipped = VK_TRUE,
         .oldSwapchain = nullptr
     };
-    swapchainInfo->handle = this->logicalDevice->get().createSwapchainKHRUnique(
-        swapchainCreateInfo);
+    swapchainInfo->handle =
+        this->handle->createSwapchainKHRUnique(swapchainCreateInfo);
 
     // Get handles to swapchain images.
     swapchainInfo->swapchainImages =
-        this->logicalDevice->get().getSwapchainImagesKHR(
-            swapchainInfo->handle.get());
+        this->handle->getSwapchainImagesKHR(swapchainInfo->handle.get());
 
     // Get handles to swapchain image views.
     swapchainInfo->swapchainImageViews
@@ -419,8 +302,7 @@ gvw::swapchain_ptr gvw::device::CreateSwapchain(
                                   .layerCount = 1 }
         };
         swapchainInfo->swapchainImageViews.emplace_back(
-            this->logicalDevice->get().createImageViewUnique(
-                imageViewCreateInfo));
+            this->handle->createImageViewUnique(imageViewCreateInfo));
     }
 
     // Bind the framebuffers to the swapchain image views.
@@ -441,34 +323,32 @@ gvw::swapchain_ptr gvw::device::CreateSwapchain(
             .layers = 1
         };
         swapchainInfo->swapchainFramebuffers.at(i) =
-            this->logicalDevice->get().createFramebufferUnique(
-                framebufferCreateInfo);
+            this->handle->createFramebufferUnique(framebufferCreateInfo);
     }
 
     return swapchainInfo;
 }
 
-gvw::pipeline_ptr gvw::device::CreatePipeline(
-    const pipeline_info& Pipeline_Info)
+pipeline_ptr device::CreatePipeline(const pipeline_info& Pipeline_Info)
 {
     // Pipeline dynamic states (selects what is configurable after pipeline
     // creation).
     vk::PipelineDynamicStateCreateInfo dynamicState = {
         .dynamicStateCount =
-            static_cast<uint32_t>(Pipeline_Info.dynamicStates->size()),
-        .pDynamicStates = Pipeline_Info.dynamicStates->data()
+            static_cast<uint32_t>(Pipeline_Info.dynamicStates.size()),
+        .pDynamicStates = Pipeline_Info.dynamicStates.data()
     };
 
     // Binds vertex buffers to the vertex shader.
     vk::PipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         .vertexBindingDescriptionCount = static_cast<uint32_t>(
-            Pipeline_Info.vertexInputBindingDescriptions.size()),
+            Pipeline_Info.shaders.vertex->bindingDescriptions.size()),
         .pVertexBindingDescriptions =
-            Pipeline_Info.vertexInputBindingDescriptions.data(),
+            Pipeline_Info.shaders.vertex->bindingDescriptions.data(),
         .vertexAttributeDescriptionCount = static_cast<uint32_t>(
-            Pipeline_Info.vertexInputAttributeDescriptions.size()),
+            Pipeline_Info.shaders.vertex->attributeDescriptions.size()),
         .pVertexAttributeDescriptions =
-            Pipeline_Info.vertexInputAttributeDescriptions.data()
+            Pipeline_Info.shaders.vertex->attributeDescriptions.data()
     };
 
     // Defines vertex assembly behavior (currently configured to construct
@@ -537,7 +417,8 @@ gvw::pipeline_ptr gvw::device::CreatePipeline(
             vk::ArrayWrapper1D<float, 4>({ 0.0F, 0.0F, 0.0F, 0.0F })
     };
 
-    pipeline_ptr pipeline = std::make_shared<gvw::pipeline>();
+    pipeline_ptr pipeline =
+        std::make_shared<internal::pipeline_public_constructor>();
 
     // Pipeline layout creation.
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
@@ -546,18 +427,12 @@ gvw::pipeline_ptr gvw::device::CreatePipeline(
         .pushConstantRangeCount = 0,
         .pPushConstantRanges = nullptr
     };
-    pipeline->layout = this->logicalDevice->get().createPipelineLayoutUnique(
-        pipelineLayoutCreateInfo);
+    pipeline->layout =
+        this->handle->createPipelineLayoutUnique(pipelineLayoutCreateInfo);
 
     std::vector<vk::PipelineShaderStageCreateInfo>
-        pipelineShaderStageCreateInfos;
-    pipelineShaderStageCreateInfos.reserve(Pipeline_Info.shaders.size());
-    std::transform(Pipeline_Info.shaders.begin(),
-                   Pipeline_Info.shaders.end(),
-                   std::back_inserter(pipelineShaderStageCreateInfos),
-                   [](const shader& Shader) {
-                       return Shader.pipelineShaderStageCreateInfo;
-                   });
+        pipelineShaderStageCreateInfos =
+            Pipeline_Info.shaders.StageCreationInfos();
 
     // Create the graphics pipeline.
     vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {
@@ -578,11 +453,13 @@ gvw::pipeline_ptr gvw::device::CreatePipeline(
         .basePipelineHandle = VK_NULL_HANDLE, // optional
         .basePipelineIndex = -1,              // optional
     };
-    pipeline->pipeline = this->logicalDevice->get()
-                             .createGraphicsPipelineUnique(
-                                 VK_NULL_HANDLE, graphicsPipelineCreateInfo)
-                             .value;
+    pipeline->handle = this->handle
+                           ->createGraphicsPipelineUnique(
+                               VK_NULL_HANDLE, graphicsPipelineCreateInfo)
+                           .value;
     // The vertex shader and fragment shader modules may now destroyed.
 
     return pipeline;
 }
+
+} // namespace gvw

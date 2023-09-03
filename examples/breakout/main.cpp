@@ -1,5 +1,7 @@
 #include <iostream>
 #include <thread>
+#include <algorithm>
+#include <random>
 #include "../../gvw/gvw.hpp"
 #include "../../utils/ansiec/ansiec.hpp"
 
@@ -35,7 +37,7 @@ int main() // NOLINT
     // std::cout << isCLeftOfLineAB({ 1, 1 }, { 0, 0 }, { -1, 0 }) << std::endl;
     // std::cout << isCLeftOfLineAB({ 1, 1 }, { 0, 0 }, { 0, -1 }) << std::endl;
 
-    gvw::ptr gvw = gvw::Get(
+    gvw::instance_ptr gvw = gvw::CreateInstance(
         { .applicationInfo = { .pApplicationName = "breakout",
                                .applicationVersion = VK_MAKE_VERSION(1, 0, 0) },
           .debugUtilsMessengerInfo = {
@@ -44,9 +46,10 @@ int main() // NOLINT
                   vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
                   vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
                   vk::DebugUtilsMessageSeverityFlagBitsEXT::eError } });
-    gvw::monitor_ptr primaryMonitor = gvw->PrimaryMonitor();
+    gvw::monitor_ptr primaryMonitor = gvw->GetPrimaryMonitor();
 
-    const gvw::area<int> PRIMARY_MONITOR_SIZE = primaryMonitor->WorkAreaSize();
+    const gvw::area<int> PRIMARY_MONITOR_SIZE =
+        primaryMonitor->GetWorkAreaSize();
     const std::vector<gvw::vertex> WHITE_VERTICES = {
         { { -1.0F, -1.0F }, { 1.0F, 1.0F, 1.0F } },
         { { 1.0F, -1.0F }, { 1.0F, 1.0F, 1.0F } },
@@ -56,40 +59,42 @@ int main() // NOLINT
         { { 1.0F, 1.0F }, { 1.0F, 1.0F, 1.0F } }
     };
     const gvw::window_creation_hints CREATION_HINTS = {
-        { .resizable = GLFW_FALSE,
-          .decorated = GLFW_FALSE,
-          .floating = GLFW_TRUE }
+        { .resizable = false, .decorated = false, .floating = true }
     };
-    const gvw::coordinate<int> BLOCK_WINDOW_COUNT = { 10, 8 };
+    const gvw::coordinate<int> BLOCK_WINDOW_COUNT = { 17, 13 };
     const int BLOCK_WINDOW_TOTAL_COUNT =
         BLOCK_WINDOW_COUNT.x * BLOCK_WINDOW_COUNT.y;
     const float BLOCK_AREA_HEIGHT =
         float(PRIMARY_MONITOR_SIZE.height) * (float(2) / float(3));
     const gvw::window_size BLOCK_WINDOW_SIZE = {
-        { int(float(PRIMARY_MONITOR_SIZE.width) / float(BLOCK_WINDOW_COUNT.x)),
-          int(BLOCK_AREA_HEIGHT / float(BLOCK_WINDOW_COUNT.y)) }
+        int(float(PRIMARY_MONITOR_SIZE.width) / float(BLOCK_WINDOW_COUNT.x)),
+        int(BLOCK_AREA_HEIGHT / float(BLOCK_WINDOW_COUNT.y))
     };
     const gvw::area<float> PLAT_WINDOW_SIZE_TO_MONITOR_SIZE_RATIO = {
         (1.F / 8.F), (1.F / 40.F)
     };
     const gvw::window_size PLAT_WINDOW_SIZE = {
-        { int(float(PRIMARY_MONITOR_SIZE.width) *
-              PLAT_WINDOW_SIZE_TO_MONITOR_SIZE_RATIO.width),
-          int(float(PRIMARY_MONITOR_SIZE.height) *
-              PLAT_WINDOW_SIZE_TO_MONITOR_SIZE_RATIO.height) }
+        int(float(PRIMARY_MONITOR_SIZE.width) *
+            PLAT_WINDOW_SIZE_TO_MONITOR_SIZE_RATIO.width),
+        int(float(PRIMARY_MONITOR_SIZE.height) *
+            PLAT_WINDOW_SIZE_TO_MONITOR_SIZE_RATIO.height)
     };
     const gvw::coordinate<int> PLAT_WINDOW_POSITION = {
-        ((PRIMARY_MONITOR_SIZE.width / 2) - (PLAT_WINDOW_SIZE->width / 2)),
-        (PRIMARY_MONITOR_SIZE.height - PLAT_WINDOW_SIZE->height)
+        ((PRIMARY_MONITOR_SIZE.width / 2) - (PLAT_WINDOW_SIZE.width / 2)),
+        (PRIMARY_MONITOR_SIZE.height - PLAT_WINDOW_SIZE.height)
     };
-    gvw::window_event_callbacks platWindowEventCallbacks =
-        gvw::NO_WINDOW_EVENT_CALLBACKS;
-    platWindowEventCallbacks.keyCallback = gvw::AppendToKeyEventBuffer;
-    const int PLAT_HORIZONTAL_SPEED = 400;
-    const gvw::window_size BALL_WINDOW_SIZE = { { PLAT_WINDOW_SIZE->height,
-                                                  PLAT_WINDOW_SIZE->height } };
+    gvw::window_event_callbacks platWindowEventCallbacks = {
+        .keyCallback =
+            gvw::window_key_event_callback_config::APPEND_TO_KEY_EVENT_BUFFER
+    };
+
+    // platWindowEventCallbacks.keyCallback =
+    //     gvw::window_key_event_callback_config::APPEND_TO_KEY_EVENT_BUFFER;
+    const int PLAT_HORIZONTAL_SPEED = 800;
+    const gvw::window_size BALL_WINDOW_SIZE = { PLAT_WINDOW_SIZE.height,
+                                                PLAT_WINDOW_SIZE.height };
     const gvw::coordinate<int> BALL_WINDOW_POSITION = {
-        ((PRIMARY_MONITOR_SIZE.width / 2) - (BALL_WINDOW_SIZE->width / 2)),
+        ((PRIMARY_MONITOR_SIZE.width / 2) - (BALL_WINDOW_SIZE.width / 2)),
         (int(BLOCK_AREA_HEIGHT) +
          ((PLAT_WINDOW_POSITION.y - int(BLOCK_AREA_HEIGHT)) / 2))
     };
@@ -106,48 +111,91 @@ int main() // NOLINT
     gvw::window_ptr plat = gvw->CreateWindow(
         { .position = PLAT_WINDOW_POSITION,
           .size = PLAT_WINDOW_SIZE,
-          .title = gvw::window_title::BLANK,
+          .title = gvw::window_title_config::BLANK,
           .creationHints = CREATION_HINTS,
           .eventCallbacks = platWindowEventCallbacks,
-          .sizeOfDynamicVerticesInBytes =
+          .staticVertices = WHITE_VERTICES,
+          .sizeOfDynamicDataVerticesInBytes =
               (sizeof(gvw::vertex) * WHITE_VERTICES.size()) });
     plat->DrawFrame(WHITE_VERTICES);
 
-    std::vector<gvw::window_ptr> blocks;
-    blocks.resize(BLOCK_WINDOW_TOTAL_COUNT);
+    auto cursor = gvw->CreateCursor({ GLFW_HAND_CURSOR });
+
+    std::vector<std::pair<gvw::coordinate<int>, float>> blockCreationInfos;
+    blockCreationInfos.reserve(BLOCK_WINDOW_TOTAL_COUNT);
     for (int yIndex = 0; yIndex < BLOCK_WINDOW_COUNT.y; ++yIndex) {
         float colorCascadeScale =
             (float(yIndex + 1) / float(BLOCK_WINDOW_COUNT.y));
         for (int xIndex = 0; xIndex < BLOCK_WINDOW_COUNT.x; ++xIndex) {
-            gvw::window_ptr& block =
-                blocks.at((yIndex * BLOCK_WINDOW_COUNT.x) + xIndex);
-
-            for (auto& vertex : blockVertices) {
-                vertex.color = ColorCascadeGenerator(colorCascadeScale);
-            }
-
-            block = plat->CreateChildWindow(
-                { .position = { { BLOCK_WINDOW_SIZE->width * xIndex,
-                                  BLOCK_WINDOW_SIZE->height * yIndex } },
-                  .size = BLOCK_WINDOW_SIZE,
-                  .title = gvw::window_title::BLANK,
-                  .creationHints = CREATION_HINTS,
-                  .sizeOfDynamicVerticesInBytes =
-                      (sizeof(gvw::vertex) * blockVertices.size()) });
-            block->DrawFrame(blockVertices);
+            blockCreationInfos.emplace_back(
+                gvw::coordinate<int>{ BLOCK_WINDOW_SIZE.width * xIndex,
+                                      BLOCK_WINDOW_SIZE.height * yIndex },
+                float{ colorCascadeScale });
         }
     }
+
+    std::random_device randomDevice;
+    std::mt19937 randomNumberGenerator(randomDevice());
+    std::shuffle(blockCreationInfos.begin(),
+                 blockCreationInfos.end(),
+                 randomNumberGenerator);
+
+    std::vector<gvw::window_ptr> blocks;
+    blocks.reserve(BLOCK_WINDOW_TOTAL_COUNT);
+    for (const auto& blockCreationInfo : blockCreationInfos) {
+        for (auto& vertex : blockVertices) {
+            vertex.color = ColorCascadeGenerator(blockCreationInfo.second);
+        }
+
+        blocks.emplace_back(plat->CreateChildWindow(
+            { .position = blockCreationInfo.first,
+              .size = BLOCK_WINDOW_SIZE,
+              .title = gvw::window_title_config::BLANK,
+              .creationHints = CREATION_HINTS,
+              .staticVertices = blockVertices,
+              .sizeOfDynamicDataVerticesInBytes =
+                  (sizeof(gvw::vertex) * blockVertices.size()) }));
+        blocks.back()->DrawFrame(blockVertices);
+        blocks.back()->SetCursor(cursor);
+    }
+    // for (int yIndex = 0; yIndex < BLOCK_WINDOW_COUNT.y; ++yIndex) {
+    //     float colorCascadeScale =
+    //         (float(yIndex + 1) / float(BLOCK_WINDOW_COUNT.y));
+    //     for (int xIndex = 0; xIndex < BLOCK_WINDOW_COUNT.x; ++xIndex) {
+    //         gvw::window_ptr& block =
+    //             blocks.at((yIndex * BLOCK_WINDOW_COUNT.x) + xIndex);
+
+    //         for (auto& vertex : blockVertices) {
+    //             vertex.color = ColorCascadeGenerator(colorCascadeScale);
+    //         }
+
+    //         block = plat->CreateChildWindow(
+    //             { .position = { { BLOCK_WINDOW_SIZE.width * xIndex,
+    //                               BLOCK_WINDOW_SIZE.height * yIndex } },
+    //               .size = BLOCK_WINDOW_SIZE,
+    //               .title = gvw::window_title_config::BLANK,
+    //               .creationHints = CREATION_HINTS,
+    //               .staticVertices = blockVertices,
+    //               .sizeOfDynamicDataVerticesInBytes =
+    //                   (sizeof(gvw::vertex) * blockVertices.size()) });
+    //         block->DrawFrame(blockVertices);
+    //         block->SetCursor(cursor);
+    //     }
+    // }
 
     gvw::window_ptr ball = plat->CreateChildWindow(
         { .position = BALL_WINDOW_POSITION,
           .size = BALL_WINDOW_SIZE,
-          .title = gvw::window_title::BLANK,
+          .title = gvw::window_title_config::BLANK,
           .creationHints = CREATION_HINTS,
-          .sizeOfDynamicVerticesInBytes =
+          .staticVertices = WHITE_VERTICES,
+          .sizeOfDynamicDataVerticesInBytes =
               (sizeof(gvw::vertex) * WHITE_VERTICES.size()) });
     ball->DrawFrame(WHITE_VERTICES);
 
-    const gvw::coordinate<float> BALL_VELOCITY_INIT = { -230.F, 120.F };
+    plat->Focus();
+
+    const gvw::coordinate<float> BALL_VELOCITY_INIT = { -430.F, 320.F };
     float ballVelocityModifier = 1;
     gvw::coordinate<float> ballVelocity = BALL_VELOCITY_INIT;
 
@@ -159,6 +207,8 @@ int main() // NOLINT
     float spf = 0.F;
     std::chrono::time_point<std::chrono::system_clock> timeAtStartOfLastFrame =
         std::chrono::system_clock::now();
+
+    plat->SetCursor(cursor);
 
     while (!plat->ShouldClose()) {
         std::this_thread::sleep_for(std::chrono::microseconds(USPF));
@@ -177,7 +227,7 @@ int main() // NOLINT
 
         gvw->PollEvents();
 
-        gvw::coordinate<int> ballPosition = ball->Position();
+        gvw::coordinate<int> ballPosition = ball->GetPosition();
         ballPosition.x += int(ballVelocity.x * spf);
         ballPosition.y += int(ballVelocity.y * spf);
         if (ballPosition.x < 10) {
@@ -186,18 +236,18 @@ int main() // NOLINT
         if (ballPosition.y < 10) {
             ballVelocity.y = (0.F - ballVelocity.y);
         }
-        if (ballPosition.x + BALL_WINDOW_SIZE->width >
+        if (ballPosition.x + BALL_WINDOW_SIZE.width >
             (PRIMARY_MONITOR_SIZE.width - 10)) {
             ballVelocity.x = (0.F - ballVelocity.x);
         }
-        if (ballPosition.y + BALL_WINDOW_SIZE->height >
+        if (ballPosition.y + BALL_WINDOW_SIZE.height >
             (PRIMARY_MONITOR_SIZE.height - 10)) {
             ballVelocity.y = (0.F - ballVelocity.y);
             std::cout << ansiec::BOLD << ansiec::RED_FG
                       << "GAME OVER. YOU LOSE." << ansiec::RESET << std::endl;
             plat->ShouldClose(true);
         }
-        ball->Position(ballPosition);
+        ball->SetPosition(ballPosition);
 
         bool continueGame = false;
         for (gvw::window_ptr& block : blocks) {
@@ -206,22 +256,22 @@ int main() // NOLINT
             }
             continueGame = true;
 
-            gvw::coordinate<int> position = block->Position();
-            gvw::area<int> size = block->Size();
-            if ((((ballPosition.x + BALL_WINDOW_SIZE->width) > position.x) &&
+            gvw::coordinate<int> position = block->GetPosition();
+            gvw::area<int> size = block->GetSize();
+            if ((((ballPosition.x + BALL_WINDOW_SIZE.width) > position.x) &&
                  (ballPosition.x < (position.x + size.width))) &&
-                (((ballPosition.y + BALL_WINDOW_SIZE->height) > position.y) &&
+                (((ballPosition.y + BALL_WINDOW_SIZE.height) > position.y) &&
                  (ballPosition.y < (position.y + size.height)))) {
                 const gvw::coordinate<int> BALL_TOP_LEFT = ballPosition;
                 const gvw::coordinate<int> BALL_TOP_RIGHT = {
-                    ballPosition.x + BALL_WINDOW_SIZE->width, ballPosition.y
+                    ballPosition.x + BALL_WINDOW_SIZE.width, ballPosition.y
                 };
                 const gvw::coordinate<int> BALL_BOTTOM_LEFT = {
-                    ballPosition.x, ballPosition.y + BALL_WINDOW_SIZE->height
+                    ballPosition.x, ballPosition.y + BALL_WINDOW_SIZE.height
                 };
                 const gvw::coordinate<int> BALL_BOTTOM_RIGHT = {
-                    ballPosition.x + BALL_WINDOW_SIZE->width,
-                    ballPosition.y + BALL_WINDOW_SIZE->height
+                    ballPosition.x + BALL_WINDOW_SIZE.width,
+                    ballPosition.y + BALL_WINDOW_SIZE.height
                 };
                 const unsigned int LEFT_SIDE = 1;
                 const unsigned int RIGHT_SIDE = 2;
@@ -273,7 +323,7 @@ int main() // NOLINT
                         if (isCLeftOfLineAB(
                                 BALL_TOP_RIGHT,
                                 BALL_BOTTOM_LEFT,
-                                { position.x + BLOCK_WINDOW_SIZE->width,
+                                { position.x + BLOCK_WINDOW_SIZE.width,
                                   position.y })) {
                             ballVelocity.y = (0.F - ballVelocity.y);
                         } else {
@@ -284,8 +334,8 @@ int main() // NOLINT
                         if (isCLeftOfLineAB(
                                 BALL_BOTTOM_RIGHT,
                                 BALL_TOP_LEFT,
-                                { position.x + BLOCK_WINDOW_SIZE->width,
-                                  position.y + BLOCK_WINDOW_SIZE->height })) {
+                                { position.x + BLOCK_WINDOW_SIZE.width,
+                                  position.y + BLOCK_WINDOW_SIZE.height })) {
                             ballVelocity.y = (0.F - ballVelocity.y);
                         } else {
                             ballVelocity.x = (0.F - ballVelocity.x);
@@ -296,7 +346,7 @@ int main() // NOLINT
                                 BALL_BOTTOM_LEFT,
                                 BALL_TOP_RIGHT,
                                 { position.x,
-                                  position.y + BLOCK_WINDOW_SIZE->height })) {
+                                  position.y + BLOCK_WINDOW_SIZE.height })) {
                             ballVelocity.x = (0.F - ballVelocity.x);
                         } else {
                             ballVelocity.y = (0.F - ballVelocity.y);
@@ -312,7 +362,7 @@ int main() // NOLINT
                 const auto BALL_VELOCITY_MODIFIER_NEW =
                     1.F +
                     ((float(BLOCK_WINDOW_COUNT.y) -
-                      (float(position.y) / float(BLOCK_WINDOW_SIZE->height))) /
+                      (float(position.y) / float(BLOCK_WINDOW_SIZE.height))) /
                      (float(BLOCK_WINDOW_COUNT.y) / 2.F));
                 std::cout << "M: " << BALL_VELOCITY_MODIFIER_NEW << std::endl;
                 ballVelocity.x = (ballVelocity.x / ballVelocityModifier) *
@@ -329,22 +379,22 @@ int main() // NOLINT
             plat->ShouldClose(true);
         }
 
-        if (plat->KeyState(GLFW_KEY_A) == GLFW_PRESS) {
-            auto position = plat->Position();
+        if (plat->GetKeyState(GLFW_KEY_A) == GLFW_PRESS) {
+            auto position = plat->GetPosition();
             position.x -= int(float(PLAT_HORIZONTAL_SPEED) * spf);
-            plat->Position(position);
+            plat->SetPosition(position);
         }
-        if (plat->KeyState(GLFW_KEY_D) == GLFW_PRESS) {
-            auto position = plat->Position();
+        if (plat->GetKeyState(GLFW_KEY_D) == GLFW_PRESS) {
+            auto position = plat->GetPosition();
             position.x += int(float(PLAT_HORIZONTAL_SPEED) * spf);
-            plat->Position(position);
+            plat->SetPosition(position);
         }
         plat->ClearEvents();
 
-        auto platPosition = plat->Position();
-        if (((ballPosition.x + BALL_WINDOW_SIZE->width) > platPosition.x) &&
-            (ballPosition.x < (platPosition.x + PLAT_WINDOW_SIZE->width)) &&
-            ((ballPosition.y + BALL_WINDOW_SIZE->height) > platPosition.y)) {
+        auto platPosition = plat->GetPosition();
+        if (((ballPosition.x + BALL_WINDOW_SIZE.width) > platPosition.x) &&
+            (ballPosition.x < (platPosition.x + PLAT_WINDOW_SIZE.width)) &&
+            ((ballPosition.y + BALL_WINDOW_SIZE.height) > platPosition.y)) {
             ballVelocity.y = (0.F - ballVelocity.y);
         }
     }

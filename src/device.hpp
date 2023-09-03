@@ -10,61 +10,72 @@
 // Local includes
 #include "gvw.hpp"
 
-class gvw::device
-{
-    ////////////////////////////////////////////////////////////
-    ///                   Private Variables                  ///
-    ////////////////////////////////////////////////////////////
+namespace gvw {
 
-    /// @todo Make these private.
+class device : internal::uncopyable_unmovable // NOLINT
+{
+    friend internal::device_public_constructor;
+
+    ////////////////////////////////////////////////////////////////////////////
+    ///                Constructors, Operators, and Destructor               ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    device(const device_info& Device_Info);
+
   public:
-    std::shared_ptr<vk::UniqueDevice> logicalDevice;
+    // The destructor is public to allow explicit destruction.
+    ~device() = default;
+
+  private:
+    ////////////////////////////////////////////////////////////////////////////
+    ///                           Private Variables                          ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    instance_ptr gvwInstance;
+
+    vk::UniqueDevice handle;
     vk::PhysicalDevice physicalDevice;
     vk::SurfaceFormatKHR surfaceFormat;
     vk::PresentModeKHR presentMode;
-    std::vector<device_selection::queue_family_info> queueInfos;
-
-  private:
-    ////////////////////////////////////////////////////////////
-    ///       Constructors, Operators, and Destructors       ///
-    ////////////////////////////////////////////////////////////
-
-    device(std::shared_ptr<vk::UniqueDevice> Logical_Device,
-           const vk::PhysicalDevice& Physical_Device,
-           const vk::SurfaceFormatKHR& Surface_Format,
-           const vk::PresentModeKHR& Present_Mode,
-           const std::vector<device_selection::queue_family_info>& Queue_Infos);
-
-    // Allow the private constructor to be called by the parent class.
-    friend class gvw;
+    std::vector<device_selection_queue_family_info> queueFamilyInfos;
 
   public:
-    ////////////////////////////////////////////////////////////
-    ///                Public Member Functions               ///
-    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    ///                        Public Member Functions                       ///
+    ////////////////////////////////////////////////////////////////////////////
 
-    [[nodiscard]] std::vector<shader> LoadShadersFromSpirVFiles(
-        const std::vector<shader_info>& Shader_Infos);
+    [[nodiscard]] vk::Device GetHandle() const;
 
-    [[nodiscard]] buffer CreateBuffer(
-        const buffer_info& Buffer_Info = DEFAULT_BUFFER_INFO);
+    [[nodiscard]] vk::PhysicalDevice GetPhysicalDevice() const;
+
+    [[nodiscard]] vk::SurfaceFormatKHR GetSurfaceFormat() const;
+
+    [[nodiscard]] vk::PresentModeKHR GetPresentMode() const;
+
+    [[nodiscard]] std::vector<device_selection_queue_family_info>
+    GetQueueFamilyInfos() const;
+
+    [[nodiscard]] shader_ptr LoadShaderFromSpirVFile(
+        const shader_info& Shader_Info);
+
+    [[nodiscard]] vertex_shader_ptr LoadVertexShaderFromSpirVFile(
+        const vertex_shader_info& Vertex_Shader_Info);
+
+    [[nodiscard]] fragment_shader_ptr LoadFragmentShaderFromSpirVFile(
+        const fragment_shader_info& Fragment_Shader_Info);
+
+    [[nodiscard]] buffer_ptr CreateBuffer(
+        const buffer_info& Buffer_Info = buffer_info_config::DEFAULT);
 
     [[nodiscard]] render_pass_ptr CreateRenderPass(
-        const render_pass_info& Render_Pass_Info = DEFAULT_RENDER_PASS_INFO);
+        const render_pass_info& Render_Pass_Info =
+            render_pass_info_config::DEFAULT);
 
     [[nodiscard]] swapchain_ptr CreateSwapchain(
-        const swapchain_info& Swapchain_Info = DEFAULT_SWAPCHAIN_INFO);
+        const swapchain_info& Swapchain_Info = swapchain_info_config::DEFAULT);
 
     [[nodiscard]] pipeline_ptr CreatePipeline(
-        const pipeline_info& Pipeline_Info = DEFAULT_PIPELINE_INFO);
+        const pipeline_info& Pipeline_Info = pipeline_info_config::DEFAULT);
 };
 
-class gvw::device_public_constructor : public device
-{
-  public:
-    template<typename... Args>
-    device_public_constructor(Args&&... Arguments)
-        : device(std::forward<Args>(Arguments)...)
-    {
-    }
-};
+} // namespace gvw

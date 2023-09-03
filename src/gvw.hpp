@@ -3,728 +3,537 @@
 /**
  * @file gvw.hpp
  * @author Caden Shmookler (cshmookler@gmail.com)
- * @brief GVW root header file.
+ * @brief Global type, constant, and function declarations.
  * @date 2023-07-05
  */
 
 // Standard includes
+#include <cstddef>
+#include <memory>
 #include <vector>
-#include <list>
 #include <optional>
 #include <mutex>
-#include <memory>
-#include <atomic>
-#include <iostream>
-#include <fstream>
 
 // External includes
+#define VULKAN_HPP_NAMESPACE vk
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
-// Leading local includes
-
-/// @brief All GVW constants, functions, and classes are contained within this
-/// namespace.
-class gvw
-{
-    ////////////////////////////////////////////////////////////
-    ///                     Private Types                    ///
-    ////////////////////////////////////////////////////////////
-
-    /// @brief Implicitly deletes the default constructor of derived types.
-    struct no_constructor
-    {
-        no_constructor() = delete;
-    };
-
-    // Variants of classes but with public constructors instead of private
-    // constructors.
-    class gvw_public_constructor;
-    class window_public_constructor;
-    class monitor_public_constructor;
-    class device_public_constructor;
-
-  public:
-    ////////////////////////////////////////////////////////////
-    ///                     Public Types                     ///
-    ////////////////////////////////////////////////////////////
-
-    /// @brief Creates a strong typedef of a type and inheriting from a separate
-    /// base class.
-    template<typename Type, typename Base>
-    class strong_typedef;
-
-    // Manages destruction of non-unique objects.
-    template<typename... Args>
-    class terminator;
-
-    /// @brief Version major, minor, and revision.
-    struct version;
-
-    // Function signatures.
-    using gvw_error_callback = void (*)(const char*);
-    using int_hint_function = void (*)(int, int);
-    using string_hint_function = void (*)(int, const char*);
-
-    /// @brief GLFW hint ID and default value.
-    /// @tparam T The value type of the hint. Almost always int. Sometimes
-    /// const char*.
-    template<typename T>
-    struct glfw_hint;
-
-    /// @brief The base struct of the *_init_hints and *_hints structs.
-    /// @tparam The integer hint function used to apply the integer hints.
-    /// @tparam The string hint function used to apply the string hints.
-    /// @tparam IntHints The number of hints with cooresponding integer values
-    /// (int).
-    /// @tparam StringHints The number of hints with cooresponding string
-    /// values (const char*).
-    template<int_hint_function IntHintFunc,
-             string_hint_function StringHintFunc,
-             size_t IntHints,
-             size_t StringHints>
-    struct glfw_hints;
-
-    /// @brief An x and y value pair. Structurally identical to `gvw::area`.
-    /// @tparam T The type of the x and y values.
-    template<typename T>
-    struct coordinate;
-
-    /// @brief A width and height value pair. Structurally identical to
-    /// `gvw::coordinate`.
-    /// @tparam T The type of the width and height values.
-    template<typename T>
-    struct area;
-
-    /// @brief Joystick ID and event type of a joystick event.
-    struct joystick_event;
-
-    /// @brief Application information for Vulkan instance creation.
-    struct application_info;
-
-    /// @brief Initialization information for creating the Vulkan debug utility
-    /// messenger.
-    struct debug_utils_messenger_info;
-
-    /// @brief Initialization hints for GLFW.
-    struct init_hints;
-
-    // Smart pointer to a gvw instance.
-    using ptr = std::shared_ptr<gvw>;
-
-    // Public create info struct.
-    struct info;
-
-    /***************** Monitor Related Types ******************/
-
-    /// @brief Wrapper class for a GLFW monitor.
-    class monitor;
-    using monitor_ptr = std::shared_ptr<monitor>;
-
-    /****************** Window Related Types ******************/
-
-    /// @brief Wrapper class for a GLFW window.
-    class window;
-    using window_ptr = std::shared_ptr<window>;
-
-    /// @brief Creation information for a window.
-    struct window_info;
-
-    /// @brief GLFW event callbacks.
-    struct window_event_callbacks;
-
-    /// @brief GLFW window creation hints.
-    struct window_creation_hints;
-
-    /// @brief GLFW window events.
-    struct window_event : no_constructor
-    {
-        /// @brief The key, scancode, action, and mods of a key event.
-        struct key;
-
-        /// @brief A character event stored as an unsigned int. Can be
-        /// interpreted as a UTF-8, UTF-16, or UTF-32 character.
-        using character = unsigned int;
-
-        /// @brief A cursor position event stored as a `coordinate` of type
-        /// double.
-        using cursor_position = coordinate<double>;
-
-        /// @brief A cursor enter/leave event stored as an integer. Can be
-        /// interpreted as a boolean.
-        using cursor_enter = int;
-
-        /// @brief The button, action, and mods of a mouse button event.
-        struct mouse_button;
-
-        /// @brief A scroll event stored as a `coordinate` of type double.
-        using scroll = coordinate<double>;
-
-        /// @brief File count and file paths from a file drop event.
-        struct file_drop;
-
-        /// @brief A size event stored as an `area` of type int.
-        using size = area<int>;
-
-        /// @brief A framebuffer event stored as an `area` of type int.
-        using framebuffer_size = area<int>;
-
-        /// @brief A content scale event stored as a `coordinate` of type float.
-        using content_scale = coordinate<float>;
-
-        /// @brief A position event stored as an `area` of type int.
-        using position = coordinate<int>;
-
-        /// @brief An iconify event stored as an integer. Can be interpreted as
-        /// a boolean.
-        using iconify = int;
-
-        /// @brief A maximize event stored as an integer. Can be interpreted as
-        /// a boolean.
-        using maximize = int;
-
-        /// @brief A focus event stored as an integer. Can be interpreted as a
-        /// boolean.
-        using focus = int;
-    };
-
-    /****************** Device Related Types ******************/
-
-    /// @brief Wrapper class for a Vulkan logical device.
-    class device;
-    using device_ptr = std::shared_ptr<device>;
-
-    /// @brief Creation information for a device.
-    struct device_info;
-
-    /// @brief Physical device selection.
-    struct device_selection : no_constructor
-    {
-        struct queue_family_info;
-
-        struct parameters;
-        struct returns;
-
-        using signature =
-            std::vector<returns> (*)(const std::vector<parameters>&,
-                                     const std::optional<vk::SurfaceKHR>&);
-
-        [[nodiscard]] static std::vector<returns> MinimumForPresentation(
-            const std::vector<parameters>& Physical_Device_Infos,
-            const std::optional<vk::SurfaceKHR>& Window_Surface);
-    };
-
-    /// @brief Device Related create info structs.
-    struct shader_info;
-    struct buffer_info;
-    struct render_pass_info;
-    struct swapchain_info;
-    struct pipeline_info;
-
-    /// @brief Device Related internal classes.
-    struct shader;
-    struct buffer;
-    struct render_pass;
-    struct vertex;
-    struct swapchain;
-    struct pipeline;
-
-    /// @brief Shared pointers to device related internal classes.
-    using render_pass_ptr = std::shared_ptr<render_pass>;
-    using swapchain_ptr = std::shared_ptr<swapchain>;
-    using pipeline_ptr = std::shared_ptr<pipeline>;
-
-    ////////////////////////////////////////////////////////////
-    ///                       Constants                      ///
-    ////////////////////////////////////////////////////////////
-
-    /// @brief Default initialization information for GVW.
-    static const info DEFAULT_INIT_INFO;
-
-    /// @brief Default Vulkan application information for GVW initialization.
-    static const application_info DEFAULT_APPLICATION_INFO;
-
-    /// @brief Default debug utils messenger information for creating the vulkan
-    /// debug messenger.
-    static const debug_utils_messenger_info DEFAULT_UTILS_MESSENGER_INFO;
-
-    /// @brief Default initialization hints as initially set by GLFW.
-    static const init_hints DEFAULT_INIT_HINTS;
-
-  private:
-    /// @brief Vulkan instance layer presets.
-    struct instance_layers_constants
-    {
-        using public_interface =
-            strong_typedef<std::vector<const char*>, instance_layers_constants>;
-
-        static const public_interface VALIDATION;
-    };
-
-  public:
-    using instance_layers = instance_layers_constants::public_interface;
-
-  private:
-    /// @brief Vulkan instance extension presets.
-    struct instance_extensions_constants
-    {
-        using public_interface = strong_typedef<std::vector<const char*>,
-                                                instance_extensions_constants>;
-
-        static const public_interface PORTABILITY_AND_DEBUG_UTILS;
-    };
-
-  public:
-    using instance_extensions = instance_extensions_constants::public_interface;
-
-    /*************** Monitor Related Constants ****************/
-
-    /// @brief Default gamma value for monitors.
-    static const float DEFAULT_MONITOR_GAMMA;
-
-    /**************** Window Related Constants ****************/
-
-    /// @brief Default initialization information for a GLFW window.
-    static const window_info DEFAULT_WINDOW_INFO;
-
-    /// @brief No event callbacks.
-    static const window_event_callbacks NO_WINDOW_EVENT_CALLBACKS;
-
-    /// @brief Default creation hints as initially set by GLFW.
-    static const window_creation_hints DEFAULT_WINDOW_CREATION_HINTS;
-
-  private:
-    /// @brief Window title presets.
-    struct window_title_constants
-    {
-        using public_interface =
-            strong_typedef<const char*, window_title_constants>;
-
-        static const public_interface BLANK;
-        static const public_interface UNTITLED;
-    };
-
-  public:
-    using window_title = window_title_constants::public_interface;
-
-  private:
-    /// @brief Window size presets.
-    struct window_size_constants
-    {
-        using public_interface =
-            strong_typedef<area<int>, window_size_constants>;
-
-        static const public_interface W_500_H_500;
-        static const public_interface W_640_H_360;
-    };
-
-  public:
-    using window_size = window_size_constants::public_interface;
-
-  private:
-    /// @brief Window size limit presets.
-    struct window_size_limit_constants
-    {
-        using public_interface =
-            strong_typedef<area<int>, window_size_limit_constants>;
-
-        static const public_interface NO_MINIMUM;
-        static const public_interface NO_MAXIMUM;
-    };
-
-  public:
-    using window_size_limit = window_size_limit_constants::public_interface;
-
-    /**************** Device Related Constants ****************/
-
-    /// @brief Default logical device information.
-    static const device_info DEFAULT_DEVICE_INFO;
-
-    /// @brief Default buffer information.
-    static const buffer_info DEFAULT_BUFFER_INFO;
-
-    /// @brief Default render pass information.
-    static const render_pass_info DEFAULT_RENDER_PASS_INFO;
-
-    /// @brief Default swapchain information.
-    static const swapchain_info DEFAULT_SWAPCHAIN_INFO;
-
-    /// @brief Default pipeline information.
-    static const pipeline_info DEFAULT_PIPELINE_INFO;
-
-  private:
-    /// @brief Window surface formats presets.
-    struct surface_formats_constants
-    {
-        using public_interface =
-            strong_typedef<std::vector<vk::SurfaceFormatKHR>,
-                           surface_formats_constants>;
-
-        // static const std::optional<std::vector<vk::SurfaceFormatKHR>>
-        // STANDARD;
-        static const public_interface STANDARD;
-    };
-
-  public:
-    using surface_formats = surface_formats_constants::public_interface;
-
-  private:
-    /// @brief Present modes presets.
-    struct present_modes_constants
-    {
-        using public_interface = strong_typedef<std::vector<vk::PresentModeKHR>,
-                                                present_modes_constants>;
-
-        static const public_interface FIFO;
-        static const public_interface MAILBOX;
-        static const public_interface MAILBOX_OR_FIFO;
-    };
-
-  public:
-    using present_modes = present_modes_constants::public_interface;
-
-  private:
-    /// @brief Physical device features presets.
-    struct physical_device_features_constants
-    {
-        using public_interface =
-            strong_typedef<vk::PhysicalDeviceFeatures,
-                           physical_device_features_constants>;
-
-        static const public_interface NONE;
-    };
-
-  public:
-    using physical_device_features =
-        physical_device_features_constants::public_interface;
-
-  private:
-    /// @brief Logical device extension presets.
-    struct logical_device_extensions_constants
-    {
-        using public_interface =
-            strong_typedef<std::vector<const char*>,
-                           logical_device_extensions_constants>;
-
-        static const public_interface SWAPCHAIN;
-    };
-
-  public:
-    using logical_device_extensions =
-        logical_device_extensions_constants::public_interface;
-
-  private:
-    /// @brief Queue priority presets.
-    struct queue_priority_constants
-    {
-        using public_interface =
-            strong_typedef<float, queue_priority_constants>;
-
-        static const public_interface HIGH;
-    };
-
-  public:
-    using queue_priority = queue_priority_constants::public_interface;
-
-  private:
-    /// @brief Dynamic states presets.
-    struct dynamic_states_constants
-    {
-        using public_interface = strong_typedef<std::vector<vk::DynamicState>,
-                                                dynamic_states_constants>;
-
-        static const public_interface VIEWPORT;
-        static const public_interface VIEWPORT_AND_SCISSOR;
-    };
-
-  public:
-    using dynamic_states = dynamic_states_constants::public_interface;
-
-    static const std::vector<shader> NO_SHADERS;
-
-    static const std::vector<vk::VertexInputBindingDescription>
-        NO_VERTEX_BINDING_DESCRIPTIONS;
-
-    static const std::vector<vk::VertexInputAttributeDescription>
-        NO_VERTEX_ATTRIBUTE_DESCRIPTIONS;
-
-  private:
-    ////////////////////////////////////////////////////////////
-    ///                   Private Variables                  ///
-    ////////////////////////////////////////////////////////////
-    // Some variables are static so they're accessible by static functions.
-    // NOLINTBEGIN
-
-    static std::mutex glfwMutex;
-    static std::mutex consoleMutex;
-
-    /// @brief Pointer to the GVW error callback.
-    static gvw_error_callback gvwErrorCallback;
-    static std::mutex gvwErrorCallbackMutex;
-
-    /// @brief Dynamic array of joystick events.
-    static std::vector<joystick_event> joystickEvents;
-    static std::mutex joystickEventsMutex;
-
-    // NOLINTEND
-
-    /// @todo Determine if these Vulkan related variables need to be
-    /// thread-safe.
-
-    std::unique_ptr<terminator<>> glfwTerminator;
-
-    std::vector<const char*> vulkanInstanceExtensions;
-    std::vector<const char*> vulkanInstanceLayers;
-
-    vk::UniqueInstance vulkanInstance;
-    vk::DispatchLoaderDynamic vulkanDispatchLoaderDynamic;
-    vk::UniqueHandle<vk::DebugUtilsMessengerEXT, vk::DispatchLoaderDynamic>
-        vulkanDebugUtilsMessenger;
-
-    ////////////////////////////////////////////////////////////
-    ///               Private Static Functions               ///
-    ////////////////////////////////////////////////////////////
-
-    /// @brief Deinitializes the GLFW library.
-    static void TerminateGlfw() noexcept;
-
-    /// @brief Sets the GVW error callback.
-    /// @warning This function is NOT thread safe.
-    static void SetGvwErrorCallbackNoMutex(
-        gvw_error_callback GVW_Error_Callback = ThrowOnGvwError) noexcept;
-
-    /// @brief Sets the GLFW error callback.
-    /// @warning This function is NOT thread safe.
-    static void SetGlfwErrorCallbackNoMutex(
-        GLFWerrorfun GLFW_Error_Callback = ThrowOnGlfwError) noexcept;
-
-    /// @brief Returns a vector containing all the items present in the user
-    /// array that were missing in the vulkan array.
-    template<typename UserT, typename VulkanT>
-    static std::vector<UserT> UserItemsMissingInVulkanArray(
-        const std::vector<UserT>& User_Array,
-        const std::vector<VulkanT>& Vulkan_Array,
-        bool (*Is_Identical)(UserT, VulkanT));
-
-    /// @brief Returns a vector containing all the items present in the user
-    /// array that were found in the vulkan array.
-    template<typename UserT, typename VulkanT>
-    static std::vector<UserT> UserItemsFoundInVulkanArray(
-        const std::vector<UserT>& User_Array,
-        const std::vector<VulkanT>& Vulkan_Array,
-        bool (*Is_Identical)(UserT, VulkanT));
-
-  public:
-    ////////////////////////////////////////////////////////////
-    ///                Public Static Functions               ///
-    ////////////////////////////////////////////////////////////
-
-    /// @brief Default gvw error callback. Throws an exception for each error.
-    static void ThrowOnGvwError(const char* Description);
-
-    /// @brief Default error callback for handling GLFW errors. Forwards all
-    /// GLFW errors to the GVW error callback.
-    static void ThrowOnGlfwError(int Error_Code, const char* Description);
-
-    /// @brief Returns the GLFW version used at runtime.
-    [[nodiscard]] static version GetGlfwRuntimeVersion() noexcept;
-
-    /// @brief Returns the GLFW version used to compile GVW.
-    [[nodiscard]] static version GetGlfwCompiletimeVersion() noexcept;
-
-    /// @brief Sets the GVW error callback.
-    static void SetGvwErrorCallback(
-        gvw_error_callback GVW_Error_Callback = ThrowOnGvwError) noexcept;
-
-    /// @brief Sets the GLFW error callback.
-    static void SetGlfwErrorCallback(
-        GLFWerrorfun GLFW_Error_Callback = ThrowOnGlfwError) noexcept;
-
-    /// @remark This function is intended to only be called by GLFW.
-    static void AppendToJoystickEventBuffer(int JID, int Event);
-
-    /// @brief Returns the GVW instance associated with a window handle.
-    [[nodiscard]] static window& WindowInstance(GLFWwindow* Window);
-
-    /// @brief The key event callback.
-    static void AppendToKeyEventBuffer(GLFWwindow* Window,
-                                       int Key,
-                                       int Scancode,
-                                       int Action,
-                                       int Mods);
-
-    /// @brief The character event callback.
-    static void AppendToCharacterEventBuffer(GLFWwindow* Window,
-                                             unsigned int Code_Point);
-
-    /// @brief The cursor position event callback.
-    static void AppendToCursorPositionEventBuffer(GLFWwindow* Window,
-                                                  double X_Position,
-                                                  double Y_Position);
-
-    /// @brief The cursor enter event callback.
-    static void AppendToCursorEnterEventBuffer(GLFWwindow* Window, int Entered);
-
-    /// @brief The mouse button event callback.
-    static void AppendToMouseButtonEventBuffer(GLFWwindow* Window,
-                                               int Button,
-                                               int Action,
-                                               int Mods);
-
-    /// @brief The scroll event callback.
-    static void AppendToScrollEventBuffer(GLFWwindow* Window,
-                                          double X_Offset,
-                                          double Y_Offset);
-
-    /// @brief The file drop event callback.
-    static void AppendToFileDropEventBuffer(GLFWwindow* Window,
-                                            int Count,
-                                            const char** Paths);
-
-    /// @brief The close event callback.
-    static void AppendToCloseEventBuffer(GLFWwindow* Window);
-
-    /// @brief The size event callback.
-    static void AppendToSizeEventBuffer(GLFWwindow* Window,
-                                        int Width,
-                                        int Height);
-
-    /// @brief The framebuffer size event callback.
-    static void AppendToFramebufferSizeEventBuffer(GLFWwindow* Window,
-                                                   int Width,
-                                                   int Height);
-
-    /// @brief The content scale event callback.
-    static void AppendToContentScaleEventBuffer(GLFWwindow* Window,
-                                                float XScale,
-                                                float YScale);
-
-    /// @brief The position event callback.
-    static void AppendToPositionEventBuffer(GLFWwindow* Window,
-                                            int XPosition,
-                                            int YPosition);
-
-    /// @brief The iconify event callback.
-    static void AppendToIconifyEventBuffer(GLFWwindow* Window, int Iconified);
-
-    /// @brief The maximize event callback.
-    static void AppendToMaximizeEventBuffer(GLFWwindow* Window, int Maximized);
-
-    /// @brief The focus event callback.
-    static void AppendToFocusEventBuffer(GLFWwindow* Window, int Focused);
-
-    /// @brief The refresh event callback.
-    static void AppendToRefreshEventBuffer(GLFWwindow* Window);
-
-    /// @brief Reads a file from the file system.
-    template<typename T>
-    static T ReadFile(const char* Absolute_Path);
-
-    /// @remark This function is intended to only be called by Vulkan.
-    static VKAPI_ATTR VkBool32 VKAPI_CALL PrintDebugMessagesToConsole(
-        VkDebugUtilsMessageSeverityFlagBitsEXT Message_Severity,
-        VkDebugUtilsMessageTypeFlagsEXT Message_Type,
-        const VkDebugUtilsMessengerCallbackDataEXT* P_Callback_Data,
-        void* P_User_Data);
-
-  private:
-    ////////////////////////////////////////////////////////////
-    ///       Constructors, Operators, and Destructors       ///
-    ////////////////////////////////////////////////////////////
-
-    /// @brief Initializes GVW.
-    /// @remark This constructor is made private to prevent it from being called
-    /// from outside of this class.
-    gvw(const info& Init_Info = DEFAULT_INIT_INFO);
-
-  public:
-    /// @brief Returns a reference to the global instance of this object.
-    /// @remark All arguments are ignored if this function has been called once
-    /// before during execution.
-    static ptr Get(const info& Init_Info = DEFAULT_INIT_INFO);
-
-    // Delete the copy constructor, move constructor, copy assignment operator,
-    // and move assignment operator. It should not be possible to copy or move
-    // this object.
-    gvw(const gvw&) = delete;
-    gvw(gvw&&) noexcept = delete;
-    gvw& operator=(const gvw&) = delete;
-    gvw& operator=(gvw&&) noexcept = delete;
-
-    /// @brief The destructor is public so as to allow explicit destruction
-    /// using the delete operator.
-    ~gvw() = default;
-
-    ////////////////////////////////////////////////////////////
-    ///                Public Member Functions               ///
-    ////////////////////////////////////////////////////////////
-
-    /// @brief Sets the joystick event callback.
-    void SetJoystickEventCallback(
-        GLFWjoystickfun Joystick_Event_Callback = AppendToJoystickEventBuffer);
-
-    /// @brief Returns the joystick event buffer.
-    const std::vector<joystick_event>& JoystickEvents();
-
-    /// @brief Clears the joystick event buffer.
-    void ClearJoystickEvents();
-
-    /// @brief Polls events for all windows.
-    void PollEvents();
-
-    /// @brief Waits until a window event is received, then polls events for all
-    /// windows.
-    void WaitThenPollEvents();
-
-    /// @brief Waits until either the timeout (measured in milliseconds) expires
-    /// or a window event is received, then polls events for all windows.
-    void WaitThenPollEvents(double Timeout);
-
-    /// @brief Posts an empty event. Causes `WaitThenPollEvents` to poll events.
-    void PostEmptyEvent();
-
-    /// @brief Applies window creation hints.
-    void ApplyWindowCreationHints(
-        const window_creation_hints& Window_Creation_Hints =
-            DEFAULT_WINDOW_CREATION_HINTS);
-
-    /// @brief Creates a window.
-    [[nodiscard]] window_ptr CreateWindow(
-        const window_info& Window_Info = DEFAULT_WINDOW_INFO);
-
-    /// @brief Selects physical devices for graphics processing.
-    [[nodiscard]] std::vector<gvw::device_ptr> SelectPhysicalDevices(
-        const device_info& Device_Info = DEFAULT_DEVICE_INFO,
-        const std::optional<vk::SurfaceKHR>& Window_Surface = std::nullopt);
-
-    /// @brief Creates a monitor object.
-    [[nodiscard]] monitor_ptr Monitor(GLFWmonitor* Monitor_Handle);
-
-    /// @brief Returns a `monitor` object cooresponding to the primary monitor.
-    /// @remark The primary monitor, on most operating systems, contains the
-    /// taskbar.
-    [[nodiscard]] monitor_ptr PrimaryMonitor();
-
-    /// @brief Returns a vector of `monitor` objects that each coorespond to a
-    /// physical monitor.
-    [[nodiscard]] std::vector<monitor_ptr> AllMonitors();
-};
-
-class gvw::gvw_public_constructor : public gvw
-{
-  public:
-    template<typename... Args>
-    gvw_public_constructor(Args&&... Arguments)
-        : gvw(std::forward<Args>(Arguments)...)
-    {
-    }
-};
-
-// Trailing local includes
-#include "gvw.tpp"
-#include "gvw-types.hpp"
+namespace gvw {
+
+/// @brief An x and y value pair. Structurally identical to `gvw::area`.
+/// @tparam T The type of the x and y values.
+template<typename T>
+struct coordinate;
+
+/// @brief A width and height value pair. Structurally identical to
+/// `gvw::coordinate`.
+/// @tparam T The type of the width and height values.
+template<typename T>
+struct area;
+
+/// @brief Version major, minor, and revision.
+struct version;
+
+/// @brief Creation hint types.
+class creation_hint_bool;
+class creation_hint_int;
+using creation_hint_string = const char*;
+enum class creation_hint_client_api;
+enum class creation_hint_context_creation_api;
+enum class creation_hint_context_robustness;
+enum class creation_hint_context_release_behavior;
+enum class creation_hint_opengl_profile;
+
+/// @brief Reads a file from the file system.
+/// @tparam T Output buffer type. Almost always `char`.
+template<typename T = char>
+[[nodiscard]] std::vector<T> ReadFile(const char* Absolute_Path);
+
+/// @brief Returns the GLFW version used at runtime.
+[[nodiscard]] version GetGlfwRuntimeVersion() noexcept;
+
+/// @brief Returns the GLFW version used to compile GVW.
+[[nodiscard]] version GetGlfwCompiletimeVersion() noexcept;
+
+/*****************************    GVW Instance    *****************************/
+class instance;
+using instance_ptr = std::shared_ptr<instance>;
+struct instance_info;
+namespace instance_info_config {
+extern const instance_info DEFAULT;
+} // namespace instance_info_config
+
+/// @brief Vulkan instance creation flags.
+using instance_creation_flags = vk::InstanceCreateFlagBits;
+namespace instance_creation_flags_config {
+extern const instance_creation_flags NONE;
+extern const instance_creation_flags ENUMERATE_PORTABILITY_KHR;
+} // namespace instance_creation_flags_config
+
+/// @brief Initialization hints for GLFW.
+struct instance_creation_hints_info;
+namespace instance_creation_hints_info_config {
+extern const instance_creation_hints_info DEFAULT;
+} // namespace instance_creation_hints_info_config
+struct instance_creation_hints;
+namespace instance_creation_hints_config {
+extern const instance_creation_hints DEFAULT;
+} // namespace instance_creation_hints_config
+
+/// @brief Application information for Vulkan instance creation.
+struct instance_application_info;
+namespace instance_application_info_config {
+extern const instance_application_info DEFAULT;
+} // namespace instance_application_info_config
+
+/// @todo Add `application` class.
+
+/// @brief Initialization information for the Vulkan debug utility messenger.
+struct instance_debug_utils_messenger_info;
+namespace instance_debug_utils_messenger_info_config {
+extern const instance_debug_utils_messenger_info DEFAULT;
+} // namespace instance_debug_utils_messenger_info_config
+
+/// @brief Vulkan debug utility messenger callbacks.
+/// @remark These functions should only be called by Vulkan.
+using instance_debug_utils_messenger_callback =
+    PFN_vkDebugUtilsMessengerCallbackEXT;
+namespace instance_debug_utils_messenger_callback_config {
+extern const instance_debug_utils_messenger_callback NONE;
+extern const instance_debug_utils_messenger_callback
+    FORWARD_TO_WARNING_AND_ERROR_CALLBACKS;
+} // namespace instance_debug_utils_messenger_callback_config
+
+/// @brief Debug utils messenger callback template.
+using instance_debug_utils_messenger_callback_print_function =
+    void (*)(VkDebugUtilsMessageSeverityFlagBitsEXT, const char*);
+
+using instance_glfw_error_callback = GLFWerrorfun;
+namespace instance_glfw_error_callback_config {
+extern const instance_glfw_error_callback NONE;
+extern const instance_glfw_error_callback FORWARD_TO_WARNING_CALLBACK;
+extern const instance_glfw_error_callback FORWARD_TO_ERROR_CALLBACK;
+} // namespace instance_glfw_error_callback_config
+
+/// @brief Vulkan instance layer.
+using instance_layer = const char*;
+namespace instance_layer_config {
+extern const instance_layer NONE;
+/// @todo Add more instance_layer configs.
+} // namespace instance_layer_config
+using instance_layers = std::vector<instance_layer>;
+namespace instance_layers_config {
+extern const instance_layers NONE;
+extern const instance_layers VALIDATION;
+} // namespace instance_layers_config
+
+/// @brief Vulkan instance extensions.
+using instance_extension = const char*;
+namespace instance_extension_config {
+extern const instance_extension NONE;
+/// @todo Add more instance_extension configs.
+} // namespace instance_extension_config
+using instance_extensions = std::vector<instance_extension>;
+namespace instance_extensions_config {
+extern const instance_extensions NONE;
+extern const instance_extensions PORTABILITY_AND_DEBUG_UTILS;
+} // namespace instance_extensions_config
+
+/// @brief GVW callbacks.
+using instance_warning_callback = void (*)(const char*);
+namespace instance_warning_callback_config {
+extern const instance_warning_callback NONE;
+extern const instance_warning_callback COUT;
+extern const instance_warning_callback CLOG;
+extern const instance_warning_callback CERR;
+extern const instance_warning_callback COUT_THROW;
+extern const instance_warning_callback CLOG_THROW;
+extern const instance_warning_callback CERR_THROW;
+} // namespace instance_warning_callback_config
+using instance_error_callback = void (*)(const char*);
+namespace instance_error_callback_config {
+extern const instance_error_callback NONE;
+extern const instance_error_callback COUT;
+extern const instance_error_callback CLOG;
+extern const instance_error_callback CERR;
+extern const instance_error_callback COUT_THROW;
+extern const instance_error_callback CLOG_THROW;
+extern const instance_error_callback CERR_THROW;
+} // namespace instance_error_callback_config
+
+/// @brief Joystick ID and event type of a joystick event.
+struct instance_joystick_event;
+
+using instance_joystick_event_callback = GLFWjoystickfun;
+namespace instance_joystick_event_callback_config {
+extern const instance_joystick_event_callback NONE;
+extern const instance_joystick_event_callback APPEND_TO_JOYSTICK_EVENT_BUFFER;
+} // namespace instance_joystick_event_callback_config
+
+/// @brief Sets the GLFW error callback.
+void SetGlfwCallback(instance_glfw_error_callback GLFW_Error_Callback);
+
+/// @brief Sets the GVW warning callback.
+void SetWarningCallback(instance_warning_callback Warning_Callback);
+
+/// @brief Sets the GVW error callback.
+void SetErrorCallback(instance_error_callback Error_Callback);
+
+/// @brief Calls the GLFW error callback.
+void GlfwErrorCallback(int Error_Code, const char* Message);
+
+/// @brief Calls the GVW warning callback.
+void WarningCallback(const char* Message);
+
+/// @brief Calls the GVW error callback.
+void ErrorCallback(const char* Message);
+
+/// @brief Initialize GVW with the default configuration.
+/// @remark Immediately returns if GVW is already initialized.
+instance_ptr CreateInstance();
+
+/// @brief Initialize GVW with a custom configuration.
+/// @remark Immediately returns if GVW is already initialized.
+instance_ptr CreateInstance(const instance_info& Instance_Info);
+
+/// @brief Returns the GVW instance.
+/// @remark Returns nullptr if GVW is not initialized.
+instance_ptr GetInstance();
+
+/// @brief Destroys the GVW instance.
+/// @remark All objects created with GVW must be preemptively destroyed.
+void DestroyInstance();
+
+/********************************    Monitor    *******************************/
+class monitor;
+using monitor_ptr = std::shared_ptr<monitor>;
+using monitor_info = GLFWmonitor*;
+namespace monitor_info_config {
+extern const monitor_info DEFAULT;
+} // namespace monitor_info_config
+
+/// @brief Gamma value for monitors.
+using monitor_gamma = float;
+namespace monitor_gamma_config {
+extern const monitor_gamma DEFAULT;
+} // namespace monitor_gamma_config
+
+/********************************    Window    ********************************/
+class window;
+using window_ptr = std::shared_ptr<window>;
+struct window_info;
+namespace window_info_config {
+extern const window_info DEFAULT;
+} // namespace window_info_config
+
+enum class window_key;
+
+struct window_key_event;
+using window_character_event = unsigned int;
+using window_cursor_position_event = coordinate<double>;
+using window_cursor_enter_event = int;
+struct window_mouse_button_event;
+using window_scroll_event = coordinate<double>;
+struct window_file_drop_event;
+using window_size_event = area<int>;
+using window_framebuffer_size_event = area<int>;
+using window_content_scale_event = coordinate<float>;
+using window_position_event = coordinate<int>;
+using window_iconify_event = int;
+using window_maximize_event = int;
+using window_focus_event = int;
+
+using window_key_event_callback = GLFWkeyfun;
+namespace window_key_event_callback_config {
+extern const window_key_event_callback NONE;
+extern const window_key_event_callback APPEND_TO_KEY_EVENT_BUFFER;
+} // namespace window_key_event_callback_config
+using window_character_event_callback = GLFWcharfun;
+namespace window_character_event_callback_config {
+extern const window_character_event_callback NONE;
+extern const window_character_event_callback APPEND_TO_CHARACTER_EVENT_BUFFER;
+} // namespace window_character_event_callback_config
+using window_cursor_position_event_callback = GLFWcursorposfun;
+namespace window_cursor_position_event_callback_config {
+extern const window_cursor_position_event_callback NONE;
+extern const window_cursor_position_event_callback
+    APPEND_TO_CURSOR_POSITION_EVENT_BUFFER;
+} // namespace window_cursor_position_event_callback_config
+using window_cursor_enter_event_callback = GLFWcursorenterfun;
+namespace window_cursor_enter_event_callback_config {
+extern const window_cursor_enter_event_callback NONE;
+extern const window_cursor_enter_event_callback
+    APPEND_TO_CURSOR_ENTER_EVENT_BUFFER;
+} // namespace window_cursor_enter_event_callback_config
+using window_mouse_button_event_callback = GLFWmousebuttonfun;
+namespace window_mouse_button_event_callback_config {
+extern const window_mouse_button_event_callback NONE;
+extern const window_mouse_button_event_callback
+    APPEND_TO_MOUSE_BUTTON_EVENT_BUFFER;
+} // namespace window_mouse_button_event_callback_config
+using window_scroll_event_callback = GLFWscrollfun;
+namespace window_scroll_event_callback_config {
+extern const window_scroll_event_callback NONE;
+extern const window_scroll_event_callback APPEND_TO_SCROLL_EVENT_BUFFER;
+} // namespace window_scroll_event_callback_config
+using window_file_drop_event_callback = GLFWdropfun;
+namespace window_file_drop_event_callback_config {
+extern const window_file_drop_event_callback NONE;
+extern const window_file_drop_event_callback APPEND_TO_FILE_DROP_EVENT_BUFFER;
+} // namespace window_file_drop_event_callback_config
+using window_close_event_callback = GLFWwindowclosefun;
+namespace window_close_event_callback_config {
+extern const window_close_event_callback NONE;
+extern const window_close_event_callback APPEND_TO_CLOSE_EVENT_BUFFER;
+} // namespace window_close_event_callback_config
+using window_size_event_callback = GLFWwindowsizefun;
+namespace window_size_event_callback_config {
+extern const window_size_event_callback NONE;
+extern const window_size_event_callback APPEND_TO_SIZE_EVENT_BUFFER;
+} // namespace window_size_event_callback_config
+using window_framebuffer_size_event_callback = GLFWframebuffersizefun;
+namespace window_framebuffer_size_event_callback_config {
+extern const window_framebuffer_size_event_callback NONE;
+extern const window_framebuffer_size_event_callback
+    APPEND_TO_FRAMEBUFFER_SIZE_EVENT_BUFFER;
+} // namespace window_framebuffer_size_event_callback_config
+using window_content_scale_event_callback = GLFWwindowcontentscalefun;
+namespace window_content_scale_event_callback_config {
+extern const window_content_scale_event_callback NONE;
+extern const window_content_scale_event_callback
+    APPEND_TO_CONTENT_SCALE_EVENT_BUFFER;
+} // namespace window_content_scale_event_callback_config
+using window_position_event_callback = GLFWwindowposfun;
+namespace window_position_event_callback_config {
+extern const window_position_event_callback NONE;
+extern const window_position_event_callback APPEND_TO_POSITION_EVENT_BUFFER;
+} // namespace window_position_event_callback_config
+using window_iconify_event_callback = GLFWwindowiconifyfun;
+namespace window_iconify_event_callback_config {
+extern const window_iconify_event_callback NONE;
+extern const window_iconify_event_callback APPEND_TO_ICONIFY_EVENT_BUFFER;
+} // namespace window_iconify_event_callback_config
+using window_maximize_event_callback = GLFWwindowmaximizefun;
+namespace window_maximize_event_callback_config {
+extern const window_maximize_event_callback NONE;
+extern const window_maximize_event_callback APPEND_TO_MAXIMIZE_EVENT_BUFFER;
+} // namespace window_maximize_event_callback_config
+using window_focus_event_callback = GLFWwindowfocusfun;
+namespace window_focus_event_callback_config {
+extern const window_focus_event_callback NONE;
+extern const window_focus_event_callback APPEND_TO_FOCUS_EVENT_BUFFER;
+} // namespace window_focus_event_callback_config
+using window_refresh_event_callback = GLFWwindowrefreshfun;
+namespace window_refresh_event_callback_config {
+extern const window_refresh_event_callback NONE;
+extern const window_refresh_event_callback APPEND_TO_REFRESH_EVENT_BUFFER;
+} // namespace window_refresh_event_callback_config
+
+struct window_event_callbacks;
+namespace window_event_callbacks_config {
+extern const window_event_callbacks NONE;
+extern const window_event_callbacks APPEND_TO_EVENT_BUFFERS;
+} // namespace window_event_callbacks_config
+
+struct window_creation_hints_info;
+namespace window_creation_hints_info_config {
+extern const window_creation_hints_info DEFAULT;
+} // namespace window_creation_hints_info_config
+struct window_creation_hints;
+namespace window_creation_hints_config {
+extern const window_creation_hints DEFAULT;
+} // namespace window_creation_hints_config
+
+using window_title = const char*;
+namespace window_title_config {
+extern const window_title UNTITLED;
+extern const window_title BLANK;
+} // namespace window_title_config
+
+using window_size = area<int>;
+namespace window_size_config {
+extern const window_size W_500_H_500;
+extern const window_size W_640_H_360;
+} // namespace window_size_config
+
+using window_size_limit = area<int>;
+namespace window_size_limit_config {
+extern const window_size_limit NO_MINIMUM;
+extern const window_size_limit NO_MAXIMUM;
+} // namespace window_size_limit_config
+
+/********************************    Cursor    ********************************/
+class cursor;
+using cursor_ptr = std::shared_ptr<cursor>;
+
+using cursor_hotspot = coordinate<int>;
+namespace cursor_hotspot_config {
+extern const cursor_hotspot DEFAULT;
+} // namespace cursor_hotspot_config
+
+struct standard_cursor_info;
+namespace standard_cursor_info_config {
+extern const standard_cursor_info DEFAULT;
+} // namespace standard_cursor_info_config
+
+struct custom_cursor_info;
+namespace custom_cursor_info_config {
+extern const custom_cursor_info DEFAULT;
+} // namespace custom_cursor_info_config
+
+/********************************    Shader    ********************************/
+class shader;
+using shader_ptr = std::shared_ptr<shader>;
+struct shader_info;
+namespace shader_info_config {
+extern const shader_info DEFAULT;
+} // namespace shader_info_config
+
+class vertex_shader;
+using vertex_shader_ptr = std::shared_ptr<vertex_shader>;
+struct vertex_shader_info;
+namespace vertex_shader_info_config {
+extern const vertex_shader_info DEFAULT;
+} // namespace vertex_shader_info_config
+
+class fragment_shader;
+using fragment_shader_ptr = std::shared_ptr<fragment_shader>;
+struct fragment_shader_info;
+namespace fragment_shader_info_config {
+extern const fragment_shader_info DEFAULT;
+} // namespace fragment_shader_info_config
+
+/********************************    Buffer    ********************************/
+class buffer;
+using buffer_ptr = std::shared_ptr<buffer>;
+struct buffer_info;
+namespace buffer_info_config {
+extern const buffer_info DEFAULT;
+} // namespace buffer_info_config
+
+/******************************    Render Pass    *****************************/
+class render_pass;
+using render_pass_ptr = std::shared_ptr<render_pass>;
+struct render_pass_info;
+namespace render_pass_info_config {
+extern const render_pass_info DEFAULT;
+} // namespace render_pass_info_config
+
+/*******************************    Swapchain    ******************************/
+class swapchain;
+using swapchain_ptr = std::shared_ptr<swapchain>;
+struct swapchain_info;
+namespace swapchain_info_config {
+extern const swapchain_info DEFAULT;
+} // namespace swapchain_info_config
+
+/// @brief Window surface format.
+using swapchain_surface_format = vk::SurfaceFormatKHR;
+namespace swapchain_surface_format_config {
+extern const swapchain_surface_format STANDARD;
+} // namespace swapchain_surface_format_config
+using swapchain_surface_formats = std::vector<swapchain_surface_format>;
+namespace swapchain_surface_formats_config {
+extern const swapchain_surface_formats STANDARD;
+} // namespace swapchain_surface_formats_config
+
+/// @brief Window present mode.
+using swapchain_present_mode = vk::PresentModeKHR;
+namespace swapchain_present_mode_config {
+extern const swapchain_present_mode FIFO;
+extern const swapchain_present_mode MAILBOX;
+} // namespace swapchain_present_mode_config
+using swapchain_present_modes = std::vector<swapchain_present_mode>;
+namespace swapchain_present_modes_config {
+extern const swapchain_present_modes FIFO;
+extern const swapchain_present_modes MAILBOX;
+extern const swapchain_present_modes MAILBOX_OR_FIFO;
+} // namespace swapchain_present_modes_config
+
+/*******************************    Pipeline    *******************************/
+class pipeline;
+using pipeline_ptr = std::shared_ptr<pipeline>;
+struct pipeline_info;
+namespace pipeline_info_config {
+extern const pipeline_info DEFAULT;
+} // namespace pipeline_info_config
+
+/// @brief Collection of shaders for creating a pipeline.
+struct pipeline_shaders;
+namespace pipeline_shaders_config {
+extern const pipeline_shaders NONE;
+} // namespace pipeline_shaders_config
+
+/// @brief Dynamic states.
+using pipeline_dynamic_states = std::vector<vk::DynamicState>;
+namespace pipeline_dynamic_states_config {
+extern const pipeline_dynamic_states VIEWPORT;
+extern const pipeline_dynamic_states VIEWPORT_AND_SCISSOR;
+} // namespace pipeline_dynamic_states_config
+
+/********************************    Device    ********************************/
+class device;
+using device_ptr = std::shared_ptr<device>;
+struct device_info;
+namespace device_info_config {
+extern const device_info DEFAULT;
+} // namespace device_info_config
+
+struct device_selection_info;
+namespace device_selection_info_config {
+extern const device_selection_info DEFAULT;
+} // namespace device_selection_info_config
+struct device_selection_queue_family_info;
+struct device_selection_parameter;
+using device_selection_function =
+    std::vector<device_info> (*)(const std::vector<device_selection_parameter>&,
+                                 const std::optional<vk::SurfaceKHR>&);
+namespace device_selection_function_config {
+extern const device_selection_function NONE;
+extern const device_selection_function MINIMUM_FOR_PRESENTATION;
+} // namespace device_selection_function_config
+
+/// @brief Physical device features.
+/// @todo Consider naming this device_selection_features.
+using device_features = vk::PhysicalDeviceFeatures;
+namespace device_features_config {
+extern const device_features NONE;
+} // namespace device_features_config
+
+/// @brief Logical device extensions.
+/// @todo Consider naming this device_selection_extensions (if possible to
+/// select for logical device extensions during physical device selection).
+using device_extensions = std::vector<const char*>;
+namespace device_extensions_config {
+extern const device_extensions NONE;
+extern const device_extensions SWAPCHAIN;
+} // namespace device_extensions_config
+
+/// @brief Logical device queue priority.
+/// @todo Move this to within the `queue` class once it exists.
+using device_queue_priority = float;
+namespace device_queue_priority_config {
+extern const device_queue_priority HIGH;
+} // namespace device_queue_priority_config
+
+/*********************************    Other    ********************************/
+/// @todo Figure out what to do with these "temporary" types.
+extern const std::vector<vk::VertexInputBindingDescription>
+    NO_VERTEX_BINDING_DESCRIPTIONS;
+extern const std::vector<vk::VertexInputAttributeDescription>
+    NO_VERTEX_ATTRIBUTE_DESCRIPTIONS;
+struct vertex;
+extern const std::vector<vertex> NO_VERTICES;
+
+} // namespace gvw
+
+// Local definition includes
+#include "internal.hpp"
+#include "gvw.ipp"
+#include "instance.hpp"
 #include "monitor.hpp"
 #include "window.hpp"
 #include "device.hpp"

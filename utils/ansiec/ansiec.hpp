@@ -1,7 +1,13 @@
 #pragma once
 
-// Standard includes
-#include <iostream>
+// External includes
+/// @todo Standardize OS-specific compiler macros using conan.
+// #ifdef _WIN32
+// #include <windows.h>
+// #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+// #define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+// #endif
+// #endif
 
 // ANSI escape codes
 namespace ansiec {

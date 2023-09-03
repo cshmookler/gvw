@@ -1,143 +1,109 @@
+// Standard includes
+#include <iostream>
+
 // Local includes
 #include "window.hpp"
 
-// Standard includes
-#include <algorithm>
-#include <utility>
-
-gvw::window_creation_hints::window_creation_hints(const info& Creation_Hints)
-    : glfw_hints(
-          { { { GLFW_RESIZABLE, Creation_Hints.resizable },
-              { GLFW_VISIBLE, Creation_Hints.visible },
-              { GLFW_DECORATED, Creation_Hints.decorated },
-              { GLFW_FOCUSED, Creation_Hints.focused },
-              { GLFW_AUTO_ICONIFY, Creation_Hints.autoIconify },
-              { GLFW_FLOATING, Creation_Hints.floating },
-              { GLFW_MAXIMIZED, Creation_Hints.maximized },
-              { GLFW_CENTER_CURSOR, Creation_Hints.centerCursor },
-              { GLFW_TRANSPARENT_FRAMEBUFFER,
-                Creation_Hints.transparentFramebuffer },
-              { GLFW_FOCUS_ON_SHOW, Creation_Hints.focusOnShow },
-              { GLFW_SCALE_TO_MONITOR, Creation_Hints.scaleToMonitor },
-              { GLFW_RED_BITS, Creation_Hints.redBits },
-              { GLFW_GREEN_BITS, Creation_Hints.greenBits },
-              { GLFW_BLUE_BITS, Creation_Hints.blueBits },
-              { GLFW_ALPHA_BITS, Creation_Hints.alphaBits },
-              { GLFW_DEPTH_BITS, Creation_Hints.depthBits },
-              { GLFW_STENCIL_BITS, Creation_Hints.stencilBits },
-              { GLFW_AUX_BUFFERS, Creation_Hints.auxBuffers },
-              { GLFW_STEREO, Creation_Hints.stereo },
-              { GLFW_SAMPLES, Creation_Hints.samples },
-              { GLFW_SRGB_CAPABLE, Creation_Hints.srgbCapable },
-              { GLFW_DOUBLEBUFFER, Creation_Hints.doubleBuffer },
-              { GLFW_REFRESH_RATE, Creation_Hints.refreshRate },
-              { GLFW_CLIENT_API, Creation_Hints.clientApi },
-              { GLFW_CONTEXT_CREATION_API, Creation_Hints.contextCreationApi },
-              { GLFW_CONTEXT_VERSION_MAJOR,
-                Creation_Hints.contextVersionMajor },
-              { GLFW_CONTEXT_VERSION_MINOR,
-                Creation_Hints.contextVersionMinor },
-              { GLFW_OPENGL_FORWARD_COMPAT,
-                Creation_Hints.openglForwardCompatible },
-              { GLFW_OPENGL_DEBUG_CONTEXT, Creation_Hints.openglDebugContext },
-              { GLFW_OPENGL_PROFILE, Creation_Hints.openglProfile },
-              { GLFW_CONTEXT_ROBUSTNESS, Creation_Hints.contextRobustness },
-              { GLFW_CONTEXT_RELEASE_BEHAVIOR,
-                Creation_Hints.contextReleaseBehavior },
-              { GLFW_CONTEXT_NO_ERROR, Creation_Hints.contextNoError },
-              { GLFW_COCOA_RETINA_FRAMEBUFFER,
-                Creation_Hints.cocoaRetinaFramebuffer },
-              { GLFW_COCOA_GRAPHICS_SWITCHING,
-                Creation_Hints.cocoaGraphicsSwitching } } },
-          { { { GLFW_COCOA_FRAME_NAME, Creation_Hints.cocoaFrameName },
-              { GLFW_X11_CLASS_NAME, Creation_Hints.x11ClassName },
-              { GLFW_X11_INSTANCE_NAME, Creation_Hints.x11InstanceName } } })
-{
-}
+namespace gvw {
 
 // NOLINTNEXTLINE
-void gvw::window::DestroyGlfwWindow(ptr GVW, GLFWwindow* Window_Handle) noexcept
+void window::DestroyGlfwWindow(GLFWwindow* Window_Handle) noexcept
 {
-    std::scoped_lock<std::mutex> lock(GVW->glfwMutex);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwDestroyWindow(Window_Handle);
 }
 
-gvw::window::window(ptr GVW,
-                    const window_info& Window_Info,
-                    window* Parent_Window)
-    : gvw(std::move(GVW))
+window::window(const window_info& Window_Info, window* Parent_Window)
+    : gvwInstance(internal::global::GVW_INSTANCE)
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    internal::AssertInitialization();
 
-    // Apply window creation hints.
-    Window_Info.creationHints.Apply();
+    GLFWmonitor* fullScreenMonitor =
+        (Window_Info.fullScreenMonitor != nullptr)
+            ? Window_Info.fullScreenMonitor->GetHandle()
+            : nullptr;
 
-    // Briefly hide the window if an initial position was specified. If this is
-    // not done the window may be in the wrong position for one frame (the
-    // default position set by the operating system).
-    if (Window_Info.position.has_value()) {
-        glfwWindowHint(Window_Info.creationHints.visible.HINT, GLFW_FALSE);
+    {
+        // Lock the GLFW mutex between the application of window hints and
+        // window creation to prevent other threads from setting window hints.
+        std::scoped_lock lock(internal::global::GLFW_MUTEX);
+
+        // Apply window creation hints.
+        Window_Info.creationHints.Apply();
+
+        // Briefly hide the window if an initial position was specified. If this
+        // is not done the window may be in the wrong position for one frame
+        // (the default position set by the operating system).
+        if (Window_Info.position.has_value()) {
+            glfwWindowHint(Window_Info.creationHints.visible.HINT, GLFW_FALSE);
+        }
+
+        // Create the window.
+        this->windowHandle =
+            glfwCreateWindow(Window_Info.size.width,
+                             Window_Info.size.height,
+                             Window_Info.title,
+                             fullScreenMonitor,
+                             nullptr); // "We use Vulkan in this household!"
     }
 
-    // Create the window.
-    this->windowHandle =
-        glfwCreateWindow(Window_Info.size->width,
-                         Window_Info.size->height,
-                         Window_Info.title,
-                         Window_Info.fullScreenMonitor,
-                         nullptr); // "We use Vulkan in this household!"
+    this->glfwWindowDestroyer =
+        std::make_unique<internal::terminator<GLFWwindow*>>(DestroyGlfwWindow,
+                                                            this->windowHandle);
 
-    this->glfwWindowDestroyer = std::make_unique<terminator<ptr, GLFWwindow*>>(
-        DestroyGlfwWindow, this->gvw, this->windowHandle);
-
-    // Link this window object with the underlying GLFW window object.
-    glfwSetWindowUserPointer(this->windowHandle, this);
+    this->SetUserPointer(this);
 
     // Set an initial position if one was specified.
     if (Window_Info.position.has_value()) {
-        this->PositionNoMutex(Window_Info.position.value());
+        this->SetPosition(Window_Info.position.value());
         // Show the window now that it has been moved to the correct position.
-        this->ShowNoMutex();
+        this->Show();
     }
 
-    // Set the reset position and size of the window.
-    this->resetMutex.lock();
-    this->resetPosition = PositionNoMutex();
-    this->resetSize = SizeNoMutex();
-    this->resetMutex.unlock();
+    {
+        // Set the reset position and size of the window.
+        std::scoped_lock lock(internal::global::GLFW_MUTEX, this->resetMutex);
+        this->resetPosition = this->GetPositionNoMutex();
+        this->resetSize = this->GetSizeNoMutex();
+    }
 
     // Set window event callbacks.
-    this->EventCallbacksNoMutex(Window_Info.eventCallbacks);
+    this->SetEventCallbacks(Window_Info.eventCallbacks);
 
     // Create window surface.
+    /// @todo Place this into its own function.
     VkSurfaceKHR tempSurface = nullptr;
-    if (glfwCreateWindowSurface(*this->gvw->vulkanInstance,
-                                this->windowHandle,
-                                nullptr,
-                                &tempSurface) != VK_SUCCESS) {
-        gvwErrorCallback("Window surface creation failed");
+    {
+        std::scoped_lock lock(internal::global::GLFW_MUTEX);
+        if (glfwCreateWindowSurface(*this->gvwInstance->vulkanInstance,
+                                    this->windowHandle,
+                                    nullptr,
+                                    &tempSurface) != VK_SUCCESS) {
+            ErrorCallback("Window surface creation failed");
+        }
     }
     this->surface =
-        vk::UniqueSurfaceKHR(tempSurface, *this->gvw->vulkanInstance);
+        vk::UniqueSurfaceKHR(tempSurface, *this->gvwInstance->vulkanInstance);
 
     // Use an already existing logical device or create a new one.
     if (Window_Info.device != nullptr) {
-        this->logicalDeviceInfo = Window_Info.device;
+        this->logicalDevice = Window_Info.device;
     } else if (Parent_Window != nullptr) {
-        this->logicalDeviceInfo = Parent_Window->logicalDeviceInfo;
+        this->logicalDevice = Parent_Window->logicalDevice;
     } else {
-        this->logicalDeviceInfo =
-            gvw->SelectPhysicalDevices(Window_Info.deviceInfo,
-                                       this->surface.get())
+        this->logicalDevice =
+            gvwInstance
+                ->SelectPhysicalDevices(Window_Info.deviceSelectionInfo,
+                                        this->surface.get())
                 .at(0);
     }
-    /// @todo Remove this. Rename `logicalDeviceInfo` to `logicalDevice`.
-    this->logicalDevice = this->logicalDeviceInfo->logicalDevice->get();
 
     // Find indicies for the graphics and present queue families.
+    /// @todo Place physical device minimum requirements verification into its
+    /// own function.
     std::optional<uint32_t> viableGraphicsQueueFamilyIndex;
     std::optional<uint32_t> viablePresentationQueueFamilyIndex;
-    const auto& queueInfos = this->logicalDeviceInfo->queueInfos;
+    const auto& queueInfos = this->logicalDevice->GetQueueFamilyInfos();
     for (const auto& queueInfo : queueInfos) {
         if (viableGraphicsQueueFamilyIndex.has_value() == false) {
             if (bool(queueInfo.properties.queueFlags &
@@ -147,7 +113,7 @@ gvw::window::window(ptr GVW,
             }
         }
         if (viablePresentationQueueFamilyIndex.has_value() == false) {
-            if (this->logicalDeviceInfo->physicalDevice.getSurfaceSupportKHR(
+            if (this->logicalDevice->GetPhysicalDevice().getSurfaceSupportKHR(
                     queueInfo.createInfo.queueFamilyIndex,
                     this->surface.get()) != VK_FALSE) {
                 viablePresentationQueueFamilyIndex =
@@ -164,135 +130,198 @@ gvw::window::window(ptr GVW,
         }
     }
     if (viableGraphicsQueueFamilyIndex.has_value() == false) {
-        gvwErrorCallback("The selected physical device does not offer a queue "
-                         "family that supports graphics.");
+        ErrorCallback("The selected physical device does not offer a queue "
+                      "family that supports graphics.");
     }
     if (viablePresentationQueueFamilyIndex.has_value() == false) {
-        gvwErrorCallback("The selected physical device does not offer a queue "
-                         "family that supports presentation.");
+        ErrorCallback("The selected physical device does not offer a queue "
+                      "family that supports presentation.");
     }
     this->graphicsQueueIndex = viableGraphicsQueueFamilyIndex.value();
     this->presentQueueIndex = viablePresentationQueueFamilyIndex.value();
 
     /// @todo Allow selection of specific queue indicies.
     this->graphicsQueue =
-        this->logicalDeviceInfo->logicalDevice->get().getQueue(
-            this->graphicsQueueIndex, 0);
-    this->presentQueue = this->logicalDeviceInfo->logicalDevice->get().getQueue(
-        this->presentQueueIndex, 0);
+        this->logicalDevice->GetHandle().getQueue(this->graphicsQueueIndex, 0);
+    this->presentQueue =
+        this->logicalDevice->GetHandle().getQueue(this->presentQueueIndex, 0);
 
     // Use an already existing render pass or create a new one.
     if (Window_Info.renderPass != nullptr) {
-        if (Window_Info.renderPass->handle.getOwner() != this->logicalDevice) {
-            gvwErrorCallback("Cannot use a render pass created with a "
-                             "different logical device.");
+        if (Window_Info.renderPass->handle.getOwner() !=
+            this->logicalDevice->GetHandle()) {
+            ErrorCallback("Cannot use a render pass created with a different "
+                          "logical device.");
         }
         this->renderPass = Window_Info.renderPass;
     } else {
-        this->renderPass = this->logicalDeviceInfo->CreateRenderPass(
-            { .format = this->logicalDeviceInfo->surfaceFormat.format });
+        this->renderPass = this->logicalDevice->CreateRenderPass(
+            { .format = this->logicalDevice->GetSurfaceFormat().format });
     }
 
     // Create swapchain.
     this->CreateSwapchain();
 
+    /// @todo Place shader utilities into separate functions or within the
+    /// shader class.
+    if (Window_Info.shaders.vertex != nullptr) {
+        if (this->shaders.vertex->handle.getOwner() !=
+            this->logicalDevice->GetHandle()) {
+            ErrorCallback("Cannot use a vertex shader created with a different "
+                          "logical device.");
+        }
+        this->shaders.vertex = Window_Info.shaders.vertex;
+    } else {
+        // Attempt to load the default vertex shader.
+        vertex_shader_info vertexShaderInfo = {
+            .general = { .code = "vert.spv",
+                         .stage = vk::ShaderStageFlagBits::eVertex },
+            .bindingDescriptions = { { .binding = 0,
+                                       .stride = sizeof(vertex),
+                                       .inputRate =
+                                           vk::VertexInputRate::eVertex } },
+            .attributeDescriptions = { { { .location = 0,
+                                           .binding = 0,
+                                           .format = vk::Format::eR32G32Sfloat,
+                                           .offset =
+                                               offsetof(vertex, position) },
+                                         { .location = 1,
+                                           .binding = 0,
+                                           .format =
+                                               vk::Format::eR32G32B32Sfloat,
+                                           .offset =
+                                               offsetof(vertex, color) } } }
+        };
+        this->shaders.vertex =
+            this->logicalDevice->LoadVertexShaderFromSpirVFile(
+                vertexShaderInfo);
+    }
+
+    if (Window_Info.shaders.fragment != nullptr) {
+        if (this->shaders.fragment->handle.getOwner() !=
+            this->logicalDevice->GetHandle()) {
+            ErrorCallback("Cannot use a fragment shader created with a "
+                          "different logical device.");
+        }
+        this->shaders.fragment = Window_Info.shaders.fragment;
+    } else {
+        // Attempt to load the default fragment shader.
+        fragment_shader_info fragmentShaderInfo = {
+            .general = { .code = "frag.spv",
+                         .stage = vk::ShaderStageFlagBits::eFragment }
+        };
+        this->shaders.fragment =
+            this->logicalDevice->LoadFragmentShaderFromSpirVFile(
+                fragmentShaderInfo);
+    }
+
     // Use an already existing pipeline or create a new one.
     if (Window_Info.pipeline != nullptr) {
-        if (Window_Info.pipeline->pipeline.getOwner() != this->logicalDevice) {
-            gvwErrorCallback("Cannot use a pipeline created with a different "
-                             "logical device.");
+        if (Window_Info.pipeline->handle.getOwner() !=
+            this->logicalDevice->GetHandle()) {
+            ErrorCallback("Cannot use a pipeline created with a different "
+                          "logical device.");
         }
-        this->shaders = Window_Info.shaders;
         this->pipeline = Window_Info.pipeline;
     } else {
-        // Attempt to load the default shaders.
-        std::vector<gvw::shader_info> shaderInfo = {
-            { .code = "vert.spv", .stage = vk::ShaderStageFlagBits::eVertex },
-            { .code = "frag.spv", .stage = vk::ShaderStageFlagBits::eFragment }
-        };
-        this->shaders =
-            this->logicalDeviceInfo->LoadShadersFromSpirVFiles(shaderInfo);
-
-        std::vector<vk::VertexInputBindingDescription> bindingDescriptions = {
-            { .binding = 0,
-              .stride = sizeof(vertex),
-              .inputRate = vk::VertexInputRate::eVertex }
-        };
-        std::vector<vk::VertexInputAttributeDescription>
-            attributeDescriptions = {
-                { { .location = 0,
-                    .binding = 0,
-                    .format = vk::Format::eR32G32Sfloat,
-                    .offset = offsetof(vertex, position) },
-                  { .location = 1,
-                    .binding = 0,
-                    .format = vk::Format::eR32G32B32Sfloat,
-                    .offset = offsetof(vertex, color) } }
-            };
-        this->CreatePipeline(dynamic_states::VIEWPORT_AND_SCISSOR,
-                             bindingDescriptions,
-                             attributeDescriptions);
+        this->CreatePipeline(
+            pipeline_dynamic_states_config::VIEWPORT_AND_SCISSOR);
     }
 
     // Create the command pool.
     vk::CommandPoolCreateInfo commandPoolCreateInfo = {
         .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+        // Graphics queues can also perform transfer operations.
         .queueFamilyIndex = graphicsQueueIndex
     };
     this->commandPool =
-        this->logicalDevice.createCommandPoolUnique(commandPoolCreateInfo);
+        this->logicalDevice->GetHandle().createCommandPoolUnique(
+            commandPoolCreateInfo);
 
-    // Create vertex staging buffer.
-    this->vertexStagingBuffer = this->logicalDeviceInfo->CreateBuffer(
-        { .sizeInBytes = Window_Info.sizeOfDynamicVerticesInBytes,
-          .usage = vk::BufferUsageFlagBits::eTransferSrc,
-          .memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
-                              vk::MemoryPropertyFlagBits::eHostCoherent });
-
-    // Create destination vertex buffer.
-    this->vertexBuffer = this->logicalDeviceInfo->CreateBuffer(
-        { .sizeInBytes = vertexStagingBuffer.size,
-          .usage = vk::BufferUsageFlagBits::eTransferDst |
-                   vk::BufferUsageFlagBits::eVertexBuffer,
-          .memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal });
-
-    // Allocate a command buffer from the command pool for transfering vertex
-    // data from the staging buffer to the destination buffer.
+    // Allocate command buffers from the command pool.
     vk::CommandBufferAllocateInfo stagingCommandBufferAllocateInfo = {
         .commandPool = commandPool.get(),
         .level = vk::CommandBufferLevel::ePrimary,
         .commandBufferCount = 1
     };
     this->stagingCommandBuffer = std::move(
-        this->logicalDevice
+        this->logicalDevice->GetHandle()
             .allocateCommandBuffersUnique(stagingCommandBufferAllocateInfo)
             .at(0));
 
-    vk::CommandBufferBeginInfo stagingCommandBufferBeginInfo = {
-        // The 'OneTimeSubmit' flag tells Vulkan that this command buffer will
-        // only be submitted once, so optimizations can be made that would
-        // normally be blocked to allow subsequent rerecording of the command
-        // buffer.
-        // .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
-    };
-    this->stagingCommandBuffer->begin(stagingCommandBufferBeginInfo);
+    // Create staging vertex buffer for static vertices.
+    buffer_ptr tempVertexStagingBuffer = this->logicalDevice->CreateBuffer(
+        { .sizeInBytes = (sizeof(vertex) * Window_Info.staticVertices.size()),
+          .usage = vk::BufferUsageFlagBits::eTransferSrc,
+          .memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
+                              vk::MemoryPropertyFlagBits::eHostCoherent });
 
+    // Create device local buffer for static and dynamic data vertices.
+    this->staticVertexBuffer = this->logicalDevice->CreateBuffer(
+        { .sizeInBytes = tempVertexStagingBuffer->size +
+                         Window_Info.sizeOfDynamicDataVerticesInBytes,
+          .usage = vk::BufferUsageFlagBits::eTransferDst |
+                   vk::BufferUsageFlagBits::eVertexBuffer,
+          .memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal });
+
+    // Map static vertices to the static vertex buffer.
+    void* tempVertexStagingBufferPointer =
+        this->logicalDevice->GetHandle().mapMemory(
+            tempVertexStagingBuffer->memory.get(),
+            0,
+            tempVertexStagingBuffer->size,
+            {});
+    memcpy(tempVertexStagingBufferPointer,
+           Window_Info.staticVertices.data(),
+           static_cast<size_t>(tempVertexStagingBuffer->size));
+    this->logicalDevice->GetHandle().unmapMemory(
+        tempVertexStagingBuffer->memory.get());
+
+    // Record command buffer for transferring static vertices.
+    this->stagingCommandBuffer->begin(
+        { .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
     this->stagingCommandBuffer->copyBuffer(
-        this->vertexStagingBuffer.handle.get(),
-        this->vertexBuffer.handle.get(),
-        { vk::BufferCopy{
-            .srcOffset = 0, .dstOffset = 0, .size = vertexBuffer.size } });
-
+        tempVertexStagingBuffer->handle.get(),
+        this->staticVertexBuffer->handle.get(),
+        vk::BufferCopy{ .srcOffset = 0,
+                        .dstOffset = 0,
+                        .size = tempVertexStagingBuffer->size });
     this->stagingCommandBuffer->end();
 
-    // Allocate a command buffer from the command pool.
+    // Transfer static vertex buffer data from the staging buffer to the
+    // device-local buffer.
+    vk::SubmitInfo stagingSubmitInfo = {
+        .commandBufferCount = 1,
+        .pCommandBuffers = &this->stagingCommandBuffer.get()
+    };
+    this->graphicsQueue.submit({ stagingSubmitInfo });
+    this->graphicsQueue.waitIdle();
+
+    // Create vertex staging buffer.
+    this->staticVertexStagingBuffer = this->logicalDevice->CreateBuffer(
+        { .sizeInBytes = Window_Info.sizeOfDynamicDataVerticesInBytes,
+          .usage = vk::BufferUsageFlagBits::eTransferSrc,
+          .memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
+                              vk::MemoryPropertyFlagBits::eHostCoherent });
+
+    vk::CommandBufferBeginInfo stagingCommandBufferBeginInfo = {};
+    this->stagingCommandBuffer->begin(stagingCommandBufferBeginInfo);
+    this->stagingCommandBuffer->copyBuffer(
+        this->staticVertexStagingBuffer->handle.get(),
+        this->staticVertexBuffer->handle.get(),
+        { vk::BufferCopy{ .srcOffset = 0,
+                          .dstOffset = tempVertexStagingBuffer->size,
+                          .size = this->staticVertexStagingBuffer->size } });
+    this->stagingCommandBuffer->end();
+
     vk::CommandBufferAllocateInfo commandBufferAllocateInfo = {
         .commandPool = commandPool.get(),
         .level = vk::CommandBufferLevel::ePrimary,
         .commandBufferCount = this->MAX_FRAMES_IN_FLIGHT
     };
-    this->commandBuffers = this->logicalDevice.allocateCommandBuffersUnique(
-        commandBufferAllocateInfo);
+    this->commandBuffers =
+        this->logicalDevice->GetHandle().allocateCommandBuffersUnique(
+            commandBufferAllocateInfo);
 
     // Create semaphores and fences to control the execution order in the
     // device and synchronize the host with the device.
@@ -303,90 +332,90 @@ gvw::window::window(ptr GVW,
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         nextImageAvailableSemaphores.emplace_back(
-            this->logicalDevice.createSemaphoreUnique(semaphoreCreateInfo));
+            this->logicalDevice->GetHandle().createSemaphoreUnique(
+                semaphoreCreateInfo));
         finishedRenderingSemaphores.emplace_back(
-            this->logicalDevice.createSemaphoreUnique(semaphoreCreateInfo));
+            this->logicalDevice->GetHandle().createSemaphoreUnique(
+                semaphoreCreateInfo));
         inFlightFences.emplace_back(
-            this->logicalDevice.createFenceUnique(fenceCreateInfo));
+            this->logicalDevice->GetHandle().createFenceUnique(
+                fenceCreateInfo));
     }
 
     // Configure semaphore triggering.
     this->waitStages = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
 }
 
-gvw::window::~window()
+window::~window()
 {
-    this->logicalDevice.waitIdle();
+    this->logicalDevice->GetHandle().waitIdle();
 }
 
-void gvw::window::CreateSwapchain()
+void window::SetUserPointer(void* Pointer)
 {
-    swapchain_ptr oldSwapchain;
-    if (this->swapchainInfo != nullptr) {
-        oldSwapchain = this->swapchainInfo;
-    }
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    glfwSetWindowUserPointer(this->windowHandle, Pointer);
+}
 
-    this->swapchainInfo = this->logicalDeviceInfo->CreateSwapchain(
-        { .framebufferSize = this->FramebufferSizeNoMutex(),
+void window::CreateSwapchain()
+{
+    this->swapchain = this->logicalDevice->CreateSwapchain(
+        { .framebufferSize = this->GetFramebufferSizeNoMutex(),
           .graphicsQueueIndex = this->graphicsQueueIndex,
           .presentQueueIndex = this->presentQueueIndex,
           .surface = this->surface.get(),
           .renderPass = this->renderPass->handle.get(),
-          .oldSwapchain = oldSwapchain });
+          .oldSwapchain = this->swapchain });
 }
 
-void gvw::window::CreatePipeline(
-    const std::vector<vk::DynamicState>& Dynamic_States,
-    const std::vector<vk::VertexInputBindingDescription>&
-        Vertex_Input_Binding_Descriptions,
-    const std::vector<vk::VertexInputAttributeDescription>&
-        Vertex_Input_Attribute_Description)
+void window::CreatePipeline(const pipeline_dynamic_states& Dynamic_States)
 {
-    this->pipeline = this->logicalDeviceInfo->CreatePipeline(
+    this->pipeline = this->logicalDevice->CreatePipeline(
         { .shaders = this->shaders,
           .dynamicStates = Dynamic_States,
-          .vertexInputBindingDescriptions = Vertex_Input_Binding_Descriptions,
-          .vertexInputAttributeDescriptions =
-              Vertex_Input_Attribute_Description,
           .renderPass = this->renderPass->handle.get() });
 }
 
-void gvw::window::DrawFrame(const std::vector<vertex>& Vertices)
+void window::DrawFrame(const std::vector<vertex>& Vertices)
 {
     // Wait until the previous frame is done rendering.
-    if (logicalDevice.waitForFences(
+    if (logicalDevice->GetHandle().waitForFences(
             this->inFlightFences.at(this->currentFrameIndex).get(),
             VK_TRUE,
             UINT64_MAX) != vk::Result::eSuccess) {
-        gvwErrorCallback("Failed to wait for the previous "
-                         "frame to finish rendering.");
+        ErrorCallback("Failed to wait for the previous "
+                      "frame to finish rendering.");
     }
 
     // Get an image from the swapchain to render to.
-    vk::ResultValue<uint32_t> imageIndex = logicalDevice.acquireNextImageKHR(
-        this->swapchainInfo->handle.get(),
-        UINT64_MAX,
-        nextImageAvailableSemaphores.at(currentFrameIndex).get());
+    vk::ResultValue<uint32_t> imageIndex =
+        logicalDevice->GetHandle().acquireNextImageKHR(
+            this->swapchain->handle.get(),
+            UINT64_MAX,
+            nextImageAvailableSemaphores.at(currentFrameIndex).get());
 
     if (imageIndex.result == vk::Result::eErrorOutOfDateKHR) {
-        logicalDevice.waitIdle();
+        logicalDevice->GetHandle().waitIdle();
         this->CreateSwapchain();
     } else if (imageIndex.result != vk::Result::eSuccess &&
                imageIndex.result != vk::Result::eSuboptimalKHR) {
-        gvwErrorCallback("Failed to acquire next image from the swapchain.");
+        ErrorCallback("Failed to acquire next image from the swapchain.");
     } else {
-        logicalDevice.resetFences(inFlightFences.at(currentFrameIndex).get());
+        logicalDevice->GetHandle().resetFences(
+            inFlightFences.at(currentFrameIndex).get());
 
         // Map vertices to the vertex buffer.
-        void* vertexStagingBufferPointer = this->logicalDevice.mapMemory(
-            this->vertexStagingBuffer.memory.get(),
-            0,
-            this->vertexStagingBuffer.size,
-            {});
+        void* vertexStagingBufferPointer =
+            this->logicalDevice->GetHandle().mapMemory(
+                this->staticVertexStagingBuffer->memory.get(),
+                0,
+                this->staticVertexStagingBuffer->size,
+                {});
         memcpy(vertexStagingBufferPointer,
                Vertices.data(),
-               static_cast<size_t>(vertexStagingBuffer.size));
-        this->logicalDevice.unmapMemory(this->vertexStagingBuffer.memory.get());
+               static_cast<size_t>(this->staticVertexStagingBuffer->size));
+        this->logicalDevice->GetHandle().unmapMemory(
+            this->staticVertexStagingBuffer->memory.get());
 
         // Transfer vertex buffer data from the staging buffer to the
         // destination buffer.
@@ -413,10 +442,10 @@ void gvw::window::DrawFrame(const std::vector<vertex>& Vertices)
         vk::RenderPassBeginInfo renderPassBeginInfo = {
             .renderPass = this->renderPass->handle.get(),
             .framebuffer =
-                this->swapchainInfo->swapchainFramebuffers.at(imageIndex.value)
+                this->swapchain->swapchainFramebuffers.at(imageIndex.value)
                     .get(),
             .renderArea = { .offset = { 0, 0 },
-                            .extent = this->swapchainInfo->scissor.extent },
+                            .extent = this->swapchain->scissor.extent },
             .clearValueCount = 1,
             .pClearValues = &clearValue
         };
@@ -425,13 +454,13 @@ void gvw::window::DrawFrame(const std::vector<vertex>& Vertices)
         commandBuffer.beginRenderPass(renderPassBeginInfo,
                                       vk::SubpassContents::eInline);
         commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics,
-                                   this->pipeline->pipeline.get());
-        commandBuffer.setViewport(0, this->swapchainInfo->viewport);
-        commandBuffer.setScissor(0, this->swapchainInfo->scissor);
+                                   this->pipeline->handle.get());
+        commandBuffer.setViewport(0, this->swapchain->viewport);
+        commandBuffer.setScissor(0, this->swapchain->scissor);
         commandBuffer.bindVertexBuffers(
-            0, { this->vertexBuffer.handle.get() }, { 0 });
-        // NOLINTNEXTLINE
-        commandBuffer.draw(static_cast<uint32_t>(Vertices.size()), 1, 0, 0);
+            0, { this->staticVertexBuffer->handle.get() }, { 0 });
+        commandBuffer.draw(
+            static_cast<uint32_t>(this->staticVertexBuffer->size), 1, 0, 0);
         commandBuffer.endRenderPass();
 
         commandBuffer.end();
@@ -458,7 +487,7 @@ void gvw::window::DrawFrame(const std::vector<vertex>& Vertices)
             .pWaitSemaphores =
                 &finishedRenderingSemaphores.at(currentFrameIndex).get(),
             .swapchainCount = 1,
-            .pSwapchains = &this->swapchainInfo->handle.get(),
+            .pSwapchains = &this->swapchain->handle.get(),
             .pImageIndices = &imageIndex.value,
             .pResults = nullptr // optional
         };
@@ -468,29 +497,29 @@ void gvw::window::DrawFrame(const std::vector<vertex>& Vertices)
         vk::Result presentResult = presentQueue.presentKHR(&presentInfo);
         if (presentResult == vk::Result::eErrorOutOfDateKHR ||
             presentResult == vk::Result::eSuboptimalKHR) {
-            logicalDevice.waitIdle();
+            logicalDevice->GetHandle().waitIdle();
             this->CreateSwapchain();
         } else if (presentResult != vk::Result::eSuccess) {
-            gvwErrorCallback("Presentation failed.");
+            ErrorCallback("Presentation failed.");
         }
 
         currentFrameIndex = (currentFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 }
 
-int gvw::window::WindowAttribute(int Attribute)
+int window::GetWindowAttribute(int Attribute)
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     return glfwGetWindowAttrib(this->windowHandle, Attribute);
 }
 
-void gvw::window::WindowAttribute(int Attribute, int Value)
+void window::SetWindowAttribute(int Attribute, int Value)
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwSetWindowAttrib(this->windowHandle, Attribute, Value);
 }
 
-void gvw::window::EventCallbacksNoMutex(
+void window::SetEventCallbacksNoMutex(
     const window_event_callbacks& Window_Event_Callbacks) const
 {
     glfwSetKeyCallback(this->windowHandle, Window_Event_Callbacks.keyCallback);
@@ -526,268 +555,263 @@ void gvw::window::EventCallbacksNoMutex(
                                  Window_Event_Callbacks.refreshCallback);
 }
 
-gvw::area<int> gvw::window::SizeNoMutex() const
+area<int> window::GetSizeNoMutex() const
 {
     area<int> size = { 0, 0 };
     glfwGetWindowSize(this->windowHandle, &size.width, &size.height);
     return size;
 }
 
-void gvw::window::SizeNoMutex(const area<int>& Size) const
+void window::SetSizeNoMutex(const area<int>& Size) const
 {
     glfwSetWindowSize(this->windowHandle, Size.width, Size.height);
 }
 
-gvw::area<int> gvw::window::FramebufferSizeNoMutex() const
+area<int> window::GetFramebufferSizeNoMutex() const
 {
     area<int> size = { 0, 0 };
     glfwGetFramebufferSize(this->windowHandle, &size.width, &size.height);
     return size;
 }
 
-gvw::coordinate<int> gvw::window::PositionNoMutex() const
+gvw::coordinate<int> window::GetPositionNoMutex() const
 {
     coordinate<int> position = { 0, 0 };
     glfwGetWindowPos(this->windowHandle, &position.x, &position.y);
     return position;
 }
 
-void gvw::window::PositionNoMutex(const coordinate<int>& Position) const
+void window::SetPositionNoMutex(const coordinate<int>& Position) const
 {
     glfwSetWindowPos(this->windowHandle, Position.x, Position.y);
 }
 
-void gvw::window::HideNoMutex() const
+void window::HideNoMutex() const
 {
     glfwHideWindow(this->windowHandle);
 }
 
-void gvw::window::ShowNoMutex() const
+void window::ShowNoMutex() const
 {
     glfwShowWindow(this->windowHandle);
 }
 
-void gvw::window::EventCallbacks(const window_event_callbacks& Event_Callbacks)
+void window::SetEventCallbacks(const window_event_callbacks& Event_Callbacks)
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
-    this->EventCallbacksNoMutex(Event_Callbacks);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    this->SetEventCallbacksNoMutex(Event_Callbacks);
 }
 
-gvw::window_ptr gvw::window::CreateChildWindow(const window_info& Window_Info)
+window_ptr window::CreateChildWindow(const window_info& Window_Info)
 {
-    return std::make_shared<window_public_constructor>(
-        this->gvw, Window_Info, this);
+    return std::make_shared<internal::window_public_constructor>(Window_Info,
+                                                                 this);
 }
 
-GLFWwindow* gvw::window::Handle() const noexcept
+GLFWwindow* window::GetHandle() const noexcept
 {
     return this->windowHandle;
 }
 
-std::vector<gvw::window_event::key> gvw::window::KeyEvents() noexcept
+std::vector<window_key_event> window::GetKeyEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->keyEventsMutex);
+    std::scoped_lock lock(this->keyEventsMutex);
     return this->keyEvents;
 }
 
-std::vector<gvw::window_event::character>
-gvw::window::CharacterEvents() noexcept
+std::vector<window_character_event> window::GetCharacterEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->characterEventsMutex);
+    std::scoped_lock lock(this->characterEventsMutex);
     return this->characterEvents;
 }
 
-std::vector<gvw::window_event::cursor_position>
-gvw::window::CursorPositionEvents() noexcept
+std::vector<window_cursor_position_event>
+window::GetCursorPositionEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->cursorPositionEventsMutex);
+    std::scoped_lock lock(this->cursorPositionEventsMutex);
     return this->cursorPositionEvents;
 }
 
-std::vector<gvw::window_event::cursor_enter>
-gvw::window::CursorEnterEvents() noexcept
+std::vector<window_cursor_enter_event> window::GetCursorEnterEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->cursorEnterEventsMutex);
+    std::scoped_lock lock(this->cursorEnterEventsMutex);
     return this->cursorEnterEvents;
 }
 
-std::vector<gvw::window_event::mouse_button>
-gvw::window::MouseButtonEvents() noexcept
+std::vector<window_mouse_button_event> window::GetMouseButtonEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->mouseButtonEventsMutex);
+    std::scoped_lock lock(this->mouseButtonEventsMutex);
     return this->mouseButtonEvents;
 }
 
-std::vector<gvw::window_event::scroll> gvw::window::ScrollEvents() noexcept
+std::vector<window_scroll_event> window::GetScrollEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->scrollEventsMutex);
+    std::scoped_lock lock(this->scrollEventsMutex);
     return this->scrollEvents;
 }
 
-std::vector<gvw::window_event::file_drop> gvw::window::FileDropEvents() noexcept
+std::vector<window_file_drop_event> window::GetFileDropEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->fileDropEventsMutex);
+    std::scoped_lock lock(this->fileDropEventsMutex);
     return this->fileDropEvents;
 }
 
-[[nodiscard]] size_t gvw::window::CloseEvents() noexcept
+[[nodiscard]] size_t window::GetCloseEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->closeEventsMutex);
+    std::scoped_lock lock(this->closeEventsMutex);
     return this->closeEvents;
 }
 
-[[nodiscard]] std::vector<gvw::window_event::size>
-gvw::window::SizeEvents() noexcept
+[[nodiscard]] std::vector<window_size_event> window::GetSizeEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->sizeEventsMutex);
+    std::scoped_lock lock(this->sizeEventsMutex);
     return this->sizeEvents;
 }
 
-[[nodiscard]] std::vector<gvw::window_event::framebuffer_size>
-gvw::window::FramebufferSizeEvents() noexcept
+[[nodiscard]] std::vector<window_framebuffer_size_event>
+window::GetFramebufferSizeEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->framebufferSizeEventsMutex);
+    std::scoped_lock lock(this->framebufferSizeEventsMutex);
     return this->framebufferSizeEvents;
 }
 
-[[nodiscard]] std::vector<gvw::window_event::content_scale>
-gvw::window::ContentScaleEvents() noexcept
+[[nodiscard]] std::vector<window_content_scale_event>
+window::GetContentScaleEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->contentScaleEventsMutex);
+    std::scoped_lock lock(this->contentScaleEventsMutex);
     return this->contentScaleEvents;
 }
 
-[[nodiscard]] std::vector<gvw::window_event::position>
-gvw::window::PositionEvents() noexcept
+[[nodiscard]] std::vector<window_position_event>
+window::GetPositionEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->positionEventsMutex);
+    std::scoped_lock lock(this->positionEventsMutex);
     return this->positionEvents;
 }
 
-[[nodiscard]] std::vector<gvw::window_event::iconify>
-gvw::window::IconifyEvents() noexcept
+[[nodiscard]] std::vector<window_iconify_event>
+window::GetIconifyEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->iconifyEventsMutex);
+    std::scoped_lock lock(this->iconifyEventsMutex);
     return this->iconifyEvents;
 }
 
-[[nodiscard]] std::vector<gvw::window_event::maximize>
-gvw::window::MaximizeEvents() noexcept
+[[nodiscard]] std::vector<window_maximize_event>
+window::GetMaximizeEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->maximizeEventsMutex);
+    std::scoped_lock lock(this->maximizeEventsMutex);
     return this->maximizeEvents;
 }
 
-[[nodiscard]] std::vector<gvw::window_event::focus>
-gvw::window::FocusEvents() noexcept
+[[nodiscard]] std::vector<window_focus_event> window::GetFocusEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->focusEventsMutex);
+    std::scoped_lock lock(this->focusEventsMutex);
     return this->focusEvents;
 }
 
-[[nodiscard]] size_t gvw::window::RefreshEvents() noexcept
+[[nodiscard]] size_t window::GetRefreshEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->refreshEventsMutex);
+    std::scoped_lock lock(this->refreshEventsMutex);
     return this->refreshEvents;
 }
 
-void gvw::window::ClearKeyEvents() noexcept
+void window::ClearKeyEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->keyEventsMutex);
+    std::scoped_lock lock(this->keyEventsMutex);
     this->keyEvents.clear();
 }
 
-void gvw::window::ClearCharacterEvents() noexcept
+void window::ClearCharacterEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->characterEventsMutex);
+    std::scoped_lock lock(this->characterEventsMutex);
     this->characterEvents.clear();
 }
 
-void gvw::window::ClearCursorPositionEvents() noexcept
+void window::ClearCursorPositionEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->cursorPositionEventsMutex);
+    std::scoped_lock lock(this->cursorPositionEventsMutex);
     this->cursorPositionEvents.clear();
 }
 
-void gvw::window::ClearCursorEnterEvents() noexcept
+void window::ClearCursorEnterEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->cursorEnterEventsMutex);
+    std::scoped_lock lock(this->cursorEnterEventsMutex);
     this->cursorEnterEvents.clear();
 }
 
-void gvw::window::ClearMouseButtonEvents() noexcept
+void window::ClearMouseButtonEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->mouseButtonEventsMutex);
+    std::scoped_lock lock(this->mouseButtonEventsMutex);
     this->mouseButtonEvents.clear();
 }
 
-void gvw::window::ClearScrollEvents() noexcept
+void window::ClearScrollEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->scrollEventsMutex);
+    std::scoped_lock lock(this->scrollEventsMutex);
     this->scrollEvents.clear();
 }
 
-void gvw::window::ClearFileDropEvents() noexcept
+void window::ClearFileDropEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->fileDropEventsMutex);
+    std::scoped_lock lock(this->fileDropEventsMutex);
     this->fileDropEvents.clear();
 }
 
-void gvw::window::ClearCloseEvents() noexcept
+void window::ClearCloseEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->closeEventsMutex);
+    std::scoped_lock lock(this->closeEventsMutex);
     this->closeEvents = 0;
 }
 
-void gvw::window::ClearSizeEvents() noexcept
+void window::ClearSizeEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->sizeEventsMutex);
+    std::scoped_lock lock(this->sizeEventsMutex);
     this->sizeEvents.clear();
 }
 
-void gvw::window::ClearFramebufferSizeEvents() noexcept
+void window::ClearFramebufferSizeEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->framebufferSizeEventsMutex);
+    std::scoped_lock lock(this->framebufferSizeEventsMutex);
     this->framebufferSizeEvents.clear();
 }
 
-void gvw::window::ClearContentScaleEvents() noexcept
+void window::ClearContentScaleEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->contentScaleEventsMutex);
+    std::scoped_lock lock(this->contentScaleEventsMutex);
     this->contentScaleEvents.clear();
 }
 
-void gvw::window::ClearPositionEvents() noexcept
+void window::ClearPositionEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->positionEventsMutex);
+    std::scoped_lock lock(this->positionEventsMutex);
     this->positionEvents.clear();
 }
 
-void gvw::window::ClearIconifyEvents() noexcept
+void window::ClearIconifyEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->iconifyEventsMutex);
+    std::scoped_lock lock(this->iconifyEventsMutex);
     this->iconifyEvents.clear();
 }
 
-void gvw::window::ClearMaximizeEvents() noexcept
+void window::ClearMaximizeEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->maximizeEventsMutex);
+    std::scoped_lock lock(this->maximizeEventsMutex);
     this->maximizeEvents.clear();
 }
 
-void gvw::window::ClearFocusEvents() noexcept
+void window::ClearFocusEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->focusEventsMutex);
+    std::scoped_lock lock(this->focusEventsMutex);
     this->focusEvents.clear();
 }
 
-void gvw::window::ClearRefreshEvents() noexcept
+void window::ClearRefreshEvents() noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->refreshEventsMutex);
+    std::scoped_lock lock(this->refreshEventsMutex);
     this->refreshEvents = 0;
 }
 
-void gvw::window::ClearEvents() noexcept
+void window::ClearEvents() noexcept
 {
     this->ClearKeyEvents();
     this->ClearCharacterEvents();
@@ -807,66 +831,72 @@ void gvw::window::ClearEvents() noexcept
     this->ClearRefreshEvents();
 }
 
-int gvw::window::KeyState(int Key) noexcept
+int window::GetKeyState(int Key) noexcept
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     return glfwGetKey(this->windowHandle, Key);
 }
 
-bool gvw::window::ShouldClose() const
+bool window::ShouldClose() const
 {
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     return bool(glfwWindowShouldClose(this->windowHandle) != GLFW_FALSE);
 }
 
-void gvw::window::ShouldClose(bool State) const
+bool window::ShouldNotClose() const
 {
+    return !this->ShouldClose();
+}
+
+void window::ShouldClose(bool State) const
+{
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwSetWindowShouldClose(this->windowHandle, static_cast<int>(State));
 }
 
-gvw::area<int> gvw::window::Size()
+gvw::area<int> window::GetSize()
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
-    return this->SizeNoMutex();
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    return this->GetSizeNoMutex();
 }
 
-void gvw::window::Size(const area<int>& Size)
+void window::SetSize(const area<int>& Size)
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
-    this->SizeNoMutex(Size);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    this->SetSizeNoMutex(Size);
 }
 
-gvw::area<int> gvw::window::FramebufferSize()
+gvw::area<int> window::GetFramebufferSize()
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
-    return this->FramebufferSizeNoMutex();
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    return this->GetFramebufferSizeNoMutex();
 }
 
-gvw::coordinate<int> gvw::window::Position()
+gvw::coordinate<int> window::GetPosition()
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
-    return this->PositionNoMutex();
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    return this->GetPositionNoMutex();
 }
 
-void gvw::window::Position(const coordinate<int>& Position)
+void window::SetPosition(const coordinate<int>& Position)
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
-    this->PositionNoMutex(Position);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    this->SetPositionNoMutex(Position);
 }
 
-gvw::coordinate<float> gvw::window::ContentScale()
+gvw::coordinate<float> window::GetContentScale()
 {
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     coordinate<float> contentScale = { 0.0F, 0.0F };
-    this->gvw->glfwMutex.lock();
     glfwGetWindowContentScale(
         this->windowHandle, &contentScale.x, &contentScale.y);
-    this->gvw->glfwMutex.unlock();
     return contentScale;
 }
 
-void gvw::window::SizeLimits(const area<int>& Minimum_Size,
-                             const area<int>& Maximum_Size)
+void window::SetSizeLimits(const area<int>& Minimum_Size,
+                           const area<int>& Maximum_Size)
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwSetWindowSizeLimits(this->windowHandle,
                             Minimum_Size.width,
                             Minimum_Size.height,
@@ -874,174 +904,176 @@ void gvw::window::SizeLimits(const area<int>& Minimum_Size,
                             Maximum_Size.height);
 }
 
-void gvw::window::AspectRatio(int Numerator, int Denominator)
+void window::SetAspectRatio(int Numerator, int Denominator)
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwSetWindowAspectRatio(this->windowHandle, Numerator, Denominator);
 }
 
-bool gvw::window::IsCursorHovering()
+bool window::IsCursorHovering()
 {
-    return static_cast<bool>(this->WindowAttribute(GLFW_HOVERED));
+    return static_cast<bool>(this->GetWindowAttribute(GLFW_HOVERED));
 }
 
-bool gvw::window::IsResizable()
+bool window::IsResizable()
 {
-    return static_cast<bool>(this->WindowAttribute(GLFW_RESIZABLE));
+    return static_cast<bool>(this->GetWindowAttribute(GLFW_RESIZABLE));
 }
 
-void gvw::window::Decorate()
+void window::Decorate()
 {
-    this->WindowAttribute(GLFW_DECORATED, GLFW_TRUE);
+    this->SetWindowAttribute(GLFW_DECORATED, GLFW_TRUE);
 }
 
-void gvw::window::Undecorate()
+void window::Undecorate()
 {
-    this->WindowAttribute(GLFW_DECORATED, GLFW_FALSE);
+    this->SetWindowAttribute(GLFW_DECORATED, GLFW_FALSE);
 }
 
-bool gvw::window::IsDecorated()
+bool window::IsDecorated()
 {
-    return bool(this->WindowAttribute(GLFW_DECORATED));
+    return bool(this->GetWindowAttribute(GLFW_DECORATED));
 }
 
-void gvw::window::MinimizeOnFocusLoss()
+void window::MinimizeOnFocusLoss()
 {
-    this->WindowAttribute(GLFW_AUTO_ICONIFY, GLFW_TRUE);
+    this->SetWindowAttribute(GLFW_AUTO_ICONIFY, GLFW_TRUE);
 }
 
-void gvw::window::DontMinimizeOnFocusLoss()
+void window::DontMinimizeOnFocusLoss()
 {
-    this->WindowAttribute(GLFW_AUTO_ICONIFY, GLFW_FALSE);
+    this->SetWindowAttribute(GLFW_AUTO_ICONIFY, GLFW_FALSE);
 }
 
-bool gvw::window::IsMinimizedOnFocusLoss()
+bool window::IsMinimizedOnFocusLoss()
 {
-    return bool(this->WindowAttribute(GLFW_AUTO_ICONIFY));
+    return bool(this->GetWindowAttribute(GLFW_AUTO_ICONIFY));
 }
 
-void gvw::window::AlwaysOnTop()
+void window::AlwaysOnTop()
 {
-    this->WindowAttribute(GLFW_FLOATING, GLFW_TRUE);
+    this->SetWindowAttribute(GLFW_FLOATING, GLFW_TRUE);
 }
 
-void gvw::window::NotAlwaysOnTop()
+void window::NotAlwaysOnTop()
 {
-    this->WindowAttribute(GLFW_FLOATING, GLFW_FALSE);
+    this->SetWindowAttribute(GLFW_FLOATING, GLFW_FALSE);
 }
 
-bool gvw::window::IsAlwaysOnTop()
+bool window::IsAlwaysOnTop()
 {
-    return static_cast<bool>(this->WindowAttribute(GLFW_FLOATING));
+    return static_cast<bool>(this->GetWindowAttribute(GLFW_FLOATING));
 }
 
-void gvw::window::Restore()
+void window::Restore()
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwRestoreWindow(this->windowHandle);
 }
 
-void gvw::window::Minimize()
+void window::Minimize()
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwIconifyWindow(this->windowHandle);
 }
 
-bool gvw::window::IsMinimized()
+bool window::IsMinimized()
 {
-    return static_cast<bool>(this->WindowAttribute(GLFW_ICONIFIED));
+    return static_cast<bool>(this->GetWindowAttribute(GLFW_ICONIFIED));
 }
 
-void gvw::window::Maximize()
+void window::Maximize()
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwMaximizeWindow(this->windowHandle);
 }
 
-bool gvw::window::IsMaximized()
+bool window::IsMaximized()
 {
-    return static_cast<bool>(this->WindowAttribute(GLFW_MAXIMIZED));
+    return static_cast<bool>(this->GetWindowAttribute(GLFW_MAXIMIZED));
 }
 
-void gvw::window::Hide()
+void window::Hide()
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     this->HideNoMutex();
 }
 
-void gvw::window::Show()
+void window::Show()
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     this->ShowNoMutex();
 }
 
-bool gvw::window::IsVisible()
+bool window::IsVisible()
 {
-    return static_cast<bool>(this->WindowAttribute(GLFW_VISIBLE));
+    return static_cast<bool>(this->GetWindowAttribute(GLFW_VISIBLE));
 }
 
-void gvw::window::RequestAttention()
+void window::RequestAttention()
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwRequestWindowAttention(this->windowHandle);
 }
 
-void gvw::window::Focus()
+void window::Focus()
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwFocusWindow(this->windowHandle);
 }
 
-bool gvw::window::IsFocused()
+bool window::IsFocused()
 {
-    return static_cast<bool>(this->WindowAttribute(GLFW_FOCUSED));
+    return static_cast<bool>(this->GetWindowAttribute(GLFW_FOCUSED));
 }
 
-void gvw::window::FocusOnShow()
+void window::FocusOnShow()
 {
-    this->WindowAttribute(GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
+    this->SetWindowAttribute(GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
 }
 
-void gvw::window::DontFocusOnShow()
+void window::DontFocusOnShow()
 {
-    this->WindowAttribute(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
+    this->SetWindowAttribute(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
 }
 
-bool gvw::window::IsFocusedOnShow()
+bool window::IsFocusedOnShow()
 {
-    return static_cast<bool>(this->WindowAttribute(GLFW_FOCUS_ON_SHOW));
+    return static_cast<bool>(this->GetWindowAttribute(GLFW_FOCUS_ON_SHOW));
 }
 
-float gvw::window::Opacity()
+float window::GetOpacity()
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     return glfwGetWindowOpacity(this->windowHandle);
 }
 
-void gvw::window::Opacity(float Opacity)
+void window::SetOpacity(float Opacity)
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwSetWindowOpacity(this->windowHandle, Opacity);
 }
 
-bool gvw::window::IsTransparent()
+bool window::IsTransparent()
 {
     return static_cast<bool>(
-        this->WindowAttribute(GLFW_TRANSPARENT_FRAMEBUFFER));
+        this->GetWindowAttribute(GLFW_TRANSPARENT_FRAMEBUFFER));
 }
 
-void gvw::window::EnterFullScreen(monitor& Full_Screen_Monitor,
-                                  const GLFWvidmode* Video_Mode)
+void window::EnterFullScreen(const monitor_ptr& Full_Screen_Monitor,
+                             const GLFWvidmode* Video_Mode)
 {
+    /// @todo Avoid deadlock here.
     this->resetMutex.lock();
-    this->resetPosition = this->Position();
-    this->resetSize = this->Size();
+    this->resetPosition = this->GetPosition();
+    this->resetSize = this->GetSize();
     this->resetMutex.unlock();
-    const GLFWvidmode* videoMode =
-        Video_Mode == nullptr ? Full_Screen_Monitor.VideoMode() : Video_Mode;
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    const GLFWvidmode* videoMode = Video_Mode == nullptr
+                                       ? Full_Screen_Monitor->GetVideoMode()
+                                       : Video_Mode;
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwSetWindowMonitor(this->windowHandle,
-                         Full_Screen_Monitor.Handle(),
+                         Full_Screen_Monitor->GetHandle(),
                          GLFW_FALSE,
                          GLFW_FALSE,
                          videoMode->width,
@@ -1049,14 +1081,15 @@ void gvw::window::EnterFullScreen(monitor& Full_Screen_Monitor,
                          videoMode->refreshRate);
 }
 
-void gvw::window::ExitFullScreen(const std::optional<coordinate<int>>& Position,
-                                 const std::optional<area<int>>& Size)
+void window::ExitFullScreen(const std::optional<coordinate<int>>& Position,
+                            const std::optional<area<int>>& Size)
 {
+    /// @todo Avoid deadlock here.
     this->resetMutex.lock();
     const coordinate<int>& position = Position.value_or(this->resetPosition);
     const area<int>& size = Size.value_or(this->resetSize);
     this->resetMutex.unlock();
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwSetWindowMonitor(this->windowHandle,
                          nullptr,
                          position.x,
@@ -1065,3 +1098,21 @@ void gvw::window::ExitFullScreen(const std::optional<coordinate<int>>& Position,
                          size.height,
                          GLFW_FALSE);
 }
+
+void window::SetCursor(cursor_ptr Cursor) // NOLINT
+{
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    if (Cursor == nullptr) {
+        this->cursorHandle = nullptr;
+    } else {
+        this->cursorHandle = Cursor;
+    }
+    glfwSetCursor(this->windowHandle, this->cursorHandle->handle);
+}
+
+void window::ResetCursor()
+{
+    this->SetCursor(nullptr);
+}
+
+} // namespace gvw

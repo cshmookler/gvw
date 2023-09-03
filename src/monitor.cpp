@@ -1,31 +1,32 @@
-// Local includes
-#include "monitor.hpp"
+// Standard includes
+#include <iostream>
 
-gvw::monitor::monitor(ptr GVW, GLFWmonitor* Monitor_Handle) noexcept
-    : gvw(std::move(GVW))
+// Local includes
+#include "gvw.hpp"
+
+namespace gvw {
+
+monitor::monitor(GLFWmonitor* Monitor_Handle)
+    : gvwInstance(internal::global::GVW_INSTANCE)
     , monitorHandle(Monitor_Handle)
 {
+    internal::AssertInitialization();
 }
 
-GLFWmonitor* gvw::monitor::Handle() const noexcept
+GLFWmonitor* monitor::GetHandle() const noexcept
 {
     return this->monitorHandle;
 }
 
-void gvw::monitor::Handle(GLFWmonitor* Handle) noexcept
+const GLFWvidmode* monitor::GetVideoMode()
 {
-    this->monitorHandle = Handle;
-}
-
-const GLFWvidmode* gvw::monitor::VideoMode()
-{
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     return glfwGetVideoMode(this->monitorHandle);
 }
 
-std::vector<const GLFWvidmode*> gvw::monitor::SupportedVideoModes() const
+std::vector<const GLFWvidmode*> monitor::GetSupportedVideoModes() const
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     int videoModeCount = 0;
     const GLFWvidmode* videoModePointerArray =
         glfwGetVideoModes(this->monitorHandle, &videoModeCount);
@@ -38,82 +39,84 @@ std::vector<const GLFWvidmode*> gvw::monitor::SupportedVideoModes() const
     return videoModes;
 }
 
-gvw::area<int> gvw::monitor::PhysicalSize() const
+gvw::area<int> monitor::GetPhysicalSize() const
 {
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     area<int> physicalSize = { 0, 0 };
-    this->gvw->glfwMutex.lock();
     glfwGetMonitorPhysicalSize(
         this->monitorHandle, &physicalSize.width, &physicalSize.height);
-    this->gvw->glfwMutex.unlock();
     return physicalSize;
 }
 
-gvw::coordinate<float> gvw::monitor::ContentScale() const
+gvw::coordinate<float> monitor::GetContentScale() const
 {
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     coordinate<float> contentScale = { 0.0F, 0.0F };
-    this->gvw->glfwMutex.lock();
     glfwGetMonitorContentScale(
         this->monitorHandle, &contentScale.x, &contentScale.y);
-    this->gvw->glfwMutex.unlock();
     return contentScale;
 }
 
-gvw::coordinate<int> gvw::monitor::VirtualPosition() const
+gvw::coordinate<int> monitor::GetVirtualPosition() const
 {
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     coordinate<int> virtualPosition = { 0, 0 };
-    this->gvw->glfwMutex.lock();
     glfwGetMonitorPos(
         this->monitorHandle, &virtualPosition.x, &virtualPosition.y);
-    this->gvw->glfwMutex.unlock();
     return virtualPosition;
 }
 
-gvw::coordinate<int> gvw::monitor::WorkAreaPosition() const
+gvw::coordinate<int> monitor::GetWorkAreaPosition() const
 {
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     coordinate<int> workAreaPosition = { 0, 0 };
-    this->gvw->glfwMutex.lock();
     glfwGetMonitorWorkarea(this->monitorHandle,
                            &workAreaPosition.x,
                            &workAreaPosition.y,
                            nullptr,
                            nullptr);
-    this->gvw->glfwMutex.unlock();
     return workAreaPosition;
 }
 
-gvw::area<int> gvw::monitor::WorkAreaSize() const
+gvw::area<int> monitor::GetWorkAreaSize() const
 {
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     area<int> workAreaSize = { 0, 0 };
-    this->gvw->glfwMutex.lock();
     glfwGetMonitorWorkarea(this->monitorHandle,
                            nullptr,
                            nullptr,
                            &workAreaSize.width,
                            &workAreaSize.height);
-    this->gvw->glfwMutex.unlock();
     return workAreaSize;
 }
 
-const char* gvw::monitor::Name() const
+const char* monitor::GetName() const
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     return glfwGetMonitorName(this->monitorHandle);
 }
 
-const GLFWgammaramp* gvw::monitor::GammaRamp() const
+const GLFWgammaramp* monitor::GetGammaRamp() const
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     return glfwGetGammaRamp(this->monitorHandle);
 }
 
-void gvw::monitor::GammaRamp(const GLFWgammaramp& Gamma_Ramp) const
+void monitor::SetGammaRamp(const GLFWgammaramp& Gamma_Ramp) const
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwSetGammaRamp(this->monitorHandle, &Gamma_Ramp);
 }
 
-void gvw::monitor::ResetGammaRamp() const
+void monitor::SetGamma(const monitor_gamma& Gamma) const
 {
-    std::scoped_lock<std::mutex> lock(this->gvw->glfwMutex);
-    glfwSetGamma(this->monitorHandle, DEFAULT_MONITOR_GAMMA);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    glfwSetGamma(this->monitorHandle, Gamma);
 }
+
+void monitor::ResetGamma() const
+{
+    this->SetGamma(monitor_gamma_config::DEFAULT);
+}
+
+} // namespace gvw

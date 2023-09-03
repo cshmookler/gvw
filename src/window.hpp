@@ -3,43 +3,63 @@
 /**
  * @file window.hpp
  * @author Caden Shmookler (cshmookler@gmail.com)
- * @brief The window class.
+ * @brief Window management.
  * @date 2023-05-22
  */
-
-// Standard includes
-#include <optional>
 
 // Local includes
 #include "gvw.hpp"
 
-class gvw::window
+namespace gvw {
+
+class window : public internal::uncopyable_unmovable // NOLINT
 {
-    ////////////////////////////////////////////////////////////
-    ///                   Private Variables                  ///
-    ////////////////////////////////////////////////////////////
+    friend internal::window_public_constructor;
 
-    std::unique_ptr<terminator<ptr, GLFWwindow*>> glfwWindowDestroyer;
+    friend instance;
 
-    /// @brief The parent GVW instance.
-    ptr gvw;
+    ////////////////////////////////////////////////////////////////////////////
+    ///                Constructors, Operators, and Destructor               ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    /// @brief Creates a window.
+    /// @remark This constructor is made private to prevent if from being called
+    /// from outside of GVW.
+    window(const window_info& Window_Info = window_info_config::DEFAULT,
+           window* Parent_Window = nullptr);
+
+  public:
+    // The destructor is public to allow explicit destruction.
+    ~window();
+
+  private:
+    ////////////////////////////////////////////////////////////////////////////
+    ///                        Private Static Functions                      ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    /// @brief Destroys the GLFW window.
+    static void DestroyGlfwWindow(GLFWwindow* Window_Handle) noexcept;
+
+    ////////////////////////////////////////////////////////////////////////////
+    ///                           Private Variables                          ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    instance_ptr gvwInstance;
+
+    std::unique_ptr<internal::terminator<GLFWwindow*>> glfwWindowDestroyer;
 
     /// @brief The pointer to the underlying GLFW window object.
-    /// @remark This pointer never changes while the window exists, so it
-    /// doesn't need to be atomic.
     GLFWwindow* windowHandle = nullptr;
+
+    /// @brief The GLFW cursor.
+    cursor_ptr cursorHandle = nullptr;
 
     /// @brief Window surface.
     vk::UniqueSurfaceKHR surface;
 
     /// @brief Logical device.
-    device_ptr logicalDeviceInfo;
+    device_ptr logicalDevice;
 
-    /// @todo Make this private.
-  public:
-    vk::Device logicalDevice; // NOLINT
-
-  private:
     /// @brief Graphics and presentation queue info.
     /// @remark The graphics queue is also used for transfer operations.
     uint32_t graphicsQueueIndex;
@@ -49,10 +69,10 @@ class gvw::window
 
     render_pass_ptr renderPass;
 
-    swapchain_ptr swapchainInfo;
+    swapchain_ptr swapchain;
 
     /// @todo Shaders might not belong here.
-    std::vector<shader> shaders;
+    pipeline_shaders shaders;
 
     /// @brief Graphics pipeline.
     pipeline_ptr pipeline;
@@ -62,9 +82,9 @@ class gvw::window
     vk::UniqueCommandBuffer stagingCommandBuffer;
     std::vector<vk::UniqueCommandBuffer> commandBuffers;
 
-    /// @brief Vertex buffer.
-    buffer vertexStagingBuffer;
-    buffer vertexBuffer;
+    /// @brief Vertex buffers.
+    buffer_ptr staticVertexStagingBuffer;
+    buffer_ptr staticVertexBuffer;
 
     /// @brief Semaphores and fences.
     std::vector<vk::UniqueSemaphore> nextImageAvailableSemaphores;
@@ -89,32 +109,35 @@ class gvw::window
     /// @brief Mutex for `resetPosition` and `resetSize`.
     std::mutex resetMutex;
 
+    /// @todo Figure out how to make these private.
+  public:
+    // NOLINTBEGIN
     /// @brief Key events.
-    std::vector<window_event::key> keyEvents;
+    std::vector<window_key_event> keyEvents;
     std::mutex keyEventsMutex;
 
     /// @brief Character events.
-    std::vector<window_event::character> characterEvents;
+    std::vector<window_character_event> characterEvents;
     std::mutex characterEventsMutex;
 
     /// @brief Cursor position events.
-    std::vector<window_event::cursor_position> cursorPositionEvents;
+    std::vector<window_cursor_position_event> cursorPositionEvents;
     std::mutex cursorPositionEventsMutex;
 
     /// @brief Cursor enter events.
-    std::vector<window_event::cursor_enter> cursorEnterEvents;
+    std::vector<window_cursor_enter_event> cursorEnterEvents;
     std::mutex cursorEnterEventsMutex;
 
     /// @brief Mouse button events.
-    std::vector<window_event::mouse_button> mouseButtonEvents;
+    std::vector<window_mouse_button_event> mouseButtonEvents;
     std::mutex mouseButtonEventsMutex;
 
     /// @brief Scroll events.
-    std::vector<window_event::scroll> scrollEvents;
+    std::vector<window_scroll_event> scrollEvents;
     std::mutex scrollEventsMutex;
 
     /// @brief File drop events.
-    std::vector<window_event::file_drop> fileDropEvents;
+    std::vector<window_file_drop_event> fileDropEvents;
     std::mutex fileDropEventsMutex;
 
     /// @brief The number of close events.
@@ -122,129 +145,92 @@ class gvw::window
     std::mutex closeEventsMutex;
 
     /// @brief Size events.
-    std::vector<window_event::size> sizeEvents;
+    std::vector<window_size_event> sizeEvents;
     std::mutex sizeEventsMutex;
 
     /// @brief Framebuffer size events.
-    std::vector<window_event::framebuffer_size> framebufferSizeEvents;
+    std::vector<window_framebuffer_size_event> framebufferSizeEvents;
     std::mutex framebufferSizeEventsMutex;
 
     /// @brief Content scale events.
-    std::vector<window_event::content_scale> contentScaleEvents;
+    std::vector<window_content_scale_event> contentScaleEvents;
     std::mutex contentScaleEventsMutex;
 
     /// @brief Position events.
-    std::vector<window_event::position> positionEvents;
+    std::vector<window_position_event> positionEvents;
     std::mutex positionEventsMutex;
 
     /// @brief Iconify events.
-    std::vector<window_event::iconify> iconifyEvents;
+    std::vector<window_iconify_event> iconifyEvents;
     std::mutex iconifyEventsMutex;
 
     /// @brief Maximize events.
-    std::vector<window_event::maximize> maximizeEvents;
+    std::vector<window_maximize_event> maximizeEvents;
     std::mutex maximizeEventsMutex;
 
     /// @brief Focus events.
-    std::vector<window_event::focus> focusEvents;
+    std::vector<window_focus_event> focusEvents;
     std::mutex focusEventsMutex;
 
     /// @brief The number of refresh events.
     size_t refreshEvents = 0;
     std::mutex refreshEventsMutex;
 
-    ////////////////////////////////////////////////////////////
-    ///               Private Static Functions               ///
-    ////////////////////////////////////////////////////////////
-
-    /// @brief Destroys the GLFW window.
-    static void DestroyGlfwWindow(ptr GVW, GLFWwindow* Window_Handle) noexcept;
-
-    ////////////////////////////////////////////////////////////
-    ///       Constructors, Operators, and Destructors       ///
-    ////////////////////////////////////////////////////////////
-
-    /// @brief Creates a window.
-    /// @remark This constructor is made private to prevent if from being called
-    /// from outside of GVW.
-    window(ptr GVW,
-           const window_info& Window_Info = DEFAULT_WINDOW_INFO,
-           window* Parent_Window = nullptr);
-
-    // Allow the private constructor to be called by the parent class.
-    friend class gvw;
-
-  public:
-    // Delete the copy constructor, move constructor, copy assignment operator,
-    // and move assignment operator. It should not be possible to copy or move
-    // this object.
-    window(const window&) = delete;
-    window(window&&) noexcept = delete;
-    window& operator=(const window&) = delete;
-    window& operator=(window&&) noexcept = delete;
-
-    // The destructor is public so as to allow explicit destruction using the
-    // delete operator.
-    ~window();
-
+    // NOLINTEND
   private:
-    ////////////////////////////////////////////////////////////
-    ///                   Private Functions                  ///
-    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    ///                        Private Member Functions                      ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    /// @brief Sets the GLFW window user pointer.
+    void SetUserPointer(void* Pointer);
 
     /// @brief Creates the swapchain.
     void CreateSwapchain();
 
     /// @brief Creates the graphics pipeline.
-    void CreatePipeline(const std::vector<vk::DynamicState>& Dynamic_States =
-                            dynamic_states::VIEWPORT_AND_SCISSOR,
-                        const std::vector<vk::VertexInputBindingDescription>&
-                            Vertex_Input_Binding_Descriptions =
-                                NO_VERTEX_BINDING_DESCRIPTIONS,
-                        const std::vector<vk::VertexInputAttributeDescription>&
-                            Vertex_Input_Attribute_Description =
-                                NO_VERTEX_ATTRIBUTE_DESCRIPTIONS);
+    void CreatePipeline(const pipeline_dynamic_states& Dynamic_States);
 
   public:
     /// @brief Draws a frame.
     /// @todo This function does a lot of stuff that should be manually managed
     /// by the user. Reconsider it's existance here.
-    /// @todo Make this function private, or remove it entirely?
+    /// @todo Make this function private or remove it entirely.
     void DrawFrame(const std::vector<vertex>& Vertices);
 
   private:
     /// @brief Returns an attribute of the window.
-    [[nodiscard]] int WindowAttribute(int Attribute);
+    [[nodiscard]] int GetWindowAttribute(int Attribute);
 
     /// @brief Sets an attribute of the window.
-    void WindowAttribute(int Attribute, int Value);
+    void SetWindowAttribute(int Attribute, int Value);
 
     /// @brief Sets GLFW event callbacks. Passing no arguments sets all default
     /// event callbacks, which populate the event buffers.
     /// @warning This function is NOT thread safe.
-    void EventCallbacksNoMutex(const window_event_callbacks& Event_Callbacks =
-                                   NO_WINDOW_EVENT_CALLBACKS) const;
+    void SetEventCallbacksNoMutex(
+        const window_event_callbacks& Event_Callbacks) const;
 
     /// @brief Returns the size of the content area of the window in screen
     /// coordinates.
     /// @warning This function is NOT thread safe.
-    [[nodiscard]] area<int> SizeNoMutex() const;
+    [[nodiscard]] area<int> GetSizeNoMutex() const;
 
     /// @brief Sets the size of the window.
     /// @warning This function is NOT thread safe.
-    void SizeNoMutex(const area<int>& Size) const;
+    void SetSizeNoMutex(const area<int>& Size) const;
 
     /// @brief Returns the size of the content area of the window in pixels.
     /// @warning This function is NOT thread safe.
-    [[nodiscard]] area<int> FramebufferSizeNoMutex() const;
+    [[nodiscard]] area<int> GetFramebufferSizeNoMutex() const;
 
     /// @brief Returns the position of the window in screen coordinates.
     /// @warning This function is NOT thread safe.
-    [[nodiscard]] coordinate<int> PositionNoMutex() const;
+    [[nodiscard]] coordinate<int> GetPositionNoMutex() const;
 
     /// @brief Sets the position of the window in screen coordinates.
     /// @warning This function is NOT thread safe.
-    void PositionNoMutex(const coordinate<int>& Position) const;
+    void SetPositionNoMutex(const coordinate<int>& Position) const;
 
     /// @brief Hides the window.
     /// @warning This function is NOT thread safe.
@@ -255,76 +241,77 @@ class gvw::window
     void ShowNoMutex() const;
 
   public:
-    ////////////////////////////////////////////////////////////
-    ///                   Public Functions                   ///
-    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    ///                        Public Member Functions                       ///
+    ////////////////////////////////////////////////////////////////////////////
 
     /// @brief Sets GLFW event callbacks. Passing no arguments sets all default
     /// event callbacks, which populate the event buffers.
-    void EventCallbacks(const window_event_callbacks& Event_Callbacks =
-                            NO_WINDOW_EVENT_CALLBACKS);
+    void SetEventCallbacks(const window_event_callbacks& Event_Callbacks);
 
     /// @brief Creates a child window.
     [[nodiscard]] window_ptr CreateChildWindow(
-        const window_info& Window_Info = DEFAULT_WINDOW_INFO);
+        const window_info& Window_Info = window_info_config::DEFAULT);
 
     /// @brief Returns the handle to the underlying GLFW window object.
-    [[nodiscard]] GLFWwindow* Handle() const noexcept;
+    [[nodiscard]] GLFWwindow* GetHandle() const noexcept;
 
     /// @brief Returns the key event buffer.
-    [[nodiscard]] std::vector<window_event::key> KeyEvents() noexcept;
+    [[nodiscard]] std::vector<window_key_event> GetKeyEvents() noexcept;
 
     /// @brief Returns the character event buffer.
-    [[nodiscard]] std::vector<window_event::character>
-    CharacterEvents() noexcept;
+    [[nodiscard]] std::vector<window_character_event>
+    GetCharacterEvents() noexcept;
 
     /// @brief Returns the cursor position buffer.
-    [[nodiscard]] std::vector<window_event::cursor_position>
-    CursorPositionEvents() noexcept;
+    [[nodiscard]] std::vector<window_cursor_position_event>
+    GetCursorPositionEvents() noexcept;
 
     /// @brief Returns the cursor enter event buffer.
-    [[nodiscard]] std::vector<window_event::cursor_enter>
-    CursorEnterEvents() noexcept;
+    [[nodiscard]] std::vector<window_cursor_enter_event>
+    GetCursorEnterEvents() noexcept;
 
     /// @brief Returns the mouse button event buffer.
-    [[nodiscard]] std::vector<window_event::mouse_button>
-    MouseButtonEvents() noexcept;
+    [[nodiscard]] std::vector<window_mouse_button_event>
+    GetMouseButtonEvents() noexcept;
 
     /// @brief Returns the scroll event buffer.
-    [[nodiscard]] std::vector<window_event::scroll> ScrollEvents() noexcept;
+    [[nodiscard]] std::vector<window_scroll_event> GetScrollEvents() noexcept;
 
     /// @brief Returns the file drop event buffer.
-    [[nodiscard]] std::vector<window_event::file_drop>
-    FileDropEvents() noexcept;
+    [[nodiscard]] std::vector<window_file_drop_event>
+    GetFileDropEvents() noexcept;
 
     /// @brief Returns the number of close events received by the window.
-    [[nodiscard]] size_t CloseEvents() noexcept;
+    [[nodiscard]] size_t GetCloseEvents() noexcept;
 
     /// @brief Returns the size event buffer.
-    [[nodiscard]] std::vector<window_event::size> SizeEvents() noexcept;
+    [[nodiscard]] std::vector<window_size_event> GetSizeEvents() noexcept;
 
     /// @brief Returns the framebuffer size event buffer.
-    [[nodiscard]] std::vector<window_event::framebuffer_size>
-    FramebufferSizeEvents() noexcept;
+    [[nodiscard]] std::vector<window_framebuffer_size_event>
+    GetFramebufferSizeEvents() noexcept;
 
     /// @brief Returns the content scale event buffer.
-    [[nodiscard]] std::vector<window_event::content_scale>
-    ContentScaleEvents() noexcept;
+    [[nodiscard]] std::vector<window_content_scale_event>
+    GetContentScaleEvents() noexcept;
 
     /// @brief Returns the position event buffer.
-    [[nodiscard]] std::vector<window_event::position> PositionEvents() noexcept;
+    [[nodiscard]] std::vector<window_position_event>
+    GetPositionEvents() noexcept;
 
     /// @brief Returns the iconify event buffer.
-    [[nodiscard]] std::vector<window_event::iconify> IconifyEvents() noexcept;
+    [[nodiscard]] std::vector<window_iconify_event> GetIconifyEvents() noexcept;
 
     /// @brief Returns the maximize event buffer.
-    [[nodiscard]] std::vector<window_event::maximize> MaximizeEvents() noexcept;
+    [[nodiscard]] std::vector<window_maximize_event>
+    GetMaximizeEvents() noexcept;
 
     /// @brief Returns the focus event buffer.
-    [[nodiscard]] std::vector<window_event::focus> FocusEvents() noexcept;
+    [[nodiscard]] std::vector<window_focus_event> GetFocusEvents() noexcept;
 
     /// @brief Returns the number of refresh events received by the window.
-    [[nodiscard]] size_t RefreshEvents() noexcept;
+    [[nodiscard]] size_t GetRefreshEvents() noexcept;
 
     /// @brief Clears the key event buffer.
     void ClearKeyEvents() noexcept;
@@ -379,43 +366,44 @@ class gvw::window
     void ClearEvents() noexcept;
 
     /// @brief Returns the state of a key.
-    [[nodiscard]] int KeyState(int Key) noexcept;
+    [[nodiscard]] int GetKeyState(int Key) noexcept;
 
     /// @brief Returns the state of the 'close' flag.
     [[nodiscard]] bool ShouldClose() const;
+
+    /// @brief Returns the inverse state of the 'close' flag.
+    [[nodiscard]] bool ShouldNotClose() const;
 
     /// @brief Sets the state of the 'close' flag.
     void ShouldClose(bool State) const;
 
     /// @brief Returns the size of the content area of the window in screen
     /// coordinates.
-    [[nodiscard]] area<int> Size();
+    [[nodiscard]] area<int> GetSize();
 
     /// @brief Sets the size of the window.
-    void Size(const area<int>& Size);
+    void SetSize(const area<int>& Size);
 
     /// @brief Returns the size of the content area of the window in pixels.
-    [[nodiscard]] area<int> FramebufferSize();
+    [[nodiscard]] area<int> GetFramebufferSize();
 
     /// @brief Returns the position of the window in screen coordinates.
-    [[nodiscard]] coordinate<int> Position();
+    [[nodiscard]] coordinate<int> GetPosition();
 
     /// @brief Sets the position of the window in screen coordinates.
-    void Position(const coordinate<int>& Position);
+    void SetPosition(const coordinate<int>& Position);
 
     /// @brief Returns the X and Y content scale of the window.
     /// @remark The content scale of the window is the ratio between the current
     /// DPI and the platform's default DPI.
-    [[nodiscard]] coordinate<float> ContentScale();
+    [[nodiscard]] coordinate<float> GetContentScale();
 
     /// @brief Sets the minimum and maximum size limits of the window.
-    void SizeLimits(
-        const area<int>& Minimum_Size = window_size_limit::NO_MINIMUM,
-        const area<int>& Maximum_Size = window_size_limit::NO_MAXIMUM);
+    void SetSizeLimits(const area<int>& Minimum_Size,
+                       const area<int>& Maximum_Size);
 
     /// @brief Sets the aspect ratio of the window.
-    void AspectRatio(int Numerator = GLFW_DONT_CARE,
-                     int Denominator = GLFW_DONT_CARE);
+    void SetAspectRatio(int Numerator, int Denominator);
 
     /// @brief Returns the cursor hovering state over the window.
     [[nodiscard]] bool IsCursorHovering();
@@ -496,16 +484,16 @@ class gvw::window
     [[nodiscard]] bool IsFocusedOnShow();
 
     /// @brief Returns the opacity of the window.
-    [[nodiscard]] float Opacity();
+    [[nodiscard]] float GetOpacity();
 
     /// @brief Sets the opacity of the entire window including decorations.
-    void Opacity(float Opacity);
+    void SetOpacity(float Opacity);
 
     /// @brief Returns the transparency of the framebuffer.
     [[nodiscard]] bool IsTransparent();
 
     /// @brief Enters full screen.
-    void EnterFullScreen(monitor& Full_Screen_Monitor,
+    void EnterFullScreen(const monitor_ptr& Full_Screen_Monitor,
                          const GLFWvidmode* Video_Mode = nullptr);
 
     /// @brief Exits full screen.
@@ -513,16 +501,13 @@ class gvw::window
         const std::optional<coordinate<int>>& Position = std::nullopt,
         const std::optional<area<int>>& Size = std::nullopt);
 
+    /// @brief Sets a custom cursor.
+    void SetCursor(cursor_ptr Cursor);
+
+    /// @brief Resets the cursor.
+    void ResetCursor();
+
     /// @todo Declare and define the icon functions.
-    /// @todo Declare and define the cursor customization functions.
 };
 
-class gvw::window_public_constructor : public window
-{
-  public:
-    template<typename... Args>
-    window_public_constructor(Args&&... Arguments)
-        : window(std::forward<Args>(Arguments)...)
-    {
-    }
-};
+} // namespace gvw
