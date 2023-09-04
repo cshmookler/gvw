@@ -5,3 +5,4 @@ build/
 resources/
 
 CMakeUserPresets.json
+compile_commands.json

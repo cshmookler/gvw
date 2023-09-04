@@ -15,6 +15,18 @@ instance::instance(const instance_info& Instance_Info)
     // Set warning and error callbacks.
     SetWarningCallback(Instance_Info.warningCallback);
     SetErrorCallback(Instance_Info.errorCallback);
+
+    version compiletimeGlfw = GetGlfwCompiletimeVersion();
+    version runtimeGlfw = GetGlfwRuntimeVersion();
+    if (runtimeGlfw < compiletimeGlfw) {
+        std::string message = "The GLFW runtime version (" +
+                              static_cast<std::string>(runtimeGlfw) +
+                              ") is lower than the GLFW compiletime version (" +
+                              static_cast<std::string>(compiletimeGlfw) + ").";
+        WarningCallback(message.c_str());
+    }
+
+    // Set the GLFW error callback.
     SetGlfwCallback(Instance_Info.glfwErrorCallback);
 
     {
@@ -95,15 +107,31 @@ instance::instance(const instance_info& Instance_Info)
                 .c_str());
     }
 
+    vk::ApplicationInfo applicationInfo = {
+        .pNext = nullptr,
+        .pApplicationName = Instance_Info.applicationInfo.pApplicationName,
+        .applicationVersion = Instance_Info.applicationInfo.applicationVersion,
+        .pEngineName = Instance_Info.applicationInfo.pEngineName,
+        .engineVersion = Instance_Info.applicationInfo.engineVersion,
+        .apiVersion = Instance_Info.applicationInfo.apiVersion
+    };
+
+    vk::DebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfo = {
+        .pNext = nullptr,
+        .flags = {},
+        .messageSeverity =
+            Instance_Info.debugUtilsMessengerInfo.messageSeverity,
+        .messageType = Instance_Info.debugUtilsMessengerInfo.messageType,
+        .pfnUserCallback =
+            Instance_Info.debugUtilsMessengerInfo.pfnUserCallback,
+        .pUserData = Instance_Info.debugUtilsMessengerInfo.pUserData
+    };
+
     // Create the instance creation information struct
     vk::InstanceCreateInfo instanceInfo = {
-        // NOLINTNEXTLINE
-        .pNext = reinterpret_cast<const VkDebugUtilsMessengerCreateInfoEXT*>(
-            &Instance_Info.debugUtilsMessengerInfo),
+        .pNext = &debugUtilsMessengerCreateInfo,
         .flags = Instance_Info.creationFlags,
-        // NOLINTNEXTLINE
-        .pApplicationInfo = reinterpret_cast<const vk::ApplicationInfo*>(
-            &Instance_Info.applicationInfo),
+        .pApplicationInfo = &applicationInfo,
         .enabledLayerCount =
             static_cast<uint32_t>(this->vulkanInstanceLayers.size()),
         .ppEnabledLayerNames = this->vulkanInstanceLayers.data(),
@@ -123,9 +151,7 @@ instance::instance(const instance_info& Instance_Info)
     // Debug callback setup
     this->vulkanDebugUtilsMessenger =
         this->vulkanInstance->createDebugUtilsMessengerEXTUnique(
-            // NOLINTNEXTLINE
-            *reinterpret_cast<const vk::DebugUtilsMessengerCreateInfoEXT*>(
-                &Instance_Info.debugUtilsMessengerInfo),
+            debugUtilsMessengerCreateInfo,
             nullptr,
             this->vulkanDispatchLoaderDynamic);
 #endif
@@ -332,18 +358,18 @@ std::vector<gvw::monitor_ptr> instance::AllMonitors()
 }
 
 // NOLINTNEXTLINE
-cursor_ptr instance::CreateCursor(
-    const standard_cursor_info& Standard_Cursor_Info)
+cursor_ptr instance::CreateCursor(cursor_standard_shape Cursor_Standard_Shape)
 {
     return std::make_shared<internal::cursor_public_constructor>(
-        Standard_Cursor_Info);
+        Cursor_Standard_Shape);
 }
 
 // NOLINTNEXTLINE
-cursor_ptr instance::CreateCursor(const custom_cursor_info& Custom_Cursor_Info)
+cursor_ptr instance::CreateCursor(
+    const cursor_custom_shape_info& Cursor_Custom_Shape_Info)
 {
     return std::make_shared<internal::cursor_public_constructor>(
-        Custom_Cursor_Info);
+        Cursor_Custom_Shape_Info);
 }
 
 } // namespace gvw

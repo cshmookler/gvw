@@ -47,6 +47,23 @@ enum class creation_hint_context_robustness;
 enum class creation_hint_context_release_behavior;
 enum class creation_hint_opengl_profile;
 
+/// @brief GLM type aliases.
+using xy = glm::vec2;
+using xyz = glm::vec3;
+using rgb = glm::vec3;
+using rgba = glm::vec4;
+using xy_rgb = std::pair<xy, rgb>;
+using xyz_rgb = std::pair<xyz, rgb>;
+using xy_rgba = std::pair<xy, rgba>;
+using xyz_rgba = std::pair<xyz, rgba>;
+
+/// @todo Figure out what to do with these "temporary" types.
+extern const std::vector<vk::VertexInputBindingDescription>
+    NO_VERTEX_BINDING_DESCRIPTIONS;
+extern const std::vector<vk::VertexInputAttributeDescription>
+    NO_VERTEX_ATTRIBUTE_DESCRIPTIONS;
+extern const std::vector<xy_rgb> NO_VERTICES;
+
 /// @brief Reads a file from the file system.
 /// @tparam T Output buffer type. Almost always `char`.
 template<typename T = char>
@@ -57,6 +74,15 @@ template<typename T = char>
 
 /// @brief Returns the GLFW version used to compile GVW.
 [[nodiscard]] version GetGlfwCompiletimeVersion() noexcept;
+
+/*********************************    Image    ********************************/
+class image;
+using image_ptr = std::shared_ptr<image>;
+struct image_file_info;
+struct image_memory_info;
+
+template<typename T>
+[[nodiscard]] image_ptr CreateImage(const T& Info);
 
 /*****************************    GVW Instance    *****************************/
 class instance;
@@ -91,21 +117,43 @@ extern const instance_application_info DEFAULT;
 
 /// @todo Add `application` class.
 
+using instance_debug_utils_message_severity =
+    vk::DebugUtilsMessageSeverityFlagsEXT;
+namespace instance_debug_utils_message_severity_config {
+extern const instance_debug_utils_message_severity NONE;
+extern const instance_debug_utils_message_severity ERROR;
+extern const instance_debug_utils_message_severity ERROR_WARNING;
+extern const instance_debug_utils_message_severity ERROR_WARNING_INFO;
+extern const instance_debug_utils_message_severity ERROR_WARNING_INFO_VERBOSE;
+extern const instance_debug_utils_message_severity ALL;
+} // namespace instance_debug_utils_message_severity_config
+
+using instance_debug_utils_message_type = vk::DebugUtilsMessageTypeFlagsEXT;
+namespace instance_debug_utils_message_type_config {
+extern const instance_debug_utils_message_type NONE;
+extern const instance_debug_utils_message_type VALIDATION;
+extern const instance_debug_utils_message_type VALIDATION_GENERAL;
+extern const instance_debug_utils_message_type VALIDATION_GENERAL_PERFORMANCE;
+extern const instance_debug_utils_message_type
+    VALIDATION_GENERAL_PERFORMANCE_DEVICE_ADDRESS_BINDING;
+extern const instance_debug_utils_message_type ALL;
+} // namespace instance_debug_utils_message_type_config
+
+/// @brief Vulkan debug utility messenger callbacks.
+/// @remark These functions should only be called by Vulkan.
+using instance_debug_utils_messenge_callback =
+    PFN_vkDebugUtilsMessengerCallbackEXT;
+namespace instance_debug_utils_messenge_callback_config {
+extern const instance_debug_utils_messenge_callback NONE;
+extern const instance_debug_utils_messenge_callback
+    FORWARD_TO_WARNING_AND_ERROR_CALLBACKS;
+} // namespace instance_debug_utils_messenge_callback_config
+
 /// @brief Initialization information for the Vulkan debug utility messenger.
 struct instance_debug_utils_messenger_info;
 namespace instance_debug_utils_messenger_info_config {
 extern const instance_debug_utils_messenger_info DEFAULT;
 } // namespace instance_debug_utils_messenger_info_config
-
-/// @brief Vulkan debug utility messenger callbacks.
-/// @remark These functions should only be called by Vulkan.
-using instance_debug_utils_messenger_callback =
-    PFN_vkDebugUtilsMessengerCallbackEXT;
-namespace instance_debug_utils_messenger_callback_config {
-extern const instance_debug_utils_messenger_callback NONE;
-extern const instance_debug_utils_messenger_callback
-    FORWARD_TO_WARNING_AND_ERROR_CALLBACKS;
-} // namespace instance_debug_utils_messenger_callback_config
 
 /// @brief Debug utils messenger callback template.
 using instance_debug_utils_messenger_callback_print_function =
@@ -203,10 +251,6 @@ instance_ptr CreateInstance(const instance_info& Instance_Info);
 /// @remark Returns nullptr if GVW is not initialized.
 instance_ptr GetInstance();
 
-/// @brief Destroys the GVW instance.
-/// @remark All objects created with GVW must be preemptively destroyed.
-void DestroyInstance();
-
 /********************************    Monitor    *******************************/
 class monitor;
 using monitor_ptr = std::shared_ptr<monitor>;
@@ -230,6 +274,8 @@ extern const window_info DEFAULT;
 } // namespace window_info_config
 
 enum class window_key;
+
+enum class window_key_action;
 
 struct window_key_event;
 using window_character_event = unsigned int;
@@ -374,15 +420,12 @@ namespace cursor_hotspot_config {
 extern const cursor_hotspot DEFAULT;
 } // namespace cursor_hotspot_config
 
-struct standard_cursor_info;
-namespace standard_cursor_info_config {
-extern const standard_cursor_info DEFAULT;
-} // namespace standard_cursor_info_config
+enum class cursor_standard_shape;
 
-struct custom_cursor_info;
-namespace custom_cursor_info_config {
-extern const custom_cursor_info DEFAULT;
-} // namespace custom_cursor_info_config
+struct cursor_custom_shape_info;
+namespace cursor_custom_shape_info_config {
+extern const cursor_custom_shape_info DEFAULT;
+} // namespace cursor_custom_shape_info_config
 
 /********************************    Shader    ********************************/
 class shader;
@@ -518,15 +561,6 @@ using device_queue_priority = float;
 namespace device_queue_priority_config {
 extern const device_queue_priority HIGH;
 } // namespace device_queue_priority_config
-
-/*********************************    Other    ********************************/
-/// @todo Figure out what to do with these "temporary" types.
-extern const std::vector<vk::VertexInputBindingDescription>
-    NO_VERTEX_BINDING_DESCRIPTIONS;
-extern const std::vector<vk::VertexInputAttributeDescription>
-    NO_VERTEX_ATTRIBUTE_DESCRIPTIONS;
-struct vertex;
-extern const std::vector<vertex> NO_VERTICES;
 
 } // namespace gvw
 

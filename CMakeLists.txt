@@ -51,13 +51,16 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(Vulkan REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
+find_package(stb REQUIRED)
 message("-- Vulkan Libraries: ${Vulkan_LIBRARIES}")
 message("-- GLFW3 Libraries: ${glfw3_LIBRARIES}")
 message("-- GLM Libraries: ${glm_LIBRARIES}")
+message("-- STB Libraries: ${stb_LIBRARIES}")
 set(GVW_DEPENDENCIES
     ${Vulkan_LIBRARIES}
     ${glfw3_LIBRARIES}
     ${glm_LIBRARIES}
+    ${stb_LIBRARIES}
 )
 
 # GVW source files

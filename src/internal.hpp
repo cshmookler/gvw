@@ -67,6 +67,9 @@ template<int_hint_function IntHintFunc,
          size_t StringHints>
 struct glfw_hints;
 
+/*********************************    Image    ********************************/
+using image_public_constructor = public_constructor<image>;
+
 /*****************************    GVW Instance    *****************************/
 using instance_public_constructor = public_constructor<instance>;
 

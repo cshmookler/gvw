@@ -112,12 +112,12 @@ class instance : internal::uncopyable_unmovable // NOLINT
 
     /// @brief Creates a standard GLFW cursor.
     [[nodiscard]] cursor_ptr CreateCursor(
-        const standard_cursor_info& Standard_Cursor_Info =
-            standard_cursor_info_config::DEFAULT);
+        cursor_standard_shape Cursor_Standard_Shape =
+            cursor_standard_shape::eArrow);
 
     /// @brief Creates a custom GLFW cursor.
     [[nodiscard]] cursor_ptr CreateCursor(
-        const custom_cursor_info& Custom_Cursor_Info);
+        const cursor_custom_shape_info& Cursor_Custom_Shape_Info);
 };
 
 } // namespace gvw

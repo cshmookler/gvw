@@ -19,13 +19,56 @@ const instance_creation_hints instance_creation_hints_config::DEFAULT;
 
 const instance_application_info instance_application_info_config::DEFAULT;
 
-const instance_debug_utils_messenger_info
-    instance_debug_utils_messenger_info_config::DEFAULT;
+const instance_debug_utils_message_severity
+    instance_debug_utils_message_severity_config::NONE = {};
+const instance_debug_utils_message_severity
+    instance_debug_utils_message_severity_config::ERROR =
+        vk::DebugUtilsMessageSeverityFlagBitsEXT::eError;
+const instance_debug_utils_message_severity
+    instance_debug_utils_message_severity_config::ERROR_WARNING =
+        instance_debug_utils_message_severity_config::ERROR |
+        vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
+const instance_debug_utils_message_severity
+    instance_debug_utils_message_severity_config::ERROR_WARNING_INFO =
+        instance_debug_utils_message_severity_config::ERROR_WARNING |
+        vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo;
+const instance_debug_utils_message_severity
+    instance_debug_utils_message_severity_config::ERROR_WARNING_INFO_VERBOSE =
+        instance_debug_utils_message_severity_config::ERROR_WARNING_INFO |
+        vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose;
+const instance_debug_utils_message_severity
+    instance_debug_utils_message_severity_config::ALL =
+        instance_debug_utils_message_severity_config::
+            ERROR_WARNING_INFO_VERBOSE;
 
-const instance_debug_utils_messenger_callback
-    instance_debug_utils_messenger_callback_config::NONE = nullptr;
-const instance_debug_utils_messenger_callback
-    instance_debug_utils_messenger_callback_config::
+const instance_debug_utils_message_type
+    instance_debug_utils_message_type_config::NONE = {};
+const instance_debug_utils_message_type
+    instance_debug_utils_message_type_config::VALIDATION =
+        vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation;
+const instance_debug_utils_message_type
+    instance_debug_utils_message_type_config::VALIDATION_GENERAL =
+        instance_debug_utils_message_type_config::VALIDATION |
+        vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral;
+const instance_debug_utils_message_type
+    instance_debug_utils_message_type_config::VALIDATION_GENERAL_PERFORMANCE =
+        instance_debug_utils_message_type_config::VALIDATION_GENERAL |
+        vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
+const instance_debug_utils_message_type
+    instance_debug_utils_message_type_config::
+        VALIDATION_GENERAL_PERFORMANCE_DEVICE_ADDRESS_BINDING =
+            instance_debug_utils_message_type_config::
+                VALIDATION_GENERAL_PERFORMANCE |
+            vk::DebugUtilsMessageTypeFlagBitsEXT::eDeviceAddressBinding;
+const instance_debug_utils_message_type
+    instance_debug_utils_message_type_config::ALL =
+        instance_debug_utils_message_type_config::
+            VALIDATION_GENERAL_PERFORMANCE_DEVICE_ADDRESS_BINDING;
+
+const instance_debug_utils_messenge_callback
+    instance_debug_utils_messenge_callback_config::NONE = nullptr;
+const instance_debug_utils_messenge_callback
+    instance_debug_utils_messenge_callback_config::
         FORWARD_TO_WARNING_AND_ERROR_CALLBACKS =
             internal::DebugUtilsMessengerCallbackTemplate<
                 [](VkDebugUtilsMessageSeverityFlagBitsEXT Message_Severity,
@@ -44,6 +87,9 @@ const instance_debug_utils_messenger_callback
                             break;
                     }
                 }>;
+
+const instance_debug_utils_messenger_info
+    instance_debug_utils_messenger_info_config::DEFAULT;
 
 const instance_glfw_error_callback instance_glfw_error_callback_config::NONE =
     nullptr;
@@ -175,7 +221,8 @@ const window_key_event_callback
     auto* windowPtr =
         static_cast<window*>(internal::GetUserPointerNoMutex(Window_Handle));
     std::scoped_lock<std::mutex> lock(windowPtr->keyEventsMutex);
-    windowPtr->keyEvents.emplace_back(Key, Scancode, Action, Mods);
+    windowPtr->keyEvents.emplace_back(
+        window_key(Key), Scancode, window_key_action(Action), Mods);
 };
 
 const window_character_event_callback
@@ -446,9 +493,7 @@ const window_info window_info_config::DEFAULT;
 /********************************    Cursor    ********************************/
 const cursor_hotspot cursor_hotspot_config::DEFAULT = { 0, 0 };
 
-const standard_cursor_info standard_cursor_info_config::DEFAULT;
-
-const custom_cursor_info custom_cursor_info_config::DEFAULT;
+const cursor_custom_shape_info cursor_custom_shape_info_config::DEFAULT;
 
 /********************************    Shader    ********************************/
 const shader_info shader_info_config::DEFAULT;
@@ -705,6 +750,6 @@ const std::vector<vk::VertexInputBindingDescription>
 const std::vector<vk::VertexInputAttributeDescription>
     NO_VERTEX_ATTRIBUTE_DESCRIPTIONS;
 
-const std::vector<vertex> NO_VERTICES;
+const std::vector<xy_rgb> NO_VERTICES;
 
 } // namespace gvw

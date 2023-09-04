@@ -11,7 +11,7 @@ class gvw(ConanFile):
     version = "1.0.0"
 
     # Metadata
-    license = "MIT"
+    license = "ZLIB"
     author = "Caden Shmookler (cshmookler@gmail.com)"
     url = "https://github.com/cshmookler/GLFW-and-Vulkan-Wrapper.git"
     description = "Desktop application development with GLFW and Vulkan"
@@ -54,6 +54,7 @@ class gvw(ConanFile):
             self.requires("vulkan-validationlayers/1.3.239.0")
         self.requires("glfw/3.3.8")
         self.requires("glm/cci.20230113")
+        self.requires("stb/cci.20220909")
 
     def build_requirements(self):
         self.tool_requires("cmake/3.27.1")

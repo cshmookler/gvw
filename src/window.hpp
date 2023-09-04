@@ -51,8 +51,8 @@ class window : public internal::uncopyable_unmovable // NOLINT
     /// @brief The pointer to the underlying GLFW window object.
     GLFWwindow* windowHandle = nullptr;
 
-    /// @brief The GLFW cursor.
-    cursor_ptr cursorHandle = nullptr;
+    /// @brief The window cursor.
+    cursor_ptr cursor;
 
     /// @brief Window surface.
     vk::UniqueSurfaceKHR surface;
@@ -196,7 +196,7 @@ class window : public internal::uncopyable_unmovable // NOLINT
     /// @todo This function does a lot of stuff that should be manually managed
     /// by the user. Reconsider it's existance here.
     /// @todo Make this function private or remove it entirely.
-    void DrawFrame(const std::vector<vertex>& Vertices);
+    void DrawFrame(const std::vector<xy_rgb>& Vertices);
 
   private:
     /// @brief Returns an attribute of the window.
@@ -366,7 +366,7 @@ class window : public internal::uncopyable_unmovable // NOLINT
     void ClearEvents() noexcept;
 
     /// @brief Returns the state of a key.
-    [[nodiscard]] int GetKeyState(int Key) noexcept;
+    [[nodiscard]] window_key_action GetKeyState(window_key Key) noexcept;
 
     /// @brief Returns the state of the 'close' flag.
     [[nodiscard]] bool ShouldClose() const;
@@ -502,12 +502,16 @@ class window : public internal::uncopyable_unmovable // NOLINT
         const std::optional<area<int>>& Size = std::nullopt);
 
     /// @brief Sets a custom cursor.
-    void SetCursor(cursor_ptr Cursor);
+    void SetCursor(const cursor_ptr& Cursor);
 
     /// @brief Resets the cursor.
     void ResetCursor();
 
-    /// @todo Declare and define the icon functions.
+    /// @brief Sets a custom icon.
+    void SetIcon(const image_ptr& Icon);
+
+    /// @brief Resets the icon.
+    void ResetIcon();
 };
 
 } // namespace gvw

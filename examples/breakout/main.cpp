@@ -26,6 +26,11 @@ bool isCLeftOfLineAB(gvw::coordinate<int> A, // NOLINT
 
 int main() // NOLINT
 {
+    // vertex = { x, y, z }
+    // color = { r, g, b }
+    // colored_vertex = {{ x, y, z }, { r, g, b }}
+    // index = uint16_t
+
     // TESTING
     // std::cout << isCLeftOfLineAB({ 0, 1 }, { 1, 0 }, { 1, -1 }) << std::endl;
     // std::cout << isCLeftOfLineAB({ 0, 1 }, { 1, 0 }, { 3, -1 }) << std::endl;
@@ -39,18 +44,13 @@ int main() // NOLINT
 
     gvw::instance_ptr gvw = gvw::CreateInstance(
         { .applicationInfo = { .pApplicationName = "breakout",
-                               .applicationVersion = VK_MAKE_VERSION(1, 0, 0) },
-          .debugUtilsMessengerInfo = {
-              .messageSeverity =
-                  vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
-                  vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
-                  vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
-                  vk::DebugUtilsMessageSeverityFlagBitsEXT::eError } });
+                               .applicationVersion =
+                                   VK_MAKE_VERSION(1, 0, 0) } });
     gvw::monitor_ptr primaryMonitor = gvw->GetPrimaryMonitor();
 
     const gvw::area<int> PRIMARY_MONITOR_SIZE =
         primaryMonitor->GetWorkAreaSize();
-    const std::vector<gvw::vertex> WHITE_VERTICES = {
+    const std::vector<gvw::xy_rgb> WHITE_VERTICES = {
         { { -1.0F, -1.0F }, { 1.0F, 1.0F, 1.0F } },
         { { 1.0F, -1.0F }, { 1.0F, 1.0F, 1.0F } },
         { { -1.0F, 1.0F }, { 1.0F, 1.0F, 1.0F } },
@@ -61,7 +61,7 @@ int main() // NOLINT
     const gvw::window_creation_hints CREATION_HINTS = {
         { .resizable = false, .decorated = false, .floating = true }
     };
-    const gvw::coordinate<int> BLOCK_WINDOW_COUNT = { 17, 13 };
+    const gvw::coordinate<int> BLOCK_WINDOW_COUNT = { 8, 8 };
     const int BLOCK_WINDOW_TOTAL_COUNT =
         BLOCK_WINDOW_COUNT.x * BLOCK_WINDOW_COUNT.y;
     const float BLOCK_AREA_HEIGHT =
@@ -88,8 +88,6 @@ int main() // NOLINT
             gvw::window_key_event_callback_config::APPEND_TO_KEY_EVENT_BUFFER
     };
 
-    // platWindowEventCallbacks.keyCallback =
-    //     gvw::window_key_event_callback_config::APPEND_TO_KEY_EVENT_BUFFER;
     const int PLAT_HORIZONTAL_SPEED = 800;
     const gvw::window_size BALL_WINDOW_SIZE = { PLAT_WINDOW_SIZE.height,
                                                 PLAT_WINDOW_SIZE.height };
@@ -99,7 +97,7 @@ int main() // NOLINT
          ((PLAT_WINDOW_POSITION.y - int(BLOCK_AREA_HEIGHT)) / 2))
     };
 
-    std::vector<gvw::vertex> blockVertices = {
+    std::vector<gvw::xy_rgb> blockVertices = {
         { { -1.0F, -1.0F }, { 0.0F, 0.0F, 1.0F } },
         { { 1.0F, -1.0F }, { 1.0F, 0.0F, 0.0F } },
         { { -1.0F, 1.0F }, { 0.0F, 1.0F, 0.0F } },
@@ -116,10 +114,19 @@ int main() // NOLINT
           .eventCallbacks = platWindowEventCallbacks,
           .staticVertices = WHITE_VERTICES,
           .sizeOfDynamicDataVerticesInBytes =
-              (sizeof(gvw::vertex) * WHITE_VERTICES.size()) });
+              (sizeof(gvw::xy_rgb) * WHITE_VERTICES.size()) });
     plat->DrawFrame(WHITE_VERTICES);
 
-    auto cursor = gvw->CreateCursor({ GLFW_HAND_CURSOR });
+    gvw::image_file_info imageInfo = { .path = "pointer.png" };
+    auto cursorImage = gvw::CreateImage(imageInfo);
+    gvw::image_file_info otherImageInfo = { .path = "testing.png" };
+    auto otherImage = gvw::CreateImage(otherImageInfo);
+    gvw::cursor_custom_shape_info cursorInfo = {
+        .image = cursorImage, .hotspot = cursorImage->GetSize() / 2
+    };
+    auto cursor = gvw->CreateCursor(cursorInfo);
+    plat->SetCursor(cursor);
+    plat->SetIcon(cursorImage);
 
     std::vector<std::pair<gvw::coordinate<int>, float>> blockCreationInfos;
     blockCreationInfos.reserve(BLOCK_WINDOW_TOTAL_COUNT);
@@ -144,7 +151,7 @@ int main() // NOLINT
     blocks.reserve(BLOCK_WINDOW_TOTAL_COUNT);
     for (const auto& blockCreationInfo : blockCreationInfos) {
         for (auto& vertex : blockVertices) {
-            vertex.color = ColorCascadeGenerator(blockCreationInfo.second);
+            vertex.second = ColorCascadeGenerator(blockCreationInfo.second);
         }
 
         blocks.emplace_back(plat->CreateChildWindow(
@@ -154,34 +161,11 @@ int main() // NOLINT
               .creationHints = CREATION_HINTS,
               .staticVertices = blockVertices,
               .sizeOfDynamicDataVerticesInBytes =
-                  (sizeof(gvw::vertex) * blockVertices.size()) }));
+                  (sizeof(gvw::xy_rgb) * blockVertices.size()) }));
         blocks.back()->DrawFrame(blockVertices);
         blocks.back()->SetCursor(cursor);
+        blocks.back()->SetIcon(cursorImage);
     }
-    // for (int yIndex = 0; yIndex < BLOCK_WINDOW_COUNT.y; ++yIndex) {
-    //     float colorCascadeScale =
-    //         (float(yIndex + 1) / float(BLOCK_WINDOW_COUNT.y));
-    //     for (int xIndex = 0; xIndex < BLOCK_WINDOW_COUNT.x; ++xIndex) {
-    //         gvw::window_ptr& block =
-    //             blocks.at((yIndex * BLOCK_WINDOW_COUNT.x) + xIndex);
-
-    //         for (auto& vertex : blockVertices) {
-    //             vertex.color = ColorCascadeGenerator(colorCascadeScale);
-    //         }
-
-    //         block = plat->CreateChildWindow(
-    //             { .position = { { BLOCK_WINDOW_SIZE.width * xIndex,
-    //                               BLOCK_WINDOW_SIZE.height * yIndex } },
-    //               .size = BLOCK_WINDOW_SIZE,
-    //               .title = gvw::window_title_config::BLANK,
-    //               .creationHints = CREATION_HINTS,
-    //               .staticVertices = blockVertices,
-    //               .sizeOfDynamicDataVerticesInBytes =
-    //                   (sizeof(gvw::vertex) * blockVertices.size()) });
-    //         block->DrawFrame(blockVertices);
-    //         block->SetCursor(cursor);
-    //     }
-    // }
 
     gvw::window_ptr ball = plat->CreateChildWindow(
         { .position = BALL_WINDOW_POSITION,
@@ -190,7 +174,7 @@ int main() // NOLINT
           .creationHints = CREATION_HINTS,
           .staticVertices = WHITE_VERTICES,
           .sizeOfDynamicDataVerticesInBytes =
-              (sizeof(gvw::vertex) * WHITE_VERTICES.size()) });
+              (sizeof(gvw::xy_rgb) * WHITE_VERTICES.size()) });
     ball->DrawFrame(WHITE_VERTICES);
 
     plat->Focus();
@@ -207,8 +191,6 @@ int main() // NOLINT
     float spf = 0.F;
     std::chrono::time_point<std::chrono::system_clock> timeAtStartOfLastFrame =
         std::chrono::system_clock::now();
-
-    plat->SetCursor(cursor);
 
     while (!plat->ShouldClose()) {
         std::this_thread::sleep_for(std::chrono::microseconds(USPF));
@@ -243,9 +225,11 @@ int main() // NOLINT
         if (ballPosition.y + BALL_WINDOW_SIZE.height >
             (PRIMARY_MONITOR_SIZE.height - 10)) {
             ballVelocity.y = (0.F - ballVelocity.y);
-            std::cout << ansiec::BOLD << ansiec::RED_FG
-                      << "GAME OVER. YOU LOSE." << ansiec::RESET << std::endl;
-            plat->ShouldClose(true);
+            // std::cout << ansiec::BOLD << ansiec::RAPID_BLINK <<
+            // ansiec::RED_FG
+            //           << "\nGAME OVER. YOU LOSE.\n"
+            //           << ansiec::RESET << std::endl;
+            // plat->ShouldClose(true);
         }
         ball->SetPosition(ballPosition);
 
@@ -374,17 +358,20 @@ int main() // NOLINT
             }
         }
         if (!continueGame) {
-            std::cout << ansiec::BOLD << ansiec::GREEN_FG << "YOU WIN!"
+            std::cout << ansiec::BOLD << ansiec::RAPID_BLINK << ansiec::GREEN_FG
+                      << "\nYOU WIN!\n"
                       << ansiec::RESET << std::endl;
             plat->ShouldClose(true);
         }
 
-        if (plat->GetKeyState(GLFW_KEY_A) == GLFW_PRESS) {
+        if (plat->GetKeyState(gvw::window_key::eA) ==
+            gvw::window_key_action::ePress) {
             auto position = plat->GetPosition();
             position.x -= int(float(PLAT_HORIZONTAL_SPEED) * spf);
             plat->SetPosition(position);
         }
-        if (plat->GetKeyState(GLFW_KEY_D) == GLFW_PRESS) {
+        if (plat->GetKeyState(gvw::window_key::eD) ==
+            gvw::window_key_action::ePress) {
             auto position = plat->GetPosition();
             position.x += int(float(PLAT_HORIZONTAL_SPEED) * spf);
             plat->SetPosition(position);

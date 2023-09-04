@@ -177,20 +177,19 @@ window::window(const window_info& Window_Info, window* Parent_Window)
             .general = { .code = "vert.spv",
                          .stage = vk::ShaderStageFlagBits::eVertex },
             .bindingDescriptions = { { .binding = 0,
-                                       .stride = sizeof(vertex),
+                                       .stride = sizeof(xy_rgb),
                                        .inputRate =
                                            vk::VertexInputRate::eVertex } },
             .attributeDescriptions = { { { .location = 0,
                                            .binding = 0,
                                            .format = vk::Format::eR32G32Sfloat,
-                                           .offset =
-                                               offsetof(vertex, position) },
+                                           .offset = offsetof(xy_rgb, first) },
                                          { .location = 1,
                                            .binding = 0,
                                            .format =
                                                vk::Format::eR32G32B32Sfloat,
                                            .offset =
-                                               offsetof(vertex, color) } } }
+                                               offsetof(xy_rgb, second) } } }
         };
         this->shaders.vertex =
             this->logicalDevice->LoadVertexShaderFromSpirVFile(
@@ -251,7 +250,7 @@ window::window(const window_info& Window_Info, window* Parent_Window)
 
     // Create staging vertex buffer for static vertices.
     buffer_ptr tempVertexStagingBuffer = this->logicalDevice->CreateBuffer(
-        { .sizeInBytes = (sizeof(vertex) * Window_Info.staticVertices.size()),
+        { .sizeInBytes = (sizeof(xy_rgb) * Window_Info.staticVertices.size()),
           .usage = vk::BufferUsageFlagBits::eTransferSrc,
           .memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
                               vk::MemoryPropertyFlagBits::eHostCoherent });
@@ -376,7 +375,7 @@ void window::CreatePipeline(const pipeline_dynamic_states& Dynamic_States)
           .renderPass = this->renderPass->handle.get() });
 }
 
-void window::DrawFrame(const std::vector<vertex>& Vertices)
+void window::DrawFrame(const std::vector<xy_rgb>& Vertices)
 {
     // Wait until the previous frame is done rendering.
     if (logicalDevice->GetHandle().waitForFences(
@@ -831,10 +830,10 @@ void window::ClearEvents() noexcept
     this->ClearRefreshEvents();
 }
 
-int window::GetKeyState(int Key) noexcept
+window_key_action window::GetKeyState(window_key Key) noexcept
 {
     std::scoped_lock lock(internal::global::GLFW_MUTEX);
-    return glfwGetKey(this->windowHandle, Key);
+    return window_key_action(glfwGetKey(this->windowHandle, int(Key)));
 }
 
 bool window::ShouldClose() const
@@ -1099,20 +1098,40 @@ void window::ExitFullScreen(const std::optional<coordinate<int>>& Position,
                          GLFW_FALSE);
 }
 
-void window::SetCursor(cursor_ptr Cursor) // NOLINT
+void window::SetCursor(const cursor_ptr& Cursor) // NOLINT
 {
-    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     if (Cursor == nullptr) {
-        this->cursorHandle = nullptr;
-    } else {
-        this->cursorHandle = Cursor;
+        ErrorCallback("Failed to set cursor. Cursor pointer is NULL.");
+        return;
     }
-    glfwSetCursor(this->windowHandle, this->cursorHandle->handle);
+    this->cursor = Cursor;
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    glfwSetCursor(this->windowHandle, this->cursor->handle);
 }
 
 void window::ResetCursor()
 {
-    this->SetCursor(nullptr);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    glfwSetCursor(this->windowHandle, nullptr);
+}
+
+void window::SetIcon(const image_ptr& Icon)
+{
+    if (Icon == nullptr) {
+        ErrorCallback("Failed to set icon. Icon pointer is NULL.");
+        return;
+    }
+    GLFWimage iconImage = { .width = Icon->size.width,
+                            .height = Icon->size.height,
+                            .pixels = Icon->data };
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    glfwSetWindowIcon(this->windowHandle, 1, &iconImage);
+}
+
+void window::ResetIcon()
+{
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    glfwSetWindowIcon(this->windowHandle, 0, nullptr);
 }
 
 } // namespace gvw

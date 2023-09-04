@@ -57,7 +57,7 @@ $ conan build . -c tools.system.package_manager:mode=install -c tools.system.pac
 **6.** Create a Python 3.6+ virtual environment and activate it.
 ```shell
 > python -m venv venv
-> .\\venv\\Scripts\\Activate
+> .\venv\Scripts\Activate.bat
 ```
 **7.** Install Conan 2.
 ```shell
@@ -90,11 +90,11 @@ To build this project with Conan 2 without installing it, swap out `conan create
  7. Prefer RAII over C-style resource management.
 
 ### **Technical TODO**
- * [ ] Create enums for GLFW integer values.
+ * [X] Create enums for GLFW integer values.
  * [X] Replace namespace-like classes with the types they represent.
  * [ ] Further compartmentalize Vulkan functions and permit more customization at runtime.
  * [ ] Add Freetype for rendering text.
- * [ ] Add an image loading library for rendering images.
+ * [X] Add an image loading library for rendering images.
  * [ ] Replace Vulkan-Hpp with Vulkan to improve compiletime (?) (possibly not worth it).
  * [ ] Ensure thread-safety for GLFW functions.
 

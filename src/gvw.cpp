@@ -1,7 +1,58 @@
+// Standard includes
+#include <string>
+
+// External includes
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 // Local includes
 #include "gvw.hpp"
 
 namespace gvw {
+
+bool operator==(const version& Lhs, const version& Rhs)
+{
+    return ((Lhs.major == Rhs.major) && (Lhs.minor == Rhs.minor) &&
+            (Lhs.revision == Rhs.revision));
+}
+bool operator!=(const version& Lhs, const version& Rhs)
+{
+    return !operator==(Lhs, Rhs);
+}
+bool operator<(const version& Lhs, const version& Rhs)
+{
+    if (Lhs.major > Rhs.major) {
+        return false;
+    }
+    if (Lhs.major < Rhs.major) {
+        return true;
+    }
+    if (Lhs.minor > Rhs.minor) {
+        return false;
+    }
+    if (Lhs.minor < Rhs.minor) {
+        return true;
+    }
+    if (Lhs.revision > Rhs.revision) {
+        return false;
+    }
+    if (Lhs.revision < Rhs.revision) {
+        return true;
+    }
+    return false;
+}
+bool operator>(const version& Lhs, const version& Rhs)
+{
+    return operator<(Rhs, Lhs);
+}
+bool operator<=(const version& Lhs, const version& Rhs)
+{
+    return !operator>(Lhs, Rhs);
+}
+bool operator>=(const version& Lhs, const version& Rhs)
+{
+    return !operator<(Lhs, Rhs);
+}
 
 creation_hint_bool::creation_hint_bool(bool Boolean)
     : boolean(Boolean)
@@ -65,6 +116,75 @@ version GetGlfwCompiletimeVersion() noexcept
     return version{ .major = GLFW_VERSION_MAJOR,
                     .minor = GLFW_VERSION_MINOR,
                     .revision = GLFW_VERSION_REVISION };
+}
+
+image::image(const image_file_info& File_Info)
+{
+    this->data = stbi_load(File_Info.path,
+                           &this->size.width,
+                           &this->size.height,
+                           &this->colorComponentsPerPixel,
+                           File_Info.requestedColorComponentsPerPixel);
+    if (this->data == nullptr) {
+        std::string message;
+        if (File_Info.path == nullptr) {
+            message =
+                static_cast<std::string>("Failed to open file. Path is NULL. ");
+        } else {
+            message = static_cast<std::string>("Failed to open file \"") +
+                      File_Info.path + "\". ";
+        }
+        message += static_cast<std::string>("STD error: \"") +
+                   stbi_failure_reason() + "\".";
+        ErrorCallback(message.c_str());
+    }
+    if (this->colorComponentsPerPixel <
+        File_Info.requestedColorComponentsPerPixel) {
+        std::string message =
+            "Image \"" + static_cast<std::string>(File_Info.path) +
+            "\" only has " + std::to_string(this->colorComponentsPerPixel) +
+            " color components per pixel but " +
+            std::to_string(File_Info.requestedColorComponentsPerPixel) +
+            " were requested.";
+        WarningCallback(message.c_str());
+    }
+}
+
+image::image(const image_memory_info& Memory_Info)
+{
+    this->data =
+        stbi_load_from_memory(Memory_Info.data.data(),
+                              static_cast<int>(Memory_Info.data.size()),
+                              &this->size.width,
+                              &this->size.height,
+                              &this->colorComponentsPerPixel,
+                              Memory_Info.requestedColorComponentsPerPixel);
+    if (this->data == nullptr) {
+        std::string message =
+            static_cast<std::string>(
+                "Failed to read image data from memory. STD error: \"") +
+            stbi_failure_reason() + "\".";
+        ErrorCallback(message.c_str());
+    }
+    if (this->colorComponentsPerPixel <
+        Memory_Info.requestedColorComponentsPerPixel) {
+        std::string message =
+            "Image only has " + std::to_string(this->colorComponentsPerPixel) +
+            " color components per pixel but " +
+            std::to_string(Memory_Info.requestedColorComponentsPerPixel) +
+            " were requested.";
+        WarningCallback(message.c_str());
+    }
+}
+
+image::~image()
+{
+    stbi_image_free(this->data);
+}
+
+area<int> image::GetSize() const
+{
+    return this->size;
 }
 
 instance_creation_hints::instance_creation_hints(
@@ -133,24 +253,6 @@ instance_ptr GetInstance()
     return internal::global::GVW_INSTANCE;
 }
 
-void DestroyInstance()
-{
-    if (internal::global::GVW_INSTANCE.unique()) {
-        internal::global::GVW_INSTANCE.reset();
-        return;
-    }
-
-    auto gvwInstancePtrCount = internal::global::GVW_INSTANCE.use_count() - 1;
-    std::string error =
-        "Failed to destroy GVW. " + std::to_string(gvwInstancePtrCount);
-    if (gvwInstancePtrCount > 1) {
-        error += " objects are still using GVW.";
-    } else {
-        error += " object is still using GVW.";
-    }
-    ErrorCallback(error.c_str());
-}
-
 window_creation_hints::window_creation_hints(
     const window_creation_hints_info& Creation_Hints_Info)
     : glfw_hints(
@@ -208,20 +310,23 @@ window_creation_hints::window_creation_hints(
 {
 }
 
-cursor::cursor(const standard_cursor_info& Standard_Cursor_Info)
+cursor::cursor(cursor_standard_shape Cursor_Standard_Shape)
 {
     std::scoped_lock lock(internal::global::GLFW_MUTEX);
     // NOLINTNEXTLINE
-    this->handle = glfwCreateStandardCursor(Standard_Cursor_Info.shape);
+    this->handle = glfwCreateStandardCursor(int(Cursor_Standard_Shape));
 }
 
-cursor::cursor(const custom_cursor_info& Custom_Cursor_Info)
+cursor::cursor(const cursor_custom_shape_info& Cursor_Custom_Shape_Info)
 {
     std::scoped_lock lock(internal::global::GLFW_MUTEX);
     // NOLINTNEXTLINE
-    this->handle = glfwCreateCursor(Custom_Cursor_Info.image,
-                                    Custom_Cursor_Info.hotspot.x,
-                                    Custom_Cursor_Info.hotspot.y);
+    GLFWimage image = { .width = Cursor_Custom_Shape_Info.image->size.width,
+                        .height = Cursor_Custom_Shape_Info.image->size.height,
+                        .pixels = Cursor_Custom_Shape_Info.image->data };
+    this->handle = glfwCreateCursor(&image,
+                                    Cursor_Custom_Shape_Info.hotspot.x,
+                                    Cursor_Custom_Shape_Info.hotspot.y);
 }
 
 cursor::~cursor()

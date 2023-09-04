@@ -64,6 +64,58 @@ struct coordinate
     {
         return (this->x != Coordinate.x) || (this->y != Coordinate.y);
     }
+
+    coordinate<T> operator+(T Type) const
+    {
+        return { this->x + Type, this->y + Type };
+    }
+    coordinate<T> operator-(T Type) const
+    {
+        return { this->x - Type, this->y - Type };
+    }
+    coordinate<T> operator*(T Type) const
+    {
+        return { this->x * Type, this->y * Type };
+    }
+    coordinate<T> operator/(T Type) const
+    {
+        return { this->x / Type, this->y / Type };
+    }
+    coordinate<T> operator%(T Type) const
+    {
+        return { this->x % Type, this->y % Type };
+    }
+
+    coordinate<T>& operator+=(T Type)
+    {
+        this->x += Type;
+        this->y += Type;
+        return *this;
+    }
+    coordinate<T>& operator-=(T Type)
+    {
+        this->x -= Type;
+        this->y -= Type;
+        return *this;
+    }
+    coordinate<T>& operator*=(T Type)
+    {
+        this->x *= Type;
+        this->y *= Type;
+        return *this;
+    }
+    coordinate<T>& operator/=(T Type)
+    {
+        this->x /= Type;
+        this->y /= Type;
+        return *this;
+    }
+    coordinate<T>& operator%=(T Type)
+    {
+        this->x %= Type;
+        this->y %= Type;
+        return *this;
+    }
 };
 
 template<typename T>
@@ -115,6 +167,58 @@ struct area
     {
         return (this->width != Area.width) || (this->height != Area.height);
     }
+
+    area<T> operator+(T Type) const
+    {
+        return { this->width + Type, this->height + Type };
+    }
+    area<T> operator-(T Type) const
+    {
+        return { this->width - Type, this->height - Type };
+    }
+    area<T> operator*(T Type) const
+    {
+        return { this->width * Type, this->height * Type };
+    }
+    area<T> operator/(T Type) const
+    {
+        return { this->width / Type, this->height / Type };
+    }
+    area<T> operator%(T Type) const
+    {
+        return { this->width % Type, this->height % Type };
+    }
+
+    area<T>& operator+=(T Type)
+    {
+        this->width += Type;
+        this->height += Type;
+        return *this;
+    }
+    area<T>& operator-=(T Type)
+    {
+        this->width -= Type;
+        this->height -= Type;
+        return *this;
+    }
+    area<T>& operator*=(T Type)
+    {
+        this->width *= Type;
+        this->height *= Type;
+        return *this;
+    }
+    area<T>& operator/=(T Type)
+    {
+        this->width /= Type;
+        this->height /= Type;
+        return *this;
+    }
+    area<T>& operator%=(T Type)
+    {
+        this->width %= Type;
+        this->height %= Type;
+        return *this;
+    }
 };
 
 struct version
@@ -122,7 +226,20 @@ struct version
     int major;
     int minor;
     int revision;
+
+    operator std::string() const
+    {
+        return std::to_string(major) + "." + std::to_string(minor) + "." +
+               std::to_string(revision);
+    }
 };
+
+bool operator==(const version& Lhs, const version& Rhs);
+bool operator!=(const version& Lhs, const version& Rhs);
+bool operator<(const version& Lhs, const version& Rhs);
+bool operator>(const version& Lhs, const version& Rhs);
+bool operator<=(const version& Lhs, const version& Rhs);
+bool operator>=(const version& Lhs, const version& Rhs);
 
 class creation_hint_bool
 {
@@ -249,7 +366,7 @@ std::vector<T> ReadFile(const char* Absolute_Path)
     std::ifstream file(Absolute_Path, std::ios::ate | std::ios::binary);
     if (!file.is_open()) {
         ErrorCallback(("Failed to open shader file: \"" +
-                       std::string(Absolute_Path) + "\"")
+                       static_cast<std::string>(Absolute_Path) + "\"")
                           .c_str());
     }
     size_t fileSize = file.tellg();
@@ -261,6 +378,62 @@ std::vector<T> ReadFile(const char* Absolute_Path)
     file.close();
 
     return charBuffer;
+}
+
+struct image_file_info
+{
+    const char* path = nullptr;
+    int requestedColorComponentsPerPixel = 4;
+};
+
+struct image_memory_info
+{
+    std::vector<uint8_t> data;
+    int requestedColorComponentsPerPixel = 4;
+};
+
+class image
+{
+    friend internal::image_public_constructor;
+
+    friend cursor;
+    friend window;
+
+    ////////////////////////////////////////////////////////////////////////////
+    ///                Constructors, Operators, and Destructor               ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    image(const image_file_info& File_Info);
+    image(const image_memory_info& Memory_Info);
+
+  public:
+    image(const image&) = delete;
+    image(image&&) noexcept = delete;
+    image& operator=(const image&) = delete;
+    image& operator=(image&&) noexcept = delete;
+    ~image();
+
+  private:
+    ////////////////////////////////////////////////////////////////////////////
+    ///                           Private Variables                          ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    uint8_t* data = nullptr;
+    area<int> size = { 0, 0 };
+    int colorComponentsPerPixel = 0;
+
+  public:
+    ////////////////////////////////////////////////////////////////////////////
+    ///                        Public Member Functions                       ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    [[nodiscard]] area<int> GetSize() const;
+};
+
+template<typename T>
+image_ptr CreateImage(const T& Info)
+{
+    return std::make_shared<internal::image_public_constructor>(Info);
 }
 
 struct instance_creation_hints_info
@@ -291,8 +464,6 @@ struct instance_creation_hints
 struct instance_application_info
 {
     /// @todo Create configurations for these types.
-    vk::StructureType sType = vk::StructureType::eApplicationInfo;
-    const void* pNext = nullptr;
     const char* pApplicationName = "";
     uint32_t applicationVersion = VK_MAKE_VERSION(0, 0, 0);
     const char* pEngineName = "No Engine";
@@ -302,21 +473,12 @@ struct instance_application_info
 
 struct instance_debug_utils_messenger_info
 {
-    /// @todo Create configurations for these types.
-    vk::StructureType sType =
-        vk::StructureType::eDebugUtilsMessengerCreateInfoEXT;
-    const void* pNext = nullptr;
-    vk::DebugUtilsMessengerCreateFlagsEXT flags = {};
-    vk::DebugUtilsMessageSeverityFlagsEXT messageSeverity =
-        vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
-        vk::DebugUtilsMessageSeverityFlagBitsEXT::eError;
-    vk::DebugUtilsMessageTypeFlagsEXT messageType =
-        vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
-        vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
-        vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance |
-        vk::DebugUtilsMessageTypeFlagBitsEXT::eDeviceAddressBinding;
-    PFN_vkDebugUtilsMessengerCallbackEXT pfnUserCallback =
-        instance_debug_utils_messenger_callback_config::
+    instance_debug_utils_message_severity messageSeverity =
+        instance_debug_utils_message_severity_config::ERROR_WARNING;
+    instance_debug_utils_message_type messageType =
+        instance_debug_utils_message_type_config::ALL;
+    instance_debug_utils_messenge_callback pfnUserCallback =
+        instance_debug_utils_messenge_callback_config::
             FORWARD_TO_WARNING_AND_ERROR_CALLBACKS;
     void* pUserData = nullptr;
 };
@@ -471,6 +633,15 @@ enum class window_key
     eRightAlt = GLFW_KEY_RIGHT_ALT,
     eRightSuper = GLFW_KEY_RIGHT_SUPER,
     eMenu = GLFW_KEY_MENU
+    // NOLINTEND
+};
+
+enum class window_key_action
+{
+    // NOLINTBEGIN
+    ePress = GLFW_PRESS,
+    eRelease = GLFW_RELEASE,
+    eRepeat = GLFW_REPEAT
     // NOLINTEND
 };
 
@@ -631,9 +802,9 @@ struct window_creation_hints
 
 struct window_key_event
 {
-    int key;
+    window_key key;
     int scancode;
-    int action;
+    window_key_action action;
     int mods;
 };
 
@@ -650,16 +821,21 @@ struct window_file_drop_event
     const char** paths;
 };
 
-struct standard_cursor_info
+enum class cursor_standard_shape
 {
-    /// @todo Create GLFW type enums
-    int shape = GLFW_ARROW_CURSOR;
+    // NOLINTBEGIN
+    eArrow = GLFW_ARROW_CURSOR,
+    eIBeam = GLFW_IBEAM_CURSOR,
+    eCrossHair = GLFW_CROSSHAIR_CURSOR,
+    eHand = GLFW_HAND_CURSOR,
+    eHResize = GLFW_HRESIZE_CURSOR,
+    eVResize = GLFW_VRESIZE_CURSOR
+    // NOLINTEND
 };
 
-struct custom_cursor_info
+struct cursor_custom_shape_info
 {
-    /// @todo Create a dedicated function for managing GLFW images.
-    GLFWimage* image = nullptr;
+    image_ptr image = nullptr;
     cursor_hotspot hotspot = cursor_hotspot_config::DEFAULT;
 };
 
@@ -676,13 +852,13 @@ class cursor : internal::uncopyable_unmovable // NOLINT
     /// @brief Creates a standard GLFW cursor.
     /// @remark This constructor is made private to prevent it from being called
     /// from outside of this class.
-    cursor(const standard_cursor_info& Standard_Cursor_Info =
-               standard_cursor_info_config::DEFAULT);
+    cursor(cursor_standard_shape Cursor_Standard_Shape =
+               cursor_standard_shape::eArrow);
 
     /// @brief Creates a custom GLFW cursor.
     /// @remark This constructor is made private to prevent it from being called
     /// from outside of this class.
-    cursor(const custom_cursor_info& Custom_Cursor_Info);
+    cursor(const cursor_custom_shape_info& Cursor_Custom_Shape_Info);
 
   public:
     // The destructor is public to allow explicit destruction.
@@ -895,15 +1071,9 @@ struct window_info
     device_ptr device = nullptr;
     render_pass_ptr renderPass = nullptr;
     const pipeline_shaders& shaders = pipeline_shaders_config::NONE;
-    const std::vector<gvw::vertex>& staticVertices = NO_VERTICES;
+    const std::vector<gvw::xy_rgb>& staticVertices = NO_VERTICES;
     vk::DeviceSize sizeOfDynamicDataVerticesInBytes = 0;
     pipeline_ptr pipeline = nullptr;
-};
-
-struct vertex
-{
-    glm::vec2 position;
-    glm::vec3 color;
 };
 
 } // namespace gvw
