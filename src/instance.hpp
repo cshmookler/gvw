@@ -118,6 +118,12 @@ class instance : internal::uncopyable_unmovable // NOLINT
     /// @brief Creates a custom GLFW cursor.
     [[nodiscard]] cursor_ptr CreateCursor(
         const cursor_custom_shape_info& Cursor_Custom_Shape_Info);
+
+    /// @brief Returns the clipboard.
+    [[nodiscard]] const char* GetClipboard();
+
+    /// @brief Sets the clipboard.
+    void SetClipboard(const char* Data);
 };
 
 } // namespace gvw

@@ -366,16 +366,19 @@ class window : public internal::uncopyable_unmovable // NOLINT
     void ClearEvents() noexcept;
 
     /// @brief Returns the state of a key.
-    [[nodiscard]] window_key_action GetKeyState(window_key Key) noexcept;
+    [[nodiscard]] window_key_action GetKeyState(window_key Key);
+
+    /// @brief Returns the position of the cursor.
+    [[nodiscard]] coordinate<double> GetCursorPosition();
 
     /// @brief Returns the state of the 'close' flag.
-    [[nodiscard]] bool ShouldClose() const;
+    [[nodiscard]] bool ShouldClose();
 
     /// @brief Returns the inverse state of the 'close' flag.
-    [[nodiscard]] bool ShouldNotClose() const;
+    [[nodiscard]] bool ShouldNotClose();
 
     /// @brief Sets the state of the 'close' flag.
-    void ShouldClose(bool State) const;
+    void ShouldClose(bool State);
 
     /// @brief Returns the size of the content area of the window in screen
     /// coordinates.

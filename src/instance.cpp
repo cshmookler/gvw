@@ -372,4 +372,16 @@ cursor_ptr instance::CreateCursor(
         Cursor_Custom_Shape_Info);
 }
 
+const char* instance::GetClipboard() // NOLINT
+{
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    return glfwGetClipboardString(nullptr);
+}
+
+void instance::SetClipboard(const char* Data) // NOLINT
+{
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    glfwSetClipboardString(nullptr, Data);
+}
+
 } // namespace gvw

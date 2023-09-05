@@ -830,24 +830,32 @@ void window::ClearEvents() noexcept
     this->ClearRefreshEvents();
 }
 
-window_key_action window::GetKeyState(window_key Key) noexcept
+window_key_action window::GetKeyState(window_key Key)
 {
     std::scoped_lock lock(internal::global::GLFW_MUTEX);
     return window_key_action(glfwGetKey(this->windowHandle, int(Key)));
 }
 
-bool window::ShouldClose() const
+coordinate<double> window::GetCursorPosition()
+{
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    coordinate<double> cursorPosition = { 0, 0 };
+    glfwGetCursorPos(this->windowHandle, &cursorPosition.x, &cursorPosition.y);
+    return cursorPosition;
+}
+
+bool window::ShouldClose()
 {
     std::scoped_lock lock(internal::global::GLFW_MUTEX);
     return bool(glfwWindowShouldClose(this->windowHandle) != GLFW_FALSE);
 }
 
-bool window::ShouldNotClose() const
+bool window::ShouldNotClose()
 {
     return !this->ShouldClose();
 }
 
-void window::ShouldClose(bool State) const
+void window::ShouldClose(bool State)
 {
     std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwSetWindowShouldClose(this->windowHandle, static_cast<int>(State));

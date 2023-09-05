@@ -92,9 +92,11 @@ To build this project with Conan 2 without installing it, swap out `conan create
 ### **Technical TODO**
  * [X] Create enums for GLFW integer values.
  * [X] Replace namespace-like classes with the types they represent.
- * [ ] Further compartmentalize Vulkan functions and permit more customization at runtime.
- * [ ] Add Freetype for rendering text.
  * [X] Add an image loading library for rendering images.
+ * [ ] Render textures with Vulkan.
+ * [ ] Add Freetype for rendering text.
+ * [ ] Don't force ErrorCallback to throw.
+ * [ ] Further compartmentalize Vulkan functions and permit more customization at runtime.
  * [ ] Replace Vulkan-Hpp with Vulkan to improve compiletime (?) (possibly not worth it).
  * [ ] Ensure thread-safety for GLFW functions.
 
