@@ -235,7 +235,7 @@ extern const instance_error_callback CERR_THROW;
 void SetErrorCallback(instance_error_callback Error_Callback);
 void ErrorCallback(const char* Message);
 
-using instance_glfw_error_callback = GLFWerrorfun;
+using instance_glfw_error_callback = void (*)(int, const char*); // GLFWerrorfun
 namespace instance_glfw_error_callback_config {
 extern const instance_glfw_error_callback NONE;
 extern const instance_glfw_error_callback FORWARD_TO_VERBOSE_CALLBACK;
@@ -249,7 +249,7 @@ void GlfwErrorCallback(int Error_Code, const char* Message);
 /// @brief Joystick ID and event type of a joystick event.
 struct instance_joystick_event;
 
-using instance_joystick_event_callback = GLFWjoystickfun;
+using instance_joystick_event_callback = void (*)(int, int); // GLFWjoystickfun
 namespace instance_joystick_event_callback_config {
 extern const instance_joystick_event_callback NONE;
 extern const instance_joystick_event_callback APPEND_TO_JOYSTICK_EVENT_BUFFER;
@@ -308,87 +308,108 @@ using window_iconify_event = int;
 using window_maximize_event = int;
 using window_focus_event = int;
 
-using window_key_event_callback = GLFWkeyfun;
+using window_key_event_callback =
+    void (*)(GLFWwindow*, int, int, int, int); // GLFWkeyfun
 namespace window_key_event_callback_config {
 extern const window_key_event_callback NONE;
 extern const window_key_event_callback APPEND_TO_KEY_EVENT_BUFFER;
 } // namespace window_key_event_callback_config
-using window_character_event_callback = GLFWcharfun;
+using window_character_event_callback = void (*)(GLFWwindow*,
+                                                 unsigned int); // GLFWcharfun
 namespace window_character_event_callback_config {
 extern const window_character_event_callback NONE;
 extern const window_character_event_callback APPEND_TO_CHARACTER_EVENT_BUFFER;
 } // namespace window_character_event_callback_config
-using window_cursor_position_event_callback = GLFWcursorposfun;
+using window_cursor_position_event_callback =
+    void (*)(GLFWwindow*, double, double); // GLFWcursorposfun
 namespace window_cursor_position_event_callback_config {
 extern const window_cursor_position_event_callback NONE;
 extern const window_cursor_position_event_callback
     APPEND_TO_CURSOR_POSITION_EVENT_BUFFER;
 } // namespace window_cursor_position_event_callback_config
-using window_cursor_enter_event_callback = GLFWcursorenterfun;
+using window_cursor_enter_event_callback = void (*)(GLFWwindow*,
+                                                    int); // GLFWcursorenterfun
 namespace window_cursor_enter_event_callback_config {
 extern const window_cursor_enter_event_callback NONE;
 extern const window_cursor_enter_event_callback
     APPEND_TO_CURSOR_ENTER_EVENT_BUFFER;
 } // namespace window_cursor_enter_event_callback_config
-using window_mouse_button_event_callback = GLFWmousebuttonfun;
+using window_mouse_button_event_callback = void (*)(GLFWwindow*,
+                                                    int,
+                                                    int,
+                                                    int); // GLFWmousebuttonfun
 namespace window_mouse_button_event_callback_config {
 extern const window_mouse_button_event_callback NONE;
 extern const window_mouse_button_event_callback
     APPEND_TO_MOUSE_BUTTON_EVENT_BUFFER;
 } // namespace window_mouse_button_event_callback_config
-using window_scroll_event_callback = GLFWscrollfun;
+using window_scroll_event_callback = void (*)(GLFWwindow*,
+                                              double,
+                                              double); // GLFWscrollfun
 namespace window_scroll_event_callback_config {
 extern const window_scroll_event_callback NONE;
 extern const window_scroll_event_callback APPEND_TO_SCROLL_EVENT_BUFFER;
 } // namespace window_scroll_event_callback_config
-using window_file_drop_event_callback = GLFWdropfun;
+using window_file_drop_event_callback = void (*)(GLFWwindow*,
+                                                 int,
+                                                 const char**); // GLFWdropfun
 namespace window_file_drop_event_callback_config {
 extern const window_file_drop_event_callback NONE;
 extern const window_file_drop_event_callback APPEND_TO_FILE_DROP_EVENT_BUFFER;
 } // namespace window_file_drop_event_callback_config
-using window_close_event_callback = GLFWwindowclosefun;
+using window_close_event_callback = void (*)(GLFWwindow*); // GLFWwindowclosefun
 namespace window_close_event_callback_config {
 extern const window_close_event_callback NONE;
 extern const window_close_event_callback APPEND_TO_CLOSE_EVENT_BUFFER;
 } // namespace window_close_event_callback_config
-using window_size_event_callback = GLFWwindowsizefun;
+using window_size_event_callback = void (*)(GLFWwindow*,
+                                            int,
+                                            int); // GLFWwindowsizefun
 namespace window_size_event_callback_config {
 extern const window_size_event_callback NONE;
 extern const window_size_event_callback APPEND_TO_SIZE_EVENT_BUFFER;
 } // namespace window_size_event_callback_config
-using window_framebuffer_size_event_callback = GLFWframebuffersizefun;
+using window_framebuffer_size_event_callback =
+    void (*)(GLFWwindow*, int, int); // GLFWframebuffersizefun
 namespace window_framebuffer_size_event_callback_config {
 extern const window_framebuffer_size_event_callback NONE;
 extern const window_framebuffer_size_event_callback
     APPEND_TO_FRAMEBUFFER_SIZE_EVENT_BUFFER;
 } // namespace window_framebuffer_size_event_callback_config
-using window_content_scale_event_callback = GLFWwindowcontentscalefun;
+using window_content_scale_event_callback =
+    void (*)(GLFWwindow*, float, float); // GLFWwindowcontentscalefun
 namespace window_content_scale_event_callback_config {
 extern const window_content_scale_event_callback NONE;
 extern const window_content_scale_event_callback
     APPEND_TO_CONTENT_SCALE_EVENT_BUFFER;
 } // namespace window_content_scale_event_callback_config
-using window_position_event_callback = GLFWwindowposfun;
+using window_position_event_callback = void (*)(GLFWwindow*,
+                                                int,
+                                                int); // GLFWwindowposfun
 namespace window_position_event_callback_config {
 extern const window_position_event_callback NONE;
 extern const window_position_event_callback APPEND_TO_POSITION_EVENT_BUFFER;
 } // namespace window_position_event_callback_config
-using window_iconify_event_callback = GLFWwindowiconifyfun;
+using window_iconify_event_callback = void (*)(GLFWwindow*,
+                                               int); // GLFWwindowiconifyfun
 namespace window_iconify_event_callback_config {
 extern const window_iconify_event_callback NONE;
 extern const window_iconify_event_callback APPEND_TO_ICONIFY_EVENT_BUFFER;
 } // namespace window_iconify_event_callback_config
-using window_maximize_event_callback = GLFWwindowmaximizefun;
+using window_maximize_event_callback = void (*)(GLFWwindow*,
+                                                int); // GLFWwindowmaximizefun
 namespace window_maximize_event_callback_config {
 extern const window_maximize_event_callback NONE;
 extern const window_maximize_event_callback APPEND_TO_MAXIMIZE_EVENT_BUFFER;
 } // namespace window_maximize_event_callback_config
-using window_focus_event_callback = GLFWwindowfocusfun;
+using window_focus_event_callback = void (*)(GLFWwindow*,
+                                             int); // GLFWwindowfocusfun
 namespace window_focus_event_callback_config {
 extern const window_focus_event_callback NONE;
 extern const window_focus_event_callback APPEND_TO_FOCUS_EVENT_BUFFER;
 } // namespace window_focus_event_callback_config
-using window_refresh_event_callback = GLFWwindowrefreshfun;
+using window_refresh_event_callback =
+    void (*)(GLFWwindow*); // GLFWwindowrefreshfun
 namespace window_refresh_event_callback_config {
 extern const window_refresh_event_callback NONE;
 extern const window_refresh_event_callback APPEND_TO_REFRESH_EVENT_BUFFER;

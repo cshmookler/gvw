@@ -54,8 +54,10 @@ class terminator
 enum struct glfw_bool
 {
     // NOLINTBEGIN
-    eTrue = GLFW_TRUE,
-    eFalse = GLFW_FALSE
+
+    eFalse = 0, // GLFW_FALSE
+    eTrue = 1   // GLFW_TRUE
+
     // NOLINTEND
 };
 
