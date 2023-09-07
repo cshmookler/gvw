@@ -12,22 +12,16 @@ void AssertInitialization()
     const char* error = "GVW is not initialized.";
     if (global::ERROR_CALLBACK != nullptr) {
         ErrorCallback(error);
+        return;
     }
-    instance_error_callback_config::CERR_THROW(error);
+    instance_error_callback_config::CERR(error);
 }
 
 /********************************    Window    ********************************/
-void* GetUserPointerNoMutex(GLFWwindow* Window)
-{
-    // The GLFW error callback is invoked if GLFW (GVW by proxy) is
-    // uninitialized.
-    return glfwGetWindowUserPointer(Window);
-}
 
 void* GetUserPointer(GLFWwindow* Window)
 {
-    std::scoped_lock lock(global::GLFW_MUTEX);
-    return GetUserPointerNoMutex(Window);
+    return glfwGetWindowUserPointer(Window);
 }
 
 /********************************    Global    ********************************/
@@ -35,6 +29,10 @@ namespace global {
 instance_ptr GVW_INSTANCE = nullptr;
 std::mutex GLFW_MUTEX;
 std::mutex CONSOLE_MUTEX;
+instance_verbose_callback VERBOSE_CALLBACK = nullptr;
+std::mutex VERBOSE_CALLBACK_MUTEX;
+instance_info_callback INFO_CALLBACK = nullptr;
+std::mutex INFO_CALLBACK_MUTEX;
 instance_warning_callback WARNING_CALLBACK = nullptr;
 std::mutex WARNING_CALLBACK_MUTEX;
 instance_error_callback ERROR_CALLBACK = nullptr;

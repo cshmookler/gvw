@@ -7,6 +7,9 @@
  * @date 2023-09-01
  */
 
+// Standard includes
+#include <concepts>
+
 // Leading local includes
 #include "gvw.hpp"
 
@@ -27,21 +30,33 @@ struct uncopyable_unmovable;
 template<typename... Args>
 class terminator;
 
-/// @brief Returns a vector containing all the items present in the user
-/// array that were missing in the vulkan array.
-template<typename UserT, typename VulkanT>
-[[nodiscard]] std::vector<UserT> UserItemsMissingInVulkanArray(
-    const std::vector<UserT>& User_Array,
-    const std::vector<VulkanT>& Vulkan_Array,
-    bool (*Is_Identical)(UserT, VulkanT));
+enum struct glfw_bool;
 
-/// @brief Returns a vector containing all the items present in the user
-/// array that were found in the vulkan array.
-template<typename UserT, typename VulkanT>
-[[nodiscard]] std::vector<UserT> UserItemsFoundInVulkanArray(
-    const std::vector<UserT>& User_Array,
-    const std::vector<VulkanT>& Vulkan_Array,
-    bool (*Is_Identical)(UserT, VulkanT));
+/// @brief Returns a vector containing all the items present in both arrays.
+template<typename Type1,
+         typename Type2 = Type1,
+         typename Out = Type1,
+         typename CallableIdentical,
+         typename CallableGet>
+std::vector<Out> GetCommonElements(const std::vector<Type1>& Arr_1,
+                                   const std::vector<Type2>& Arr_2,
+                                   CallableIdentical Identical,
+                                   CallableGet Get) requires
+    std::is_invocable_r_v<bool, CallableIdentical, Type1, Type2> &&
+    std::is_invocable_r_v<Out, CallableGet, Type1, Type2>;
+
+template<typename Type1, typename Type2 = Type1, typename CallableIdentical>
+std::vector<Type1> GetCommonElementsInArr1(const std::vector<Type1>& Arr_1,
+                                           const std::vector<Type2>& Arr_2,
+                                           CallableIdentical Identical) requires
+    std::is_invocable_r_v<bool, CallableIdentical, Type1, Type2>;
+
+template<typename Type1, typename Type2 = Type1, typename CallableIdentical>
+std::vector<Type1> GetUncommonElementsInArr1(
+    const std::vector<Type1>& Arr_1,
+    const std::vector<Type2>& Arr_2,
+    CallableIdentical Identical) requires
+    std::is_invocable_r_v<bool, CallableIdentical, Type1, Type2>;
 
 /*********************************    Hints    ********************************/
 /// @brief GLFW hint ID and default value.
@@ -83,13 +98,16 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugUtilsMessengerCallbackTemplate(
 using callback_print_function = void (*)(const char*);
 
 template<callback_print_function PrintFunction>
-void GlfwErrorCallbackTemplate(int Error_Code, const char* Message);
-
-/// @brief GVW warning and error callback configurations.
+void VerboseCallbackTemplate(const char* Message);
+template<callback_print_function PrintFunction>
+void InfoCallbackTemplate(const char* Message);
 template<callback_print_function PrintFunction>
 void WarningCallbackTemplate(const char* Message);
 template<callback_print_function PrintFunction>
 void ErrorCallbackTemplate(const char* Message);
+
+template<callback_print_function PrintFunction>
+void GlfwErrorCallbackTemplate(int Error_Code, const char* Message);
 
 /// @brief Pass a message to the GVW error callback if GVW is not initialized.
 void AssertInitialization();
@@ -100,10 +118,10 @@ using monitor_public_constructor = public_constructor<monitor>;
 /********************************    Window    ********************************/
 using window_public_constructor = public_constructor<window>;
 
-/// @brief Returns the GLFW window user pointer for a specific window.
-/// @warning GLFW must be initialized.
-/// @warning This function is NOT thread safe.
-[[nodiscard]] void* GetUserPointerNoMutex(GLFWwindow* Window);
+enum struct window_input_mode;
+enum struct window_input_mode_cursor;
+using window_input_mode_sticky_keys = internal::glfw_bool;
+using window_input_mode_sticky_mouse_buttons = internal::glfw_bool;
 
 /// @brief Returns the GLFW window user pointer for a specific window.
 /// @warning GLFW must be initialized.
@@ -140,6 +158,10 @@ extern instance_ptr GVW_INSTANCE;
 extern std::mutex GLFW_MUTEX;
 /// @todo Use internal::global::CONSOLE_MUTEX.
 extern std::mutex CONSOLE_MUTEX;
+extern instance_verbose_callback VERBOSE_CALLBACK;
+extern std::mutex VERBOSE_CALLBACK_MUTEX;
+extern instance_info_callback INFO_CALLBACK;
+extern std::mutex INFO_CALLBACK_MUTEX;
 extern instance_warning_callback WARNING_CALLBACK;
 extern std::mutex WARNING_CALLBACK_MUTEX;
 extern instance_error_callback ERROR_CALLBACK;

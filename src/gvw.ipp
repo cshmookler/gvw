@@ -315,7 +315,7 @@ class creation_hint_int
     [[nodiscard]] int Get() const;
 };
 
-enum class creation_hint_client_api
+enum struct creation_hint_client_api
 {
     // NOLINTBEGIN
     eOpenGL = GLFW_OPENGL_API,
@@ -324,7 +324,7 @@ enum class creation_hint_client_api
     // NOLINTEND
 };
 
-enum class creation_hint_context_creation_api
+enum struct creation_hint_context_creation_api
 {
     // NOLINTBEGIN
     eNativeContext = GLFW_NATIVE_CONTEXT_API,
@@ -333,7 +333,7 @@ enum class creation_hint_context_creation_api
     // NOLINTEND
 };
 
-enum class creation_hint_context_robustness
+enum struct creation_hint_context_robustness
 {
     // NOLINTBEGIN
     eNone = GLFW_NO_ROBUSTNESS,
@@ -342,7 +342,7 @@ enum class creation_hint_context_robustness
     // NOLINTEND
 };
 
-enum class creation_hint_context_release_behavior
+enum struct creation_hint_context_release_behavior
 {
     // NOLINTBEGIN
     eAny = GLFW_ANY_RELEASE_BEHAVIOR,
@@ -351,7 +351,7 @@ enum class creation_hint_context_release_behavior
     // NOLINTEND
 };
 
-enum class creation_hint_opengl_profile
+enum struct creation_hint_opengl_profile
 {
     // NOLINTBEGIN
     eAny = GLFW_OPENGL_ANY_PROFILE,
@@ -474,12 +474,11 @@ struct instance_application_info
 struct instance_debug_utils_messenger_info
 {
     instance_debug_utils_message_severity messageSeverity =
-        instance_debug_utils_message_severity_config::ERROR_WARNING;
+        instance_debug_utils_message_severity_config::ALL;
     instance_debug_utils_message_type messageType =
         instance_debug_utils_message_type_config::ALL;
     instance_debug_utils_messenge_callback pfnUserCallback =
-        instance_debug_utils_messenge_callback_config::
-            FORWARD_TO_WARNING_AND_ERROR_CALLBACKS;
+        instance_debug_utils_messenge_callback_config::FORWARD_TO_GVW_CALLBACKS;
     void* pUserData = nullptr;
 };
 
@@ -492,6 +491,10 @@ struct instance_info
     const instance_layers& layers = instance_layers_config::VALIDATION;
     const instance_extensions& extensions =
         instance_extensions_config::PORTABILITY_AND_DEBUG_UTILS;
+    const instance_verbose_callback& verboseCallback =
+        instance_info_callback_config::CERR;
+    const instance_info_callback& infoCallback =
+        instance_info_callback_config::CERR;
     const instance_warning_callback& warningCallback =
         instance_warning_callback_config::CERR;
     const instance_error_callback& errorCallback =
@@ -510,7 +513,7 @@ struct instance_joystick_event
     int event;
 };
 
-enum class window_key
+enum struct window_key
 {
     // NOLINTBEGIN
     eUnknown = GLFW_KEY_UNKNOWN,
@@ -636,7 +639,7 @@ enum class window_key
     // NOLINTEND
 };
 
-enum class window_key_action
+enum struct window_key_action
 {
     // NOLINTBEGIN
     ePress = GLFW_PRESS,
@@ -821,7 +824,7 @@ struct window_file_drop_event
     const char** paths;
 };
 
-enum class cursor_standard_shape
+enum struct cursor_standard_shape
 {
     // NOLINTBEGIN
     eArrow = GLFW_ARROW_CURSOR,
@@ -1027,8 +1030,8 @@ struct device_selection_queue_family_info
 struct device_selection_parameter
 {
     vk::PhysicalDevice physicalDevice;
-    std::optional<swapchain_surface_formats> surfaceFormats;
-    std::optional<swapchain_present_modes> presentModes;
+    swapchain_surface_formats surfaceFormats;
+    swapchain_present_modes presentModes;
 };
 
 struct device_selection_info

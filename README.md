@@ -93,6 +93,7 @@ To build this project with Conan 2 without installing it, swap out `conan create
  * [X] Create enums for GLFW integer values.
  * [X] Replace namespace-like classes with the types they represent.
  * [X] Add an image loading library for rendering images.
+ * [ ] Add input mode and key state functions.
  * [ ] Render textures with Vulkan.
  * [ ] Add Freetype for rendering text.
  * [ ] Don't force ErrorCallback to throw.

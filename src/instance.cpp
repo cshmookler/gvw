@@ -9,10 +9,10 @@ namespace gvw {
 
 instance::instance(const instance_info& Instance_Info)
     : glfwTerminator(std::make_unique<internal::terminator<>>(TerminateGlfw))
-    , vulkanInstanceExtensions(Instance_Info.extensions)
-    , vulkanInstanceLayers(Instance_Info.layers)
 {
     // Set warning and error callbacks.
+    SetVerboseCallback(Instance_Info.verboseCallback);
+    SetInfoCallback(Instance_Info.infoCallback);
     SetWarningCallback(Instance_Info.warningCallback);
     SetErrorCallback(Instance_Info.errorCallback);
 
@@ -29,6 +29,8 @@ instance::instance(const instance_info& Instance_Info)
     // Set the GLFW error callback.
     SetGlfwCallback(Instance_Info.glfwErrorCallback);
 
+    uint32_t requiredInstanceExtensionCount = 0;
+    const char** requiredInstanceExtensionsPointer = nullptr;
     {
         // Lock the GLFW mutex while invoking GLFW functions.
         std::scoped_lock lock(internal::global::GLFW_MUTEX);
@@ -39,6 +41,8 @@ instance::instance(const instance_info& Instance_Info)
         // Initialize the GLFW library.
         if (glfwInit() == GLFW_FALSE) {
             ErrorCallback("GLFW failed to initialize");
+            /// @todo The program should always terminate here.
+            return;
         }
 
         // Check for Vulkan support
@@ -46,66 +50,113 @@ instance::instance(const instance_info& Instance_Info)
             ErrorCallback("Failed to find the Vulkan loader and/or a minimally "
                           "functional "
                           "ICD (Installable Client Driver)");
+            /// @todo The program should always terminate here.
+            return;
         }
 
         // Get required instance extensions
-        uint32_t extensionCount = 0;
-        const char** extensionsPointer =
-            glfwGetRequiredInstanceExtensions(&extensionCount);
-        for (uint32_t i = 0; i < extensionCount; ++i) {
-            this->vulkanInstanceExtensions.emplace_back(
-                extensionsPointer[i]); // NOLINT
-        }
+        requiredInstanceExtensionsPointer =
+            glfwGetRequiredInstanceExtensions(&requiredInstanceExtensionCount);
     }
 
     // Verify that the requested extensions are available
-    std::vector<vk::ExtensionProperties> allAvailableExtensions =
+    std::vector<vk::ExtensionProperties> supportedInstanceExtensions =
         vk::enumerateInstanceExtensionProperties();
-    std::vector<const char*> extensionsNotFound =
-        internal::UserItemsMissingInVulkanArray<const char*,
-                                                vk::ExtensionProperties>(
-            this->vulkanInstanceExtensions,
-            allAvailableExtensions,
-            [](const char* User, vk::ExtensionProperties Vulkan) {
-                return std::strcmp(User, Vulkan.extensionName) == 0;
+
+    std::vector<const char*> requiredInstanceExtensions;
+    requiredInstanceExtensions.reserve(requiredInstanceExtensionCount);
+    for (uint32_t i = 0; i < requiredInstanceExtensionCount; ++i) {
+        requiredInstanceExtensions.emplace_back(
+            requiredInstanceExtensionsPointer[i]); // NOLINT
+    }
+    std::vector<const char*> unavailableRequiredInstanceExtensions =
+        internal::GetUncommonElementsInArr1(
+            requiredInstanceExtensions,
+            supportedInstanceExtensions,
+            [](const char* Lhs, vk::ExtensionProperties Rhs) {
+                return std::strcmp(Lhs, Rhs.extensionName) == 0;
             });
-    if (!extensionsNotFound.empty()) {
-        ErrorCallback(
-            ("The following Vulkan instance extensions were requested but are "
-             "not supported on this system: " +
-             std::accumulate(
-                 extensionsNotFound.begin(),
-                 extensionsNotFound.end(),
-                 std::string(),
-                 [](const std::string& String, const char* Extension) {
-                     return String + "\n\t" + Extension;
-                 }))
-                .c_str());
+    if (!unavailableRequiredInstanceExtensions.empty()) {
+        std::string message =
+            "The following Vulkan instance extensions are required for window "
+            "surface creation but are not supported on this system:" +
+            std::accumulate(
+                unavailableRequiredInstanceExtensions.begin(),
+                unavailableRequiredInstanceExtensions.end(),
+                std::string{},
+                [](const std::string& String, const char* Extension_Name) {
+                    return String + "\n\t" + Extension_Name;
+                });
+        ErrorCallback(message.c_str());
+        /// @todo The program should always terminate here (or surface
+        /// creation can be made optional).
+        return;
     }
 
-    // Verify that the requested layers are available
-    std::vector<vk::LayerProperties> allAvailableLayers =
-        vk::enumerateInstanceLayerProperties();
-    std::vector<const char*> layersNotFound =
-        internal::UserItemsMissingInVulkanArray<const char*,
-                                                vk::LayerProperties>(
-            this->vulkanInstanceLayers,
-            allAvailableLayers,
-            [](const char* User, vk::LayerProperties Vulkan) {
-                return std::strcmp(User, Vulkan.layerName) == 0;
+    std::vector<const char*> unsupportedSelectedExtensions =
+        internal::GetUncommonElementsInArr1(
+            Instance_Info.extensions,
+            supportedInstanceExtensions,
+            [](const char* Lhs, vk::ExtensionProperties Rhs) -> bool {
+                return std::strcmp(Lhs, Rhs.extensionName) == 0;
             });
-    if (!layersNotFound.empty()) {
-        ErrorCallback(
-            ("The following Vulkan instance layers were requested but are not "
-             "supported on this system: " +
-             std::accumulate(layersNotFound.begin(),
-                             layersNotFound.end(),
-                             std::string(),
-                             [](const std::string& String, const char* Layer) {
-                                 return String + "\n\t" + Layer;
-                             }))
-                .c_str());
+    if (!unsupportedSelectedExtensions.empty()) {
+        std::string message =
+            "The following Vulkan instance extensions were requested but are "
+            "not supported on this system:" +
+            std::accumulate(
+                unsupportedSelectedExtensions.begin(),
+                unsupportedSelectedExtensions.end(),
+                std::string{},
+                [](const std::string& String, const char* Extension_Name) {
+                    return String + "\n\t" + Extension_Name;
+                });
+        ErrorCallback(message.c_str());
+        /// @todo The program should always terminate here (or the programmer
+        /// should have some way of checking which extensions were unsupported).
+        return;
     }
+
+    // Combine required instance extensions and selected instance extensions.
+    this->vulkanInstanceExtensions = requiredInstanceExtensions;
+    /// @todo Benchmark the line below (may not need .reserve()).
+    this->vulkanInstanceExtensions.reserve(
+        this->vulkanInstanceExtensions.size() +
+        Instance_Info.extensions.size());
+    this->vulkanInstanceExtensions.insert(this->vulkanInstanceExtensions.end(),
+                                          Instance_Info.extensions.begin(),
+                                          Instance_Info.extensions.end());
+
+    // Verify that the requested layers are available
+    std::vector<vk::LayerProperties> supportedInstanceLayers =
+        vk::enumerateInstanceLayerProperties();
+    std::vector<const char*> unsupportedInstanceLayers =
+        internal::GetUncommonElementsInArr1(
+            Instance_Info.layers,
+            supportedInstanceLayers,
+            [](const char* Lhs, vk::LayerProperties Rhs) {
+                return std::strcmp(Lhs, Rhs.layerName) == 0;
+            });
+    if (!unsupportedInstanceLayers.empty()) {
+        std::string message =
+            "The following Vulkan instance layers were requested but are not "
+            "supported on this system: " +
+            std::accumulate(
+                unsupportedInstanceLayers.begin(),
+                unsupportedInstanceLayers.end(),
+                std::string{},
+                [](const std::string& String, const char* Layer_Name) {
+                    return String + "\n\t" + Layer_Name;
+                });
+        ErrorCallback(message.c_str());
+        /// @todo The program should always terminate here (or the programmer
+        /// should have some way of checking which layers were unsupported).
+        return;
+    }
+
+    /// @todo Create required instance layers (like required instance extensions
+    /// but for instance layers).
+    this->vulkanInstanceLayers = Instance_Info.layers;
 
     vk::ApplicationInfo applicationInfo = {
         .pNext = nullptr,
@@ -221,7 +272,7 @@ window_ptr instance::CreateWindow(const window_info& Window_Info)
 
 std::vector<device_ptr> instance::SelectPhysicalDevices(
     const device_selection_info& Device_Info,
-    const std::optional<vk::SurfaceKHR>& Window_Surface)
+    const vk::SurfaceKHR* Window_Surface)
 {
     std::vector<vk::PhysicalDevice> physicalDevices =
         this->vulkanInstance->enumeratePhysicalDevices();
@@ -229,81 +280,64 @@ std::vector<device_ptr> instance::SelectPhysicalDevices(
         ErrorCallback("No physical devices with Vulkan support are available.");
     }
 
-    std::vector<device_selection_parameter> physicalDevicesInfoCompatible;
+    std::vector<vk::SurfaceFormatKHR> selectedSurfaceFormats =
+        Device_Info.surfaceFormats;
+    std::vector<vk::PresentModeKHR> selectedPresentModes =
+        Device_Info.presentModes;
+
+    std::vector<device_selection_parameter> compatiblePhysicalDevices;
     for (const auto& physicalDevice : physicalDevices) {
-        std::optional<std::vector<vk::SurfaceFormatKHR>>
-            availableSurfaceFormats;
-        std::optional<std::vector<vk::PresentModeKHR>> availablePresentModes;
 
-        if (!Window_Surface.has_value()) {
-            availableSurfaceFormats = Device_Info.surfaceFormats;
-            availablePresentModes = Device_Info.presentModes;
-        } else {
-            std::vector<vk::SurfaceFormatKHR> physicalDeviceSurfaceFormats =
-                physicalDevice.getSurfaceFormatsKHR(Window_Surface.value());
-            std::vector<vk::PresentModeKHR> physicalDevicePresentModes =
-                physicalDevice.getSurfacePresentModesKHR(
-                    Window_Surface.value());
-
-            availableSurfaceFormats = Device_Info.surfaceFormats;
-            availablePresentModes = Device_Info.presentModes;
-
-            // if (!Device_Info.surfaceFormats.has_value()) {
-            //     availableSurfaceFormats = physicalDeviceSurfaceFormats;
-            // } else {
-            //     availableSurfaceFormats = Device_Info.surfaceFormats.value();
-            // }
-            // if (!Device_Info.presentModes.has_value()) {
-            //     availablePresentModes = physicalDevicePresentModes;
-            // } else {
-            //     availablePresentModes = Device_Info.presentModes.value();
-            // }
-
-            availableSurfaceFormats =
-                internal::UserItemsFoundInVulkanArray<vk::SurfaceFormatKHR,
-                                                      vk::SurfaceFormatKHR>(
-                    availableSurfaceFormats.value(),
-                    physicalDeviceSurfaceFormats,
-                    [](vk::SurfaceFormatKHR Viable_Surface_Format,
-                       vk::SurfaceFormatKHR Physical_Device_Surface_Format)
-                        -> bool {
-                        return (Viable_Surface_Format.format ==
-                                Physical_Device_Surface_Format.format) &&
-                               (Viable_Surface_Format.colorSpace ==
-                                Physical_Device_Surface_Format.colorSpace);
-                    });
-            if (availableSurfaceFormats->empty()) {
-                continue;
-            }
-
-            availablePresentModes =
-                internal::UserItemsFoundInVulkanArray<vk::PresentModeKHR,
-                                                      vk::PresentModeKHR>(
-                    availablePresentModes.value(),
-                    physicalDevicePresentModes,
-                    [](vk::PresentModeKHR Viable_Present_Mode,
-                       vk::PresentModeKHR Physical_Device_Present_Mode) {
-                        return (Viable_Present_Mode ==
-                                Physical_Device_Present_Mode);
-                    });
-            if (availablePresentModes->empty()) {
-                continue;
-            }
+        std::vector<vk::SurfaceFormatKHR> availableSurfaceFormats =
+            physicalDevice.getSurfaceFormatsKHR(*Window_Surface);
+        if (availableSurfaceFormats.empty()) {
+            /// @todo Log this.
+            continue;
+        }
+        std::vector<vk::SurfaceFormatKHR> viableSurfaceFormats =
+            internal::GetCommonElementsInArr1(
+                selectedSurfaceFormats,
+                availableSurfaceFormats,
+                [](const vk::SurfaceFormatKHR& Lhs,
+                   const vk::SurfaceFormatKHR& Rhs) { return Lhs == Rhs; });
+        if (viableSurfaceFormats.empty()) {
+            /// @todo Log this.
+            continue;
         }
 
-        physicalDevicesInfoCompatible.emplace_back(
-            physicalDevice, availableSurfaceFormats, availablePresentModes);
+        std::vector<vk::PresentModeKHR> availablePresentModes =
+            physicalDevice.getSurfacePresentModesKHR(*Window_Surface);
+        if (availablePresentModes.empty()) {
+            /// @todo Log this.
+            continue;
+        }
+        std::vector<vk::PresentModeKHR> viablePresentModes =
+            internal::GetCommonElementsInArr1(
+                selectedPresentModes,
+                availablePresentModes,
+                [](const vk::PresentModeKHR& Lhs,
+                   const vk::PresentModeKHR& Rhs) { return Lhs == Rhs; });
+        if (viablePresentModes.empty()) {
+            /// @todo Log this.
+            continue;
+        }
+
+        compatiblePhysicalDevices.emplace_back(
+            physicalDevice, viableSurfaceFormats, viablePresentModes);
     }
-    if (physicalDevicesInfoCompatible.empty()) {
+    if (compatiblePhysicalDevices.empty()) {
         ErrorCallback("No physical devices support a selected surface format "
                       "and/or present mode.");
+        return {};
     }
 
+    /// @todo Remove std::optional from this function.
     std::vector<device_info> selectedPhysicalDevicesInfo =
-        Device_Info.selectPhysicalDevicesAndQueues(
-            physicalDevicesInfoCompatible, Window_Surface);
+        Device_Info.selectPhysicalDevicesAndQueues(compatiblePhysicalDevices,
+                                                   *Window_Surface);
     if (selectedPhysicalDevicesInfo.empty()) {
         ErrorCallback("No physical devices were selected.");
+        return {};
     }
 
     std::vector<device_ptr> logicalDevices;

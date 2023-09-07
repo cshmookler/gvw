@@ -34,6 +34,7 @@ window::window(const window_info& Window_Info, window* Parent_Window)
         // Briefly hide the window if an initial position was specified. If this
         // is not done the window may be in the wrong position for one frame
         // (the default position set by the operating system).
+        /// @todo Remove this when glfw 3.4.x is released.
         if (Window_Info.position.has_value()) {
             glfwWindowHint(Window_Info.creationHints.visible.HINT, GLFW_FALSE);
         }
@@ -94,7 +95,7 @@ window::window(const window_info& Window_Info, window* Parent_Window)
         this->logicalDevice =
             gvwInstance
                 ->SelectPhysicalDevices(Window_Info.deviceSelectionInfo,
-                                        this->surface.get())
+                                        &this->surface.get())
                 .at(0);
     }
 
@@ -518,6 +519,18 @@ void window::SetWindowAttribute(int Attribute, int Value)
     glfwSetWindowAttrib(this->windowHandle, Attribute, Value);
 }
 
+void window::SetInputMode(int Mode, int Value)
+{
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    glfwSetInputMode(this->windowHandle, Mode, Value);
+}
+
+int window::GetInputMode(int Mode)
+{
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    return glfwGetInputMode(this->windowHandle, Mode);
+}
+
 void window::SetEventCallbacksNoMutex(
     const window_event_callbacks& Window_Event_Callbacks) const
 {
@@ -836,6 +849,21 @@ window_key_action window::GetKeyState(window_key Key)
     return window_key_action(glfwGetKey(this->windowHandle, int(Key)));
 }
 
+bool window::IsKeyPressed(window_key Key)
+{
+    return (this->GetKeyState(Key) == window_key_action::ePress);
+}
+
+bool window::IsKeyReleased(window_key Key)
+{
+    return (this->GetKeyState(Key) == window_key_action::eRelease);
+}
+
+bool window::IsKeyRepeating(window_key Key)
+{
+    return (this->GetKeyState(Key) == window_key_action::eRepeat);
+}
+
 coordinate<double> window::GetCursorPosition()
 {
     std::scoped_lock lock(internal::global::GLFW_MUTEX);
@@ -1106,7 +1134,7 @@ void window::ExitFullScreen(const std::optional<coordinate<int>>& Position,
                          GLFW_FALSE);
 }
 
-void window::SetCursor(const cursor_ptr& Cursor) // NOLINT
+void window::SetCursorShape(const cursor_ptr& Cursor) // NOLINT
 {
     if (Cursor == nullptr) {
         ErrorCallback("Failed to set cursor. Cursor pointer is NULL.");
@@ -1117,10 +1145,100 @@ void window::SetCursor(const cursor_ptr& Cursor) // NOLINT
     glfwSetCursor(this->windowHandle, this->cursor->handle);
 }
 
-void window::ResetCursor()
+void window::ResetCursorShape()
 {
     std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwSetCursor(this->windowHandle, nullptr);
+}
+
+void window::HideCursor()
+{
+    this->SetInputMode(
+        static_cast<int>(internal::window_input_mode::eCursor),
+        static_cast<int>(internal::window_input_mode_cursor::eHidden));
+}
+
+bool window::IsCursorHidden()
+{
+    return (static_cast<internal::window_input_mode_cursor>(this->GetInputMode(
+                static_cast<int>(internal::window_input_mode::eCursor))) ==
+            internal::window_input_mode_cursor::eHidden);
+}
+
+void window::DisableCursor()
+{
+    this->SetInputMode(
+        static_cast<int>(internal::window_input_mode::eCursor),
+        static_cast<int>(internal::window_input_mode_cursor::eDisabled));
+}
+
+bool window::IsCursorDisabled()
+{
+    return (static_cast<internal::window_input_mode_cursor>(this->GetInputMode(
+                static_cast<int>(internal::window_input_mode::eCursor))) ==
+            internal::window_input_mode_cursor::eDisabled);
+}
+
+void window::ResetCursorVisibility()
+{
+    this->SetInputMode(
+        static_cast<int>(internal::window_input_mode::eCursor),
+        static_cast<int>(internal::window_input_mode_cursor::eNormal));
+}
+
+bool window::IsCursorVisible()
+{
+    return (static_cast<internal::window_input_mode_cursor>(this->GetInputMode(
+                static_cast<int>(internal::window_input_mode::eCursor))) ==
+            internal::window_input_mode_cursor::eNormal);
+}
+
+void window::EnableStickyKeys()
+{
+    this->SetInputMode(
+        static_cast<int>(internal::window_input_mode::eStickyKeys),
+        static_cast<int>(
+            internal::window_input_mode_sticky_mouse_buttons::eTrue));
+}
+
+void window::DisableStickyKeys()
+{
+    this->SetInputMode(
+        static_cast<int>(internal::window_input_mode::eStickyKeys),
+        static_cast<int>(
+            internal::window_input_mode_sticky_mouse_buttons::eFalse));
+}
+
+bool window::IsStickyKeysEnabled()
+{
+    return (
+        static_cast<internal::window_input_mode_sticky_keys>(this->GetInputMode(
+            static_cast<int>(internal::window_input_mode::eStickyKeys))) ==
+        internal::window_input_mode_sticky_keys::eTrue);
+}
+
+void window::EnableStickyMouseButtons()
+{
+    this->SetInputMode(
+        static_cast<int>(internal::window_input_mode::eStickyMouseButtons),
+        static_cast<int>(
+            internal::window_input_mode_sticky_mouse_buttons::eTrue));
+}
+
+void window::DisableStickyMouseButtons()
+{
+    this->SetInputMode(
+        static_cast<int>(internal::window_input_mode::eStickyMouseButtons),
+        static_cast<int>(
+            internal::window_input_mode_sticky_mouse_buttons::eFalse));
+}
+
+bool window::IsStickyMouseButtonsEnabled()
+{
+    return (static_cast<internal::window_input_mode_sticky_mouse_buttons>(
+                this->GetInputMode(static_cast<int>(
+                    internal::window_input_mode::eStickyMouseButtons))) ==
+            internal::window_input_mode_sticky_mouse_buttons::eTrue);
 }
 
 void window::SetIcon(const image_ptr& Icon)

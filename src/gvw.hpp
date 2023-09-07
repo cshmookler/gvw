@@ -41,11 +41,11 @@ struct version;
 class creation_hint_bool;
 class creation_hint_int;
 using creation_hint_string = const char*;
-enum class creation_hint_client_api;
-enum class creation_hint_context_creation_api;
-enum class creation_hint_context_robustness;
-enum class creation_hint_context_release_behavior;
-enum class creation_hint_opengl_profile;
+enum struct creation_hint_client_api;
+enum struct creation_hint_context_creation_api;
+enum struct creation_hint_context_robustness;
+enum struct creation_hint_context_release_behavior;
+enum struct creation_hint_opengl_profile;
 
 /// @brief GLM type aliases.
 using xy = glm::vec2;
@@ -145,8 +145,7 @@ using instance_debug_utils_messenge_callback =
     PFN_vkDebugUtilsMessengerCallbackEXT;
 namespace instance_debug_utils_messenge_callback_config {
 extern const instance_debug_utils_messenge_callback NONE;
-extern const instance_debug_utils_messenge_callback
-    FORWARD_TO_WARNING_AND_ERROR_CALLBACKS;
+extern const instance_debug_utils_messenge_callback FORWARD_TO_GVW_CALLBACKS;
 } // namespace instance_debug_utils_messenge_callback_config
 
 /// @brief Initialization information for the Vulkan debug utility messenger.
@@ -158,13 +157,6 @@ extern const instance_debug_utils_messenger_info DEFAULT;
 /// @brief Debug utils messenger callback template.
 using instance_debug_utils_messenger_callback_print_function =
     void (*)(VkDebugUtilsMessageSeverityFlagBitsEXT, const char*);
-
-using instance_glfw_error_callback = GLFWerrorfun;
-namespace instance_glfw_error_callback_config {
-extern const instance_glfw_error_callback NONE;
-extern const instance_glfw_error_callback FORWARD_TO_WARNING_CALLBACK;
-extern const instance_glfw_error_callback FORWARD_TO_ERROR_CALLBACK;
-} // namespace instance_glfw_error_callback_config
 
 /// @brief Vulkan instance layer.
 using instance_layer = const char*;
@@ -191,7 +183,33 @@ extern const instance_extensions PORTABILITY_AND_DEBUG_UTILS;
 } // namespace instance_extensions_config
 
 /// @brief GVW callbacks.
-using instance_warning_callback = void (*)(const char*);
+using instance_verbose_callback = void (*)(const char*);
+namespace instance_verbose_callback_config {
+extern const instance_verbose_callback NONE;
+extern const instance_verbose_callback COUT;
+extern const instance_verbose_callback CLOG;
+extern const instance_verbose_callback CERR;
+extern const instance_verbose_callback COUT_THROW;
+extern const instance_verbose_callback CLOG_THROW;
+extern const instance_verbose_callback CERR_THROW;
+} // namespace instance_verbose_callback_config
+void SetVerboseCallback(instance_verbose_callback Verbose_Callback);
+void VerboseCallback(const char* Message);
+
+using instance_info_callback = instance_verbose_callback;
+namespace instance_info_callback_config {
+extern const instance_info_callback NONE;
+extern const instance_info_callback COUT;
+extern const instance_info_callback CLOG;
+extern const instance_info_callback CERR;
+extern const instance_info_callback COUT_THROW;
+extern const instance_info_callback CLOG_THROW;
+extern const instance_info_callback CERR_THROW;
+} // namespace instance_info_callback_config
+void SetInfoCallback(instance_info_callback Info_Callback);
+void InfoCallback(const char* Message);
+
+using instance_warning_callback = instance_info_callback;
 namespace instance_warning_callback_config {
 extern const instance_warning_callback NONE;
 extern const instance_warning_callback COUT;
@@ -201,7 +219,10 @@ extern const instance_warning_callback COUT_THROW;
 extern const instance_warning_callback CLOG_THROW;
 extern const instance_warning_callback CERR_THROW;
 } // namespace instance_warning_callback_config
-using instance_error_callback = void (*)(const char*);
+void SetWarningCallback(instance_warning_callback Warning_Callback);
+void WarningCallback(const char* Message);
+
+using instance_error_callback = instance_warning_callback;
 namespace instance_error_callback_config {
 extern const instance_error_callback NONE;
 extern const instance_error_callback COUT;
@@ -211,6 +232,19 @@ extern const instance_error_callback COUT_THROW;
 extern const instance_error_callback CLOG_THROW;
 extern const instance_error_callback CERR_THROW;
 } // namespace instance_error_callback_config
+void SetErrorCallback(instance_error_callback Error_Callback);
+void ErrorCallback(const char* Message);
+
+using instance_glfw_error_callback = GLFWerrorfun;
+namespace instance_glfw_error_callback_config {
+extern const instance_glfw_error_callback NONE;
+extern const instance_glfw_error_callback FORWARD_TO_VERBOSE_CALLBACK;
+extern const instance_glfw_error_callback FORWARD_TO_INFO_CALLBACK;
+extern const instance_glfw_error_callback FORWARD_TO_WARNING_CALLBACK;
+extern const instance_glfw_error_callback FORWARD_TO_ERROR_CALLBACK;
+} // namespace instance_glfw_error_callback_config
+void SetGlfwCallback(instance_glfw_error_callback GLFW_Error_Callback);
+void GlfwErrorCallback(int Error_Code, const char* Message);
 
 /// @brief Joystick ID and event type of a joystick event.
 struct instance_joystick_event;
@@ -220,24 +254,6 @@ namespace instance_joystick_event_callback_config {
 extern const instance_joystick_event_callback NONE;
 extern const instance_joystick_event_callback APPEND_TO_JOYSTICK_EVENT_BUFFER;
 } // namespace instance_joystick_event_callback_config
-
-/// @brief Sets the GLFW error callback.
-void SetGlfwCallback(instance_glfw_error_callback GLFW_Error_Callback);
-
-/// @brief Sets the GVW warning callback.
-void SetWarningCallback(instance_warning_callback Warning_Callback);
-
-/// @brief Sets the GVW error callback.
-void SetErrorCallback(instance_error_callback Error_Callback);
-
-/// @brief Calls the GLFW error callback.
-void GlfwErrorCallback(int Error_Code, const char* Message);
-
-/// @brief Calls the GVW warning callback.
-void WarningCallback(const char* Message);
-
-/// @brief Calls the GVW error callback.
-void ErrorCallback(const char* Message);
 
 /// @brief Initialize GVW with the default configuration.
 /// @remark Immediately returns if GVW is already initialized.
@@ -273,9 +289,9 @@ namespace window_info_config {
 extern const window_info DEFAULT;
 } // namespace window_info_config
 
-enum class window_key;
+enum struct window_key;
 
-enum class window_key_action;
+enum struct window_key_action;
 
 struct window_key_event;
 using window_character_event = unsigned int;
@@ -420,7 +436,7 @@ namespace cursor_hotspot_config {
 extern const cursor_hotspot DEFAULT;
 } // namespace cursor_hotspot_config
 
-enum class cursor_standard_shape;
+enum struct cursor_standard_shape;
 
 struct cursor_custom_shape_info;
 namespace cursor_custom_shape_info_config {

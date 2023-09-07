@@ -51,58 +51,86 @@ class terminator
     ~terminator() { std::apply(this->deleter, this->args); }
 };
 
-template<typename UserT, typename VulkanT>
-std::vector<UserT> UserItemsMissingInVulkanArray(
-    const std::vector<UserT>& User_Array,
-    const std::vector<VulkanT>& Vulkan_Array,
-    bool (*Is_Identical)(UserT, VulkanT))
+enum struct glfw_bool
 {
-    std::vector<UserT> userStringsMissing = {};
-    std::list<VulkanT> vulkanArrayCopy(Vulkan_Array.begin(),
-                                       Vulkan_Array.end());
-    for (UserT userItem : User_Array) {
-        bool matchFound = false;
-        for (auto vulkanIt = vulkanArrayCopy.begin();
-             vulkanIt != vulkanArrayCopy.end();
-             ++vulkanIt) {
-            if (Is_Identical(userItem, *vulkanIt)) {
-                vulkanIt = vulkanArrayCopy.erase(vulkanIt);
-                matchFound = true;
+    // NOLINTBEGIN
+    eTrue = GLFW_TRUE,
+    eFalse = GLFW_FALSE
+    // NOLINTEND
+};
+
+template<typename Type1,
+         typename Type2,
+         typename Out,
+         typename CallableIdentical,
+         typename CallableGet>
+std::vector<Out> GetCommonElements(const std::vector<Type1>& Arr_1,
+                                   const std::vector<Type2>& Arr_2,
+                                   CallableIdentical Identical,
+                                   CallableGet Get) requires
+    std::is_invocable_r_v<bool, CallableIdentical, Type1, Type2> &&
+    std::is_invocable_r_v<Out, CallableGet, Type1, Type2>
+{
+    const size_t SIZE_1 = Arr_1.size();
+    const size_t SIZE_2 = Arr_2.size();
+    const size_t MAX_COMMON_ELEMENTS = (SIZE_1 > SIZE_2) ? SIZE_1 : SIZE_2;
+    std::vector<Out> commonElements;
+    commonElements.reserve(MAX_COMMON_ELEMENTS);
+    for (const auto& item1 : Arr_1) {
+        for (const auto& item2 : Arr_2) {
+            if (Identical(item1, item2)) {
+                commonElements.emplace_back(Get(item1, item2));
                 break;
             }
         }
-        if (!matchFound) {
-            userStringsMissing.emplace_back(userItem);
-        }
     }
-    return userStringsMissing;
+    commonElements.shrink_to_fit();
+    return commonElements;
 }
 
-template<typename UserT, typename VulkanT>
-std::vector<UserT> UserItemsFoundInVulkanArray(
-    const std::vector<UserT>& User_Array,
-    const std::vector<VulkanT>& Vulkan_Array,
-    bool (*Is_Identical)(UserT, VulkanT))
+template<typename Type1, typename Type2, typename CallableIdentical>
+std::vector<Type1> GetCommonElementsInArr1(const std::vector<Type1>& Arr_1,
+                                           const std::vector<Type2>& Arr_2,
+                                           CallableIdentical Identical) requires
+    std::is_invocable_r_v<bool, CallableIdentical, Type1, Type2>
 {
-    std::vector<UserT> userStringsFound = {};
-    std::list<VulkanT> vulkanArrayCopy(Vulkan_Array.begin(),
-                                       Vulkan_Array.end());
-    for (UserT userItem : User_Array) {
-        bool matchFound = false;
-        for (auto vulkanIt = vulkanArrayCopy.begin();
-             vulkanIt != vulkanArrayCopy.end();
-             ++vulkanIt) {
-            if (Is_Identical(userItem, *vulkanIt)) {
-                vulkanIt = vulkanArrayCopy.erase(vulkanIt);
-                matchFound = true;
+    std::vector<Type1> commonElementsInArr1;
+    commonElementsInArr1.reserve(Arr_1.size());
+    for (const auto& item1 : Arr_1) {
+        for (const auto& item2 : Arr_2) {
+            if (Identical(item1, item2)) {
+                commonElementsInArr1.emplace_back(item1);
                 break;
             }
         }
-        if (matchFound) {
-            userStringsFound.emplace_back(userItem);
+    }
+    commonElementsInArr1.shrink_to_fit();
+    return commonElementsInArr1;
+}
+
+template<typename Type1, typename Type2, typename CallableIdentical>
+std::vector<Type1> GetUncommonElementsInArr1(
+    const std::vector<Type1>& Arr_1,
+    const std::vector<Type2>& Arr_2,
+    CallableIdentical Identical) requires
+    std::is_invocable_r_v<bool, CallableIdentical, Type1, Type2>
+{
+    std::vector<Type1> uncommonElementsInArr1;
+    uncommonElementsInArr1.reserve(Arr_1.size());
+    for (const auto& item1 : Arr_1) {
+        bool matchNotFound = true;
+        for (const auto& item2 : Arr_2) {
+            if (Identical(item1, item2)) {
+                matchNotFound = false;
+                break;
+            }
+        }
+        if (matchNotFound) {
+            uncommonElementsInArr1.emplace_back(item1);
         }
     }
-    return userStringsFound;
+    uncommonElementsInArr1.shrink_to_fit();
+    return uncommonElementsInArr1;
 }
 
 template<typename T>
@@ -194,61 +222,43 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugUtilsMessengerCallbackTemplate(
     void* P_User_Data)
 {
     std::string message;
-
-    switch (Message_Severity) {
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-            message += "[Verbose - ";
-            break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-            message += std::string(ansiec::BOLD) + ansiec::CYAN_FG + "[Info - ";
-            break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-            message +=
-                std::string(ansiec::BOLD) + ansiec::YELLOW_FG + "[Warning - ";
-            break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-            message += std::string(ansiec::BOLD) + ansiec::RED_FG + "[Error - ";
-            break;
-        default:
-            message +=
-                std::string(ansiec::BOLD) + ansiec::MAGENTA_FG + "[Unknown - ";
-            break;
-    }
-
     switch (Message_Type) {
         case VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT:
-            message += "General]: ";
+            message += "(Vulkan | General): ";
             break;
         case VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:
-            message += "Validation]: ";
+            message += "(Vulkan | Validation): ";
             break;
         case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:
-            message += "Performance]: ";
+            message += "(Vulkan | Performance): ";
             break;
         default:
-            message += "Unknown]: ";
+            message += "(Vulkan | Unknown): ";
             break;
     }
-
     message += std::string(P_Callback_Data->pMessage) + ansiec::RESET;
-
     if (P_User_Data != nullptr) {
         message += " - Note: User data for this message was NOT "
                    "null but was ignored.";
     }
-
     PrintFunction(Message_Severity, message.c_str());
-
     return VK_FALSE;
 }
 
 template<callback_print_function PrintFunction>
-void GlfwErrorCallbackTemplate(int Error_Code, const char* Message)
+void VerboseCallbackTemplate(const char* Message)
 {
-    std::string errorMessage = std::string(ansiec::BOLD) + ansiec::RED_FG +
-                               "GLFW error [" + std::to_string(Error_Code) +
-                               "]: " + Message + ansiec::RESET;
-    PrintFunction(errorMessage.c_str());
+    std::string verboseMessage =
+        std::string(ansiec::BOLD) + "GVW verbose: " + Message + ansiec::RESET;
+    PrintFunction(verboseMessage.c_str());
+}
+
+template<callback_print_function PrintFunction>
+void InfoCallbackTemplate(const char* Message)
+{
+    std::string infoMessage = std::string(ansiec::BOLD) + ansiec::CYAN_FG +
+                              "GVW info: " + Message + ansiec::RESET;
+    PrintFunction(infoMessage.c_str());
 }
 
 template<callback_print_function PrintFunction>
@@ -266,5 +276,32 @@ void ErrorCallbackTemplate(const char* Message)
                                "GVW error: " + Message + ansiec::RESET;
     PrintFunction(errorMessage.c_str());
 }
+
+template<callback_print_function PrintFunction>
+void GlfwErrorCallbackTemplate(int Error_Code, const char* Message)
+{
+    std::string errorMessage = std::string(ansiec::BOLD) + ansiec::RED_FG +
+                               "GLFW error [" + std::to_string(Error_Code) +
+                               "]: " + Message + ansiec::RESET;
+    PrintFunction(errorMessage.c_str());
+}
+
+enum struct window_input_mode
+{
+    // NOLINTBEGIN
+    eCursor = GLFW_CURSOR,
+    eStickyKeys = GLFW_STICKY_KEYS,
+    eStickyMouseButtons = GLFW_STICKY_MOUSE_BUTTONS
+    // NOLINTEND
+};
+
+enum struct window_input_mode_cursor
+{
+    // NOLINTBEGIN
+    eNormal = GLFW_CURSOR_NORMAL,
+    eHidden = GLFW_CURSOR_HIDDEN,
+    eDisabled = GLFW_CURSOR_DISABLED
+    // NOLINTEND
+};
 
 } // namespace gvw::internal

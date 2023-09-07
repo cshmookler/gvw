@@ -199,38 +199,55 @@ instance_creation_hints::instance_creation_hints(
 {
 }
 
-void SetGlfwCallback(instance_glfw_error_callback GLFW_Error_Callback)
+void SetVerboseCallback(instance_verbose_callback Verbose_Callback)
 {
-    std::scoped_lock<std::mutex> lock(internal::global::GLFW_MUTEX);
-    internal::global::GLFW_ERROR_CALLBACK = GLFW_Error_Callback;
-    glfwSetErrorCallback(internal::global::GLFW_ERROR_CALLBACK);
+    std::scoped_lock lock(internal::global::VERBOSE_CALLBACK_MUTEX);
+    internal::global::VERBOSE_CALLBACK = Verbose_Callback;
+}
+void VerboseCallback(const char* Message)
+{
+    internal::global::VERBOSE_CALLBACK(Message);
+}
+
+void SetInfoCallback(instance_info_callback Info_Callback)
+{
+    std::scoped_lock lock(internal::global::INFO_CALLBACK_MUTEX);
+    internal::global::INFO_CALLBACK = Info_Callback;
+}
+void InfoCallback(const char* Message)
+{
+    internal::global::INFO_CALLBACK(Message);
 }
 
 void SetWarningCallback(instance_warning_callback Warning_Callback)
 {
-    std::scoped_lock<std::mutex> lock(internal::global::WARNING_CALLBACK_MUTEX);
+    std::scoped_lock lock(internal::global::WARNING_CALLBACK_MUTEX);
     internal::global::WARNING_CALLBACK = Warning_Callback;
 }
-
-void SetErrorCallback(instance_error_callback Error_Callback)
-{
-    std::scoped_lock<std::mutex> lock(internal::global::ERROR_CALLBACK_MUTEX);
-    internal::global::ERROR_CALLBACK = Error_Callback;
-}
-
-void GlfwErrorCallback(int Error_Code, const char* Message)
-{
-    internal::global::GLFW_ERROR_CALLBACK(Error_Code, Message);
-}
-
 void WarningCallback(const char* Message)
 {
     internal::global::WARNING_CALLBACK(Message);
 }
 
+void SetErrorCallback(instance_error_callback Error_Callback)
+{
+    std::scoped_lock lock(internal::global::ERROR_CALLBACK_MUTEX);
+    internal::global::ERROR_CALLBACK = Error_Callback;
+}
 void ErrorCallback(const char* Message)
 {
     internal::global::ERROR_CALLBACK(Message);
+}
+
+void SetGlfwCallback(instance_glfw_error_callback GLFW_Error_Callback)
+{
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    internal::global::GLFW_ERROR_CALLBACK = GLFW_Error_Callback;
+    glfwSetErrorCallback(internal::global::GLFW_ERROR_CALLBACK);
+}
+void GlfwErrorCallback(int Error_Code, const char* Message)
+{
+    internal::global::GLFW_ERROR_CALLBACK(Error_Code, Message);
 }
 
 instance_ptr CreateInstance()

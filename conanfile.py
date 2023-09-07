@@ -39,7 +39,7 @@ class gvw(ConanFile):
     }
 
     # Sources
-    exports_sources = "CMakeLists.txt", "gvw/*", "examples/*"
+    exports_sources = "LICENSE", "CMakeLists.txt", "gvw/*", "src/*", "examples/*", "tests/*", "utils/*"
 
     def validate(self):
         check_min_cppstd(self, "20")
@@ -86,4 +86,10 @@ class gvw(ConanFile):
         cmake.install()
     
     def package_info(self):
-        self.cpp_info.libs = ["gvw"]
+        self.cpp_info.libs = []
+        if self.options.gvw_static:
+            self.cpp_info.libs.append("gvw_static")
+        if self.options.gvw_shared:
+            self.cpp_info.libs.append("gvw_shared")
+        self.cpp_info.libdirs = ["lib"]
+        self.cpp_info.includedirs = ["include"]

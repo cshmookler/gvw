@@ -68,41 +68,29 @@ const instance_debug_utils_message_type
 const instance_debug_utils_messenge_callback
     instance_debug_utils_messenge_callback_config::NONE = nullptr;
 const instance_debug_utils_messenge_callback
-    instance_debug_utils_messenge_callback_config::
-        FORWARD_TO_WARNING_AND_ERROR_CALLBACKS =
-            internal::DebugUtilsMessengerCallbackTemplate<
-                [](VkDebugUtilsMessageSeverityFlagBitsEXT Message_Severity,
-                   const char* Message) {
-                    switch (Message_Severity) {
-                        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-                        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-                        default:
-                            std::cout << Message << "\n";
-                            break;
-                        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-                            WarningCallback(Message);
-                            break;
-                        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-                            ErrorCallback(Message);
-                            break;
-                    }
-                }>;
+    instance_debug_utils_messenge_callback_config::FORWARD_TO_GVW_CALLBACKS =
+        internal::DebugUtilsMessengerCallbackTemplate<
+            [](VkDebugUtilsMessageSeverityFlagBitsEXT Message_Severity,
+               const char* Message) {
+                switch (Message_Severity) {
+                    default:
+                    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+                        VerboseCallback(Message);
+                        break;
+                    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+                        InfoCallback(Message);
+                        break;
+                    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+                        WarningCallback(Message);
+                        break;
+                    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+                        ErrorCallback(Message);
+                        break;
+                }
+            }>;
 
 const instance_debug_utils_messenger_info
     instance_debug_utils_messenger_info_config::DEFAULT;
-
-const instance_glfw_error_callback instance_glfw_error_callback_config::NONE =
-    nullptr;
-const instance_glfw_error_callback
-    instance_glfw_error_callback_config::FORWARD_TO_WARNING_CALLBACK =
-        internal::GlfwErrorCallbackTemplate<[](const char* Message) {
-            WarningCallback(Message);
-        }>;
-const instance_glfw_error_callback
-    instance_glfw_error_callback_config::FORWARD_TO_ERROR_CALLBACK =
-        internal::GlfwErrorCallbackTemplate<[](const char* Message) {
-            ErrorCallback(Message);
-        }>;
 
 const instance_layers instance_layers_config::NONE;
 const instance_layers instance_layers_config::VALIDATION = {
@@ -118,38 +106,109 @@ const instance_extensions
         VK_EXT_DEBUG_UTILS_EXTENSION_NAME
     };
 
+const instance_verbose_callback instance_verbose_callback_config::NONE =
+    nullptr;
+const instance_verbose_callback instance_verbose_callback_config::COUT =
+    internal::VerboseCallbackTemplate<[](const char* Message) {
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
+        std::cout << Message << std::endl;
+    }>;
+const instance_verbose_callback instance_verbose_callback_config::CLOG =
+    internal::VerboseCallbackTemplate<[](const char* Message) {
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
+        std::clog << Message << std::endl;
+    }>;
+const instance_verbose_callback instance_verbose_callback_config::CERR =
+    internal::VerboseCallbackTemplate<[](const char* Message) {
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
+        std::cerr << Message << "\n";
+    }>;
+const instance_verbose_callback instance_verbose_callback_config::COUT_THROW =
+    internal::VerboseCallbackTemplate<[](const char* Message) {
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
+        std::cout << Message << std::endl;
+        throw std::runtime_error(Message);
+    }>;
+const instance_verbose_callback instance_verbose_callback_config::CLOG_THROW =
+    internal::VerboseCallbackTemplate<[](const char* Message) {
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
+        std::clog << Message << std::endl;
+        throw std::runtime_error(Message);
+    }>;
+const instance_verbose_callback instance_verbose_callback_config::CERR_THROW =
+    internal::VerboseCallbackTemplate<[](const char* Message) {
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
+        std::cerr << Message << "\n";
+        throw std::runtime_error(Message);
+    }>;
+
+const instance_info_callback instance_info_callback_config::NONE = nullptr;
+const instance_info_callback instance_info_callback_config::COUT =
+    internal::InfoCallbackTemplate<[](const char* Message) {
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
+        std::cout << Message << std::endl;
+    }>;
+const instance_info_callback instance_info_callback_config::CLOG =
+    internal::InfoCallbackTemplate<[](const char* Message) {
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
+        std::clog << Message << std::endl;
+    }>;
+const instance_info_callback instance_info_callback_config::CERR =
+    internal::InfoCallbackTemplate<[](const char* Message) {
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
+        std::cerr << Message << "\n";
+    }>;
+const instance_info_callback instance_info_callback_config::COUT_THROW =
+    internal::InfoCallbackTemplate<[](const char* Message) {
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
+        std::cout << Message << std::endl;
+        throw std::runtime_error(Message);
+    }>;
+const instance_info_callback instance_info_callback_config::CLOG_THROW =
+    internal::InfoCallbackTemplate<[](const char* Message) {
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
+        std::clog << Message << std::endl;
+        throw std::runtime_error(Message);
+    }>;
+const instance_info_callback instance_info_callback_config::CERR_THROW =
+    internal::InfoCallbackTemplate<[](const char* Message) {
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
+        std::cerr << Message << "\n";
+        throw std::runtime_error(Message);
+    }>;
+
 const instance_warning_callback instance_warning_callback_config::NONE =
     nullptr;
 const instance_warning_callback instance_warning_callback_config::COUT =
     internal::WarningCallbackTemplate<[](const char* Message) {
-        std::scoped_lock<std::mutex> lock(internal::global::CONSOLE_MUTEX);
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
         std::cout << Message << std::endl;
     }>;
 const instance_warning_callback instance_warning_callback_config::CLOG =
     internal::WarningCallbackTemplate<[](const char* Message) {
-        std::scoped_lock<std::mutex> lock(internal::global::CONSOLE_MUTEX);
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
         std::clog << Message << std::endl;
     }>;
 const instance_warning_callback instance_warning_callback_config::CERR =
     internal::WarningCallbackTemplate<[](const char* Message) {
-        std::scoped_lock<std::mutex> lock(internal::global::CONSOLE_MUTEX);
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
         std::cerr << Message << "\n";
     }>;
 const instance_warning_callback instance_warning_callback_config::COUT_THROW =
     internal::WarningCallbackTemplate<[](const char* Message) {
-        std::scoped_lock<std::mutex> lock(internal::global::CONSOLE_MUTEX);
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
         std::cout << Message << std::endl;
         throw std::runtime_error(Message);
     }>;
 const instance_warning_callback instance_warning_callback_config::CLOG_THROW =
     internal::WarningCallbackTemplate<[](const char* Message) {
-        std::scoped_lock<std::mutex> lock(internal::global::CONSOLE_MUTEX);
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
         std::clog << Message << std::endl;
         throw std::runtime_error(Message);
     }>;
 const instance_warning_callback instance_warning_callback_config::CERR_THROW =
     internal::WarningCallbackTemplate<[](const char* Message) {
-        std::scoped_lock<std::mutex> lock(internal::global::CONSOLE_MUTEX);
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
         std::cerr << Message << "\n";
         throw std::runtime_error(Message);
     }>;
@@ -157,37 +216,60 @@ const instance_warning_callback instance_warning_callback_config::CERR_THROW =
 const instance_error_callback instance_error_callback_config::NONE = nullptr;
 const instance_error_callback instance_error_callback_config::COUT =
     internal::ErrorCallbackTemplate<[](const char* Message) {
-        std::scoped_lock<std::mutex> lock(internal::global::CONSOLE_MUTEX);
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
         std::cout << Message << std::endl;
     }>;
 const instance_error_callback instance_error_callback_config::CLOG =
     internal::ErrorCallbackTemplate<[](const char* Message) {
-        std::scoped_lock<std::mutex> lock(internal::global::CONSOLE_MUTEX);
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
         std::clog << Message << std::endl;
     }>;
 const instance_error_callback instance_error_callback_config::CERR =
     internal::ErrorCallbackTemplate<[](const char* Message) {
-        std::scoped_lock<std::mutex> lock(internal::global::CONSOLE_MUTEX);
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
         std::cerr << Message << "\n";
     }>;
 const instance_error_callback instance_error_callback_config::COUT_THROW =
     internal::ErrorCallbackTemplate<[](const char* Message) {
-        std::scoped_lock<std::mutex> lock(internal::global::CONSOLE_MUTEX);
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
         std::cout << Message << std::endl;
         throw std::runtime_error(Message);
     }>;
 const instance_error_callback instance_error_callback_config::CLOG_THROW =
     internal::ErrorCallbackTemplate<[](const char* Message) {
-        std::scoped_lock<std::mutex> lock(internal::global::CONSOLE_MUTEX);
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
         std::clog << Message << std::endl;
         throw std::runtime_error(Message);
     }>;
 const instance_error_callback instance_error_callback_config::CERR_THROW =
     internal::ErrorCallbackTemplate<[](const char* Message) {
-        std::scoped_lock<std::mutex> lock(internal::global::CONSOLE_MUTEX);
+        std::scoped_lock lock(internal::global::CONSOLE_MUTEX);
         std::cerr << Message << "\n";
         throw std::runtime_error(Message);
     }>;
+
+const instance_glfw_error_callback instance_glfw_error_callback_config::NONE =
+    nullptr;
+const instance_glfw_error_callback
+    instance_glfw_error_callback_config::FORWARD_TO_VERBOSE_CALLBACK =
+        internal::GlfwErrorCallbackTemplate<[](const char* Message) {
+            VerboseCallback(Message);
+        }>;
+const instance_glfw_error_callback
+    instance_glfw_error_callback_config::FORWARD_TO_INFO_CALLBACK =
+        internal::GlfwErrorCallbackTemplate<[](const char* Message) {
+            InfoCallback(Message);
+        }>;
+const instance_glfw_error_callback
+    instance_glfw_error_callback_config::FORWARD_TO_WARNING_CALLBACK =
+        internal::GlfwErrorCallbackTemplate<[](const char* Message) {
+            WarningCallback(Message);
+        }>;
+const instance_glfw_error_callback
+    instance_glfw_error_callback_config::FORWARD_TO_ERROR_CALLBACK =
+        internal::GlfwErrorCallbackTemplate<[](const char* Message) {
+            ErrorCallback(Message);
+        }>;
 
 const instance_joystick_event_callback
     instance_joystick_event_callback_config::NONE = nullptr;
@@ -195,7 +277,7 @@ const instance_joystick_event_callback
     instance_joystick_event_callback_config::APPEND_TO_JOYSTICK_EVENT_BUFFER =
         (instance_joystick_event_callback)[](int JID, int Event)
 {
-    std::scoped_lock<std::mutex> lock(internal::global::GLFW_MUTEX);
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
     internal::global::JOYSTICK_EVENTS.emplace_back(JID, Event);
 };
 
@@ -219,8 +301,8 @@ const window_key_event_callback
                                       int Mods)
 {
     auto* windowPtr =
-        static_cast<window*>(internal::GetUserPointerNoMutex(Window_Handle));
-    std::scoped_lock<std::mutex> lock(windowPtr->keyEventsMutex);
+        static_cast<window*>(internal::GetUserPointer(Window_Handle));
+    std::scoped_lock lock(windowPtr->keyEventsMutex);
     windowPtr->keyEvents.emplace_back(
         window_key(Key), Scancode, window_key_action(Action), Mods);
 };
@@ -233,8 +315,8 @@ const window_character_event_callback
                                             unsigned int Code_Point)
 {
     auto* windowPtr =
-        static_cast<window*>(internal::GetUserPointerNoMutex(Window_Handle));
-    std::scoped_lock<std::mutex> lock(windowPtr->characterEventsMutex);
+        static_cast<window*>(internal::GetUserPointer(Window_Handle));
+    std::scoped_lock lock(windowPtr->characterEventsMutex);
     windowPtr->characterEvents.emplace_back(Code_Point);
 };
 
@@ -249,8 +331,8 @@ const window_cursor_position_event_callback
                                                       double Y_Position)
 {
     auto* windowPtr =
-        static_cast<window*>(internal::GetUserPointerNoMutex(Window_Handle));
-    std::scoped_lock<std::mutex> lock(windowPtr->cursorPositionEventsMutex);
+        static_cast<window*>(internal::GetUserPointer(Window_Handle));
+    std::scoped_lock lock(windowPtr->cursorPositionEventsMutex);
     windowPtr->cursorPositionEvents.emplace_back(X_Position, Y_Position);
 };
 
@@ -263,8 +345,8 @@ const window_cursor_enter_event_callback
                                                    int Entered)
 {
     auto* windowPtr =
-        static_cast<window*>(internal::GetUserPointerNoMutex(Window_Handle));
-    std::scoped_lock<std::mutex> lock(windowPtr->cursorEnterEventsMutex);
+        static_cast<window*>(internal::GetUserPointer(Window_Handle));
+    std::scoped_lock lock(windowPtr->cursorEnterEventsMutex);
     windowPtr->cursorEnterEvents.emplace_back(Entered);
 };
 
@@ -279,8 +361,8 @@ const window_mouse_button_event_callback
                                                    int Mods)
 {
     auto* windowPtr =
-        static_cast<window*>(internal::GetUserPointerNoMutex(Window_Handle));
-    std::scoped_lock<std::mutex> lock(windowPtr->mouseButtonEventsMutex);
+        static_cast<window*>(internal::GetUserPointer(Window_Handle));
+    std::scoped_lock lock(windowPtr->mouseButtonEventsMutex);
     windowPtr->mouseButtonEvents.emplace_back(Button, Action, Mods);
 };
 
@@ -293,8 +375,8 @@ const window_scroll_event_callback
                                          double Y_Offset)
 {
     auto* windowPtr =
-        static_cast<window*>(internal::GetUserPointerNoMutex(Window_Handle));
-    std::scoped_lock<std::mutex> lock(windowPtr->scrollEventsMutex);
+        static_cast<window*>(internal::GetUserPointer(Window_Handle));
+    std::scoped_lock lock(windowPtr->scrollEventsMutex);
     windowPtr->scrollEvents.emplace_back(X_Offset, Y_Offset);
 };
 
@@ -307,8 +389,8 @@ const window_file_drop_event_callback
                                             const char** Paths)
 {
     auto* windowPtr =
-        static_cast<window*>(internal::GetUserPointerNoMutex(Window_Handle));
-    std::scoped_lock<std::mutex> lock(windowPtr->fileDropEventsMutex);
+        static_cast<window*>(internal::GetUserPointer(Window_Handle));
+    std::scoped_lock lock(windowPtr->fileDropEventsMutex);
     windowPtr->fileDropEvents.emplace_back(Count, Paths);
 };
 
@@ -319,8 +401,8 @@ const window_close_event_callback
         (window_close_event_callback)[](GLFWwindow * Window_Handle)
 {
     auto* windowPtr =
-        static_cast<window*>(internal::GetUserPointerNoMutex(Window_Handle));
-    std::scoped_lock<std::mutex> lock(windowPtr->closeEventsMutex);
+        static_cast<window*>(internal::GetUserPointer(Window_Handle));
+    std::scoped_lock lock(windowPtr->closeEventsMutex);
     windowPtr->closeEvents++;
 };
 
@@ -333,8 +415,8 @@ const window_size_event_callback
                                        int Height)
 {
     auto* windowPtr =
-        static_cast<window*>(internal::GetUserPointerNoMutex(Window_Handle));
-    std::scoped_lock<std::mutex> lock(windowPtr->sizeEventsMutex);
+        static_cast<window*>(internal::GetUserPointer(Window_Handle));
+    std::scoped_lock lock(windowPtr->sizeEventsMutex);
     windowPtr->sizeEvents.emplace_back(Width, Height);
 };
 
@@ -349,8 +431,8 @@ const window_framebuffer_size_event_callback
                                                        int Height)
 {
     auto* windowPtr =
-        static_cast<window*>(internal::GetUserPointerNoMutex(Window_Handle));
-    std::scoped_lock<std::mutex> lock(windowPtr->framebufferSizeEventsMutex);
+        static_cast<window*>(internal::GetUserPointer(Window_Handle));
+    std::scoped_lock lock(windowPtr->framebufferSizeEventsMutex);
     windowPtr->framebufferSizeEvents.emplace_back(Width, Height);
 };
 
@@ -364,8 +446,8 @@ const window_content_scale_event_callback
                                                     float Y_Scale)
 {
     auto* windowPtr =
-        static_cast<window*>(internal::GetUserPointerNoMutex(Window_Handle));
-    std::scoped_lock<std::mutex> lock(windowPtr->contentScaleEventsMutex);
+        static_cast<window*>(internal::GetUserPointer(Window_Handle));
+    std::scoped_lock lock(windowPtr->contentScaleEventsMutex);
     windowPtr->contentScaleEvents.emplace_back(X_Scale, Y_Scale);
 };
 
@@ -378,8 +460,8 @@ const window_position_event_callback
                                            int Y_Position)
 {
     auto* windowPtr =
-        static_cast<window*>(internal::GetUserPointerNoMutex(Window_Handle));
-    std::scoped_lock<std::mutex> lock(windowPtr->positionEventsMutex);
+        static_cast<window*>(internal::GetUserPointer(Window_Handle));
+    std::scoped_lock lock(windowPtr->positionEventsMutex);
     windowPtr->positionEvents.emplace_back(X_Position, Y_Position);
 };
 
@@ -391,8 +473,8 @@ const window_iconify_event_callback
                                           int Iconified)
 {
     auto* windowPtr =
-        static_cast<window*>(internal::GetUserPointerNoMutex(Window_Handle));
-    std::scoped_lock<std::mutex> lock(windowPtr->iconifyEventsMutex);
+        static_cast<window*>(internal::GetUserPointer(Window_Handle));
+    std::scoped_lock lock(windowPtr->iconifyEventsMutex);
     windowPtr->iconifyEvents.emplace_back(Iconified);
 };
 
@@ -404,8 +486,8 @@ const window_maximize_event_callback
                                            int Maximized)
 {
     auto* windowPtr =
-        static_cast<window*>(internal::GetUserPointerNoMutex(Window_Handle));
-    std::scoped_lock<std::mutex> lock(windowPtr->maximizeEventsMutex);
+        static_cast<window*>(internal::GetUserPointer(Window_Handle));
+    std::scoped_lock lock(windowPtr->maximizeEventsMutex);
     windowPtr->maximizeEvents.emplace_back(Maximized);
 };
 
@@ -416,8 +498,8 @@ const window_focus_event_callback
         (window_focus_event_callback)[](GLFWwindow * Window_Handle, int Focused)
 {
     auto* windowPtr =
-        static_cast<window*>(internal::GetUserPointerNoMutex(Window_Handle));
-    std::scoped_lock<std::mutex> lock(windowPtr->focusEventsMutex);
+        static_cast<window*>(internal::GetUserPointer(Window_Handle));
+    std::scoped_lock lock(windowPtr->focusEventsMutex);
     windowPtr->focusEvents.emplace_back(Focused);
 };
 
@@ -428,8 +510,8 @@ const window_refresh_event_callback
         (window_refresh_event_callback)[](GLFWwindow * Window_Handle)
 {
     auto* windowPtr =
-        static_cast<window*>(internal::GetUserPointerNoMutex(Window_Handle));
-    std::scoped_lock<std::mutex> lock(windowPtr->refreshEventsMutex);
+        static_cast<window*>(internal::GetUserPointer(Window_Handle));
+    std::scoped_lock lock(windowPtr->refreshEventsMutex);
     windowPtr->refreshEvents++;
 };
 
@@ -599,54 +681,100 @@ const device_selection_function
 
         // Select the first available surface format.
         vk::SurfaceFormatKHR selectedPhysicalDeviceSurfaceFormat = {};
-        if (surfaceFormats.has_value()) {
-            selectedPhysicalDeviceSurfaceFormat = surfaceFormats.value().at(0);
-        }
+        /// @todo Look back at the use of std::optional in the function.
+        // if (surfaceFormats.has_value()) {
+        //     selectedPhysicalDeviceSurfaceFormat =
+        //     surfaceFormats.value().at(0);
+        // }
+        selectedPhysicalDeviceSurfaceFormat = surfaceFormats.at(0);
 
         vk::PresentModeKHR selectedPhysicalDevicePresentMode = {};
-        if (presentModes.has_value()) {
-            int selectedPresentModeScore = -1;
-            vk::PresentModeKHR currentPhysicalDevicePresentMode = {};
-            int currentPresentModeScore = 0;
-            for (const auto& presentMode : presentModes.value()) {
-                switch (presentMode) {
-                    case vk::PresentModeKHR::eMailbox:
-                        currentPresentModeScore = 5; // NOLINT
-                        currentPhysicalDevicePresentMode =
-                            vk::PresentModeKHR::eMailbox;
-                        break;
-                    case vk::PresentModeKHR::eFifo:
-                        currentPresentModeScore = 4;
-                        currentPhysicalDevicePresentMode =
-                            vk::PresentModeKHR::eFifo;
-                        break;
-                    case vk::PresentModeKHR::eFifoRelaxed:
-                        currentPresentModeScore = 3;
-                        currentPhysicalDevicePresentMode =
-                            vk::PresentModeKHR::eFifoRelaxed;
-                        break;
-                    case vk::PresentModeKHR::eImmediate:
-                        currentPresentModeScore = 2;
-                        currentPhysicalDevicePresentMode =
-                            vk::PresentModeKHR::eImmediate;
-                        break;
-                    case vk::PresentModeKHR::eSharedContinuousRefresh:
-                        currentPresentModeScore = 1;
-                        currentPhysicalDevicePresentMode =
-                            vk::PresentModeKHR::eSharedContinuousRefresh;
-                        break;
-                    case vk::PresentModeKHR::eSharedDemandRefresh:
-                        currentPresentModeScore = 0;
-                        currentPhysicalDevicePresentMode =
-                            vk::PresentModeKHR::eSharedDemandRefresh;
-                        break;
-                }
+        // if (presentModes.has_value()) {
+        //     int selectedPresentModeScore = -1;
+        //     vk::PresentModeKHR currentPhysicalDevicePresentMode = {};
+        //     int currentPresentModeScore = 0;
+        //     for (const auto& presentMode : presentModes.value()) {
+        //         switch (presentMode) {
+        //             case vk::PresentModeKHR::eMailbox:
+        //                 currentPresentModeScore = 5; // NOLINT
+        //                 currentPhysicalDevicePresentMode =
+        //                     vk::PresentModeKHR::eMailbox;
+        //                 break;
+        //             case vk::PresentModeKHR::eFifo:
+        //                 currentPresentModeScore = 4;
+        //                 currentPhysicalDevicePresentMode =
+        //                     vk::PresentModeKHR::eFifo;
+        //                 break;
+        //             case vk::PresentModeKHR::eFifoRelaxed:
+        //                 currentPresentModeScore = 3;
+        //                 currentPhysicalDevicePresentMode =
+        //                     vk::PresentModeKHR::eFifoRelaxed;
+        //                 break;
+        //             case vk::PresentModeKHR::eImmediate:
+        //                 currentPresentModeScore = 2;
+        //                 currentPhysicalDevicePresentMode =
+        //                     vk::PresentModeKHR::eImmediate;
+        //                 break;
+        //             case vk::PresentModeKHR::eSharedContinuousRefresh:
+        //                 currentPresentModeScore = 1;
+        //                 currentPhysicalDevicePresentMode =
+        //                     vk::PresentModeKHR::eSharedContinuousRefresh;
+        //                 break;
+        //             case vk::PresentModeKHR::eSharedDemandRefresh:
+        //                 currentPresentModeScore = 0;
+        //                 currentPhysicalDevicePresentMode =
+        //                     vk::PresentModeKHR::eSharedDemandRefresh;
+        //                 break;
+        //         }
 
-                if (currentPresentModeScore > selectedPresentModeScore) {
-                    selectedPresentModeScore = currentPresentModeScore;
-                    selectedPhysicalDevicePresentMode =
-                        currentPhysicalDevicePresentMode;
-                }
+        //         if (currentPresentModeScore > selectedPresentModeScore) {
+        //             selectedPresentModeScore = currentPresentModeScore;
+        //             selectedPhysicalDevicePresentMode =
+        //                 currentPhysicalDevicePresentMode;
+        //         }
+        //     }
+        // }
+        int selectedPresentModeScore = -1;
+        vk::PresentModeKHR currentPhysicalDevicePresentMode = {};
+        int currentPresentModeScore = 0;
+        for (const auto& presentMode : presentModes) {
+            switch (presentMode) {
+                case vk::PresentModeKHR::eMailbox:
+                    currentPresentModeScore = 5; // NOLINT
+                    currentPhysicalDevicePresentMode =
+                        vk::PresentModeKHR::eMailbox;
+                    break;
+                case vk::PresentModeKHR::eFifo:
+                    currentPresentModeScore = 4;
+                    currentPhysicalDevicePresentMode =
+                        vk::PresentModeKHR::eFifo;
+                    break;
+                case vk::PresentModeKHR::eFifoRelaxed:
+                    currentPresentModeScore = 3;
+                    currentPhysicalDevicePresentMode =
+                        vk::PresentModeKHR::eFifoRelaxed;
+                    break;
+                case vk::PresentModeKHR::eImmediate:
+                    currentPresentModeScore = 2;
+                    currentPhysicalDevicePresentMode =
+                        vk::PresentModeKHR::eImmediate;
+                    break;
+                case vk::PresentModeKHR::eSharedContinuousRefresh:
+                    currentPresentModeScore = 1;
+                    currentPhysicalDevicePresentMode =
+                        vk::PresentModeKHR::eSharedContinuousRefresh;
+                    break;
+                case vk::PresentModeKHR::eSharedDemandRefresh:
+                    currentPresentModeScore = 0;
+                    currentPhysicalDevicePresentMode =
+                        vk::PresentModeKHR::eSharedDemandRefresh;
+                    break;
+            }
+
+            if (currentPresentModeScore > selectedPresentModeScore) {
+                selectedPresentModeScore = currentPresentModeScore;
+                selectedPhysicalDevicePresentMode =
+                    currentPhysicalDevicePresentMode;
             }
         }
 

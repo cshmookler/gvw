@@ -96,7 +96,7 @@ class instance : internal::uncopyable_unmovable // NOLINT
     [[nodiscard]] std::vector<gvw::device_ptr> SelectPhysicalDevices(
         const device_selection_info& Device_Info =
             device_selection_info_config::DEFAULT,
-        const std::optional<vk::SurfaceKHR>& Window_Surface = std::nullopt);
+        const vk::SurfaceKHR* Window_Surface = nullptr);
 
     /// @brief Creates a monitor object.
     [[nodiscard]] monitor_ptr GetMonitor(

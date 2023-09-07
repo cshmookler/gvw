@@ -125,7 +125,7 @@ int main() // NOLINT
         .image = cursorImage, .hotspot = cursorImage->GetSize() / 2
     };
     auto cursor = gvw->CreateCursor(cursorInfo);
-    plat->SetCursor(cursor);
+    plat->SetCursorShape(cursor);
     plat->SetIcon(cursorImage);
 
     std::vector<std::pair<gvw::coordinate<int>, float>> blockCreationInfos;
@@ -163,7 +163,7 @@ int main() // NOLINT
               .sizeOfDynamicDataVerticesInBytes =
                   (sizeof(gvw::xy_rgb) * blockVertices.size()) }));
         blocks.back()->DrawFrame(blockVertices);
-        blocks.back()->SetCursor(cursor);
+        blocks.back()->SetCursorShape(cursor);
         blocks.back()->SetIcon(cursorImage);
     }
 

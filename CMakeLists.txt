@@ -96,8 +96,11 @@ if(GVW_SHARED)
     install(TARGETS ${GVW_SHARED_NAME} DESTINATION lib)
 endif()
 
-# Install GVW source files
-install(DIRECTORY gvw DESTINATION include)
+# Install GVW files
+install(DIRECTORY "gvw" DESTINATION "include")
+install(DIRECTORY "src" DESTINATION "include")
+install(DIRECTORY "utils" DESTINATION "include")
+install(FILES "LICENSE" DESTINATION "licenses")
 
 # Build GVW tests
 if(GVW_TESTS)

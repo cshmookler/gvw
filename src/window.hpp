@@ -205,6 +205,12 @@ class window : public internal::uncopyable_unmovable // NOLINT
     /// @brief Sets an attribute of the window.
     void SetWindowAttribute(int Attribute, int Value);
 
+    /// @brief Sets the input mode of the window.
+    void SetInputMode(int Mode, int Value);
+
+    /// @brief Returns the value of an input mode of the window.
+    [[nodiscard]] int GetInputMode(int Mode);
+
     /// @brief Sets GLFW event callbacks. Passing no arguments sets all default
     /// event callbacks, which populate the event buffers.
     /// @warning This function is NOT thread safe.
@@ -368,6 +374,10 @@ class window : public internal::uncopyable_unmovable // NOLINT
     /// @brief Returns the state of a key.
     [[nodiscard]] window_key_action GetKeyState(window_key Key);
 
+    [[nodiscard]] bool IsKeyPressed(window_key Key);
+    [[nodiscard]] bool IsKeyReleased(window_key Key);
+    [[nodiscard]] bool IsKeyRepeating(window_key Key);
+
     /// @brief Returns the position of the cursor.
     [[nodiscard]] coordinate<double> GetCursorPosition();
 
@@ -504,16 +514,28 @@ class window : public internal::uncopyable_unmovable // NOLINT
         const std::optional<coordinate<int>>& Position = std::nullopt,
         const std::optional<area<int>>& Size = std::nullopt);
 
-    /// @brief Sets a custom cursor.
-    void SetCursor(const cursor_ptr& Cursor);
+    void SetCursorShape(const cursor_ptr& Cursor);
 
-    /// @brief Resets the cursor.
-    void ResetCursor();
+    void ResetCursorShape();
 
-    /// @brief Sets a custom icon.
+    void HideCursor();
+    [[nodiscard]] bool IsCursorHidden();
+    void DisableCursor();
+    [[nodiscard]] bool IsCursorDisabled();
+
+    void ResetCursorVisibility();
+    [[nodiscard]] bool IsCursorVisible();
+
+    void EnableStickyKeys();
+    void DisableStickyKeys();
+    [[nodiscard]] bool IsStickyKeysEnabled();
+
+    void EnableStickyMouseButtons();
+    void DisableStickyMouseButtons();
+    [[nodiscard]] bool IsStickyMouseButtonsEnabled();
+
     void SetIcon(const image_ptr& Icon);
 
-    /// @brief Resets the icon.
     void ResetIcon();
 };
 
