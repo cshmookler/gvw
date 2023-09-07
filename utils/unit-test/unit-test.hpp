@@ -4,44 +4,48 @@
 #include <iostream>
 #include <exception>
 #include <mutex>
-#include <sstream>
-
-// External includes
-#include <boost/exception/diagnostic_information.hpp>
 
 // Local includes
 #include "../ansiec/ansiec.hpp"
 
 namespace test {
 
-namespace {
+namespace internal {
 
-std::mutex OUT_MUTEX; // NOLINT
+// Global variables
+std::mutex CONSOLE_MUTEX; // NOLINT
 
-} // anonymous namespace
+} // namespace internal
 
+void SynchronizedPrintToConsole(const std::string& Message)
+{
+    std::scoped_lock lock(internal::CONSOLE_MUTEX);
+    std::cout << Message;
+}
+
+/// @warning Only std::runtime_error exceptions are caught.
 template<typename Func, typename... Args>
 bool ForThrow(const char* Name, Func&& Function, Args&&... Arguments)
 {
-    std::stringstream log;
-    log << ansiec::BOLD << ansiec::CYAN_FG
-        << "[Unit Test]: " << ansiec::YELLOW_FG << "\"" << Name << "\""
-        << ansiec::RESET << " -> ";
+    std::string message = std::string(ansiec::BOLD) + ansiec::CYAN_FG +
+                          "[Unit Test]: " + ansiec::YELLOW_FG + "\"" + Name +
+                          "\"" + ansiec::RESET + " -> ";
+
     try {
         Function(std::forward<Args>(Arguments)...);
-    } catch (...) {
-        log << ansiec::BOLD << ansiec::RED_FG << "FAILED" << ansiec::RESET
-            << " -> " << boost::current_exception_diagnostic_information()
-            << "\n";
-        OUT_MUTEX.lock();
-        std::cout << log.str();
-        OUT_MUTEX.unlock();
+    } catch (const std::runtime_error& e) {
+
+        message += std::string(ansiec::BOLD) + ansiec::RED_FG + "FAILED" +
+                   ansiec::RESET + " -> " + e.what() + "\n";
+        SynchronizedPrintToConsole(message);
+
         return false;
     }
-    log << ansiec::BOLD << ansiec::GREEN_FG << "PASSED\n" << ansiec::RESET;
-    OUT_MUTEX.lock();
-    std::cout << log.str();
-    OUT_MUTEX.unlock();
+
+    message += std::string(ansiec::BOLD) + ansiec::GREEN_FG + "PASSED\n" +
+               ansiec::RESET;
+    SynchronizedPrintToConsole(message);
+
     return true;
 }
 

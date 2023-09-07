@@ -224,16 +224,16 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugUtilsMessengerCallbackTemplate(
     std::string message;
     switch (Message_Type) {
         case VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT:
-            message += "(Vulkan | General): ";
+            message += "Vulkan: General: ";
             break;
         case VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:
-            message += "(Vulkan | Validation): ";
+            message += "Vulkan: Validation: ";
             break;
         case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:
-            message += "(Vulkan | Performance): ";
+            message += "Vulkan: Performance: ";
             break;
         default:
-            message += "(Vulkan | Unknown): ";
+            message += "Vulkan: Unknown: ";
             break;
     }
     message += std::string(P_Callback_Data->pMessage) + ansiec::RESET;
@@ -289,18 +289,22 @@ void GlfwErrorCallbackTemplate(int Error_Code, const char* Message)
 enum struct window_input_mode
 {
     // NOLINTBEGIN
-    eCursor = GLFW_CURSOR,
-    eStickyKeys = GLFW_STICKY_KEYS,
-    eStickyMouseButtons = GLFW_STICKY_MOUSE_BUTTONS
+
+    eCursor = 0x00033001,            // GLFW_CURSOR
+    eStickyKeys = 0x00033002,        // GLFW_STICKY_KEYS
+    eStickyMouseButtons = 0x00033003 // GLFW_STICKY_MOUSE_BUTTONS
+
     // NOLINTEND
 };
 
 enum struct window_input_mode_cursor
 {
     // NOLINTBEGIN
-    eNormal = GLFW_CURSOR_NORMAL,
-    eHidden = GLFW_CURSOR_HIDDEN,
-    eDisabled = GLFW_CURSOR_DISABLED
+
+    eNormal = 0x00034001,  // GLFW_CURSOR_NORMAL
+    eHidden = 0x00034002,  // GLFW_CURSOR_HIDDEN
+    eDisabled = 0x00034003 // GLFW_CURSOR_DISABLED
+
     // NOLINTEND
 };
 

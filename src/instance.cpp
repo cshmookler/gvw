@@ -418,4 +418,16 @@ void instance::SetClipboard(const char* Data) // NOLINT
     glfwSetClipboardString(nullptr, Data);
 }
 
+int instance::GetKeyScancode(window_key Key) // NOLINT
+{
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    return glfwGetKeyScancode(static_cast<int>(Key));
+}
+
+const char* instance::GetKeyName(window_key Key, int Scancode) // NOLINT
+{
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    return glfwGetKeyName(static_cast<int>(Key), Scancode);
+}
+
 } // namespace gvw

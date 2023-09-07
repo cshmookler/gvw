@@ -110,20 +110,17 @@ class instance : internal::uncopyable_unmovable // NOLINT
     /// @brief Returns all monitors.
     [[nodiscard]] std::vector<monitor_ptr> AllMonitors();
 
-    /// @brief Creates a standard GLFW cursor.
     [[nodiscard]] cursor_ptr CreateCursor(
         cursor_standard_shape Cursor_Standard_Shape =
             cursor_standard_shape::eArrow);
-
-    /// @brief Creates a custom GLFW cursor.
     [[nodiscard]] cursor_ptr CreateCursor(
         const cursor_custom_shape_info& Cursor_Custom_Shape_Info);
 
-    /// @brief Returns the clipboard.
     [[nodiscard]] const char* GetClipboard();
-
-    /// @brief Sets the clipboard.
     void SetClipboard(const char* Data);
+
+    int GetKeyScancode(window_key Key);
+    const char* GetKeyName(window_key Key, int Scancode);
 };
 
 } // namespace gvw

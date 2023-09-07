@@ -318,45 +318,55 @@ class creation_hint_int
 enum struct creation_hint_client_api
 {
     // NOLINTBEGIN
-    eOpenGL = GLFW_OPENGL_API,
-    eOpenGLES = GLFW_OPENGL_ES_API,
-    eNone = GLFW_NO_API
+
+    eOpenGL = 0x00030001,   // GLFW_OPENGL_API
+    eOpenGLES = 0x00030002, // GLFW_OPENGL_ES_API
+    eNone = 0               // GLFW_NO_API
+
     // NOLINTEND
 };
 
 enum struct creation_hint_context_creation_api
 {
     // NOLINTBEGIN
-    eNativeContext = GLFW_NATIVE_CONTEXT_API,
-    eEGLContext = GLFW_EGL_CONTEXT_API,
-    eOSMesaContext = GLFW_OSMESA_CONTEXT_API
+
+    eNativeContext = 0x00036001, // GLFW_NATIVE_CONTEXT_API
+    eEGLContext = 0x00036002,    // GLFW_EGL_CONTEXT_API
+    eOSMesaContext = 0x00036003  // GLFW_OSMESA_CONTEXT_API
+
     // NOLINTEND
 };
 
 enum struct creation_hint_context_robustness
 {
     // NOLINTBEGIN
-    eNone = GLFW_NO_ROBUSTNESS,
-    eNoResetNotification = GLFW_NO_RESET_NOTIFICATION,
-    eLoseContextOnReset = GLFW_LOSE_CONTEXT_ON_RESET
+
+    eNone = 0,                         // GLFW_NO_ROBUSTNESS
+    eNoResetNotification = 0x00031001, // GLFW_NO_RESET_NOTIFICATION
+    eLoseContextOnReset = 0x00031002   // GLFW_LOSE_CONTEXT_ON_RESET
+
     // NOLINTEND
 };
 
 enum struct creation_hint_context_release_behavior
 {
     // NOLINTBEGIN
-    eAny = GLFW_ANY_RELEASE_BEHAVIOR,
-    eFlush = GLFW_RELEASE_BEHAVIOR_FLUSH,
-    eNone = GLFW_RELEASE_BEHAVIOR_NONE
+
+    eAny = 0,            // GLFW_ANY_RELEASE_BEHAVIOR
+    eFlush = 0x00035001, // GLFW_RELEASE_BEHAVIOR_FLUSH
+    eNone = 0x00035002   // GLFW_RELEASE_BEHAVIOR_NONE
+
     // NOLINTEND
 };
 
 enum struct creation_hint_opengl_profile
 {
     // NOLINTBEGIN
-    eAny = GLFW_OPENGL_ANY_PROFILE,
-    eCompatible = GLFW_OPENGL_COMPAT_PROFILE,
-    eCore = GLFW_OPENGL_CORE_PROFILE
+
+    eAny = 0,                // GLFW_OPENGL_ANY_PROFILE,
+    eCore = 0x00032001,      // GLFW_OPENGL_CORE_PROFILE
+    eCompatible = 0x00032002 // GLFW_OPENGL_COMPAT_PROFILE
+
     // NOLINTEND
 };
 
@@ -516,135 +526,139 @@ struct instance_joystick_event
 enum struct window_key
 {
     // NOLINTBEGIN
-    eUnknown = GLFW_KEY_UNKNOWN,
-    eSpace = GLFW_KEY_SPACE,
-    eApostrophe = GLFW_KEY_APOSTROPHE,
-    eComma = GLFW_KEY_COMMA,
-    eMinus = GLFW_KEY_MINUS,
-    ePeriod = GLFW_KEY_PERIOD,
-    eSlash = GLFW_KEY_SLASH,
-    e0 = GLFW_KEY_0,
-    e1 = GLFW_KEY_1,
-    e2 = GLFW_KEY_2,
-    e3 = GLFW_KEY_3,
-    e4 = GLFW_KEY_4,
-    e5 = GLFW_KEY_5,
-    e6 = GLFW_KEY_6,
-    e7 = GLFW_KEY_7,
-    e8 = GLFW_KEY_8,
-    e9 = GLFW_KEY_9,
-    eSemicolon = GLFW_KEY_SEMICOLON,
-    eEqual = GLFW_KEY_EQUAL,
-    eA = GLFW_KEY_A,
-    eB = GLFW_KEY_B,
-    eC = GLFW_KEY_C,
-    eD = GLFW_KEY_D,
-    eE = GLFW_KEY_E,
-    eF = GLFW_KEY_F,
-    eG = GLFW_KEY_G,
-    eH = GLFW_KEY_H,
-    eI = GLFW_KEY_I,
-    eJ = GLFW_KEY_J,
-    eK = GLFW_KEY_K,
-    eL = GLFW_KEY_L,
-    eM = GLFW_KEY_M,
-    eN = GLFW_KEY_N,
-    eO = GLFW_KEY_O,
-    eP = GLFW_KEY_P,
-    eQ = GLFW_KEY_Q,
-    eR = GLFW_KEY_R,
-    eS = GLFW_KEY_S,
-    eT = GLFW_KEY_T,
-    eU = GLFW_KEY_U,
-    eV = GLFW_KEY_V,
-    eW = GLFW_KEY_W,
-    eX = GLFW_KEY_X,
-    eY = GLFW_KEY_Y,
-    eZ = GLFW_KEY_Z,
-    eLeftBracket = GLFW_KEY_LEFT_BRACKET,
-    eRightBracket = GLFW_KEY_RIGHT_BRACKET,
-    eGraveAccent = GLFW_KEY_GRAVE_ACCENT,
-    eWorld1 = GLFW_KEY_WORLD_1,
-    eWorld2 = GLFW_KEY_WORLD_2,
-    eEscape = GLFW_KEY_ESCAPE,
-    eEnter = GLFW_KEY_ENTER,
-    eTab = GLFW_KEY_TAB,
-    eBackspace = GLFW_KEY_BACKSPACE,
-    eInsert = GLFW_KEY_INSERT,
-    eDelete = GLFW_KEY_DELETE,
-    eRight = GLFW_KEY_RIGHT,
-    eLeft = GLFW_KEY_LEFT,
-    eDown = GLFW_KEY_DOWN,
-    eUp = GLFW_KEY_UP,
-    ePageUp = GLFW_KEY_PAGE_UP,
-    ePageDown = GLFW_KEY_PAGE_DOWN,
-    eHome = GLFW_KEY_HOME,
-    eEnd = GLFW_KEY_END,
-    eCapsLock = GLFW_KEY_CAPS_LOCK,
-    eScrollLock = GLFW_KEY_SCROLL_LOCK,
-    eNumLock = GLFW_KEY_NUM_LOCK,
-    ePrintScreen = GLFW_KEY_PRINT_SCREEN,
-    ePause = GLFW_KEY_PAUSE,
-    eF1 = GLFW_KEY_F1,
-    eF2 = GLFW_KEY_F2,
-    eF3 = GLFW_KEY_F3,
-    eF4 = GLFW_KEY_F4,
-    eF5 = GLFW_KEY_F5,
-    eF6 = GLFW_KEY_F6,
-    eF7 = GLFW_KEY_F7,
-    eF8 = GLFW_KEY_F8,
-    eF9 = GLFW_KEY_F9,
-    eF10 = GLFW_KEY_F10,
-    eF11 = GLFW_KEY_F11,
-    eF12 = GLFW_KEY_F12,
-    eF13 = GLFW_KEY_F13,
-    eF14 = GLFW_KEY_F14,
-    eF15 = GLFW_KEY_F15,
-    eF16 = GLFW_KEY_F16,
-    eF17 = GLFW_KEY_F17,
-    eF18 = GLFW_KEY_F18,
-    eF19 = GLFW_KEY_F19,
-    eF20 = GLFW_KEY_F20,
-    eF21 = GLFW_KEY_F21,
-    eF22 = GLFW_KEY_F22,
-    eF23 = GLFW_KEY_F23,
-    eF24 = GLFW_KEY_F24,
-    eF25 = GLFW_KEY_F25,
-    eNumPad0 = GLFW_KEY_KP_0,
-    eNumPad1 = GLFW_KEY_KP_1,
-    eNumPad2 = GLFW_KEY_KP_2,
-    eNumPad3 = GLFW_KEY_KP_3,
-    eNumPad4 = GLFW_KEY_KP_4,
-    eNumPad5 = GLFW_KEY_KP_5,
-    eNumPad6 = GLFW_KEY_KP_6,
-    eNumPad7 = GLFW_KEY_KP_7,
-    eNumPad8 = GLFW_KEY_KP_8,
-    eNumPad9 = GLFW_KEY_KP_9,
-    eNumPadDecimal = GLFW_KEY_KP_DECIMAL,
-    eNumPadDivide = GLFW_KEY_KP_DIVIDE,
-    eNumPadMultiply = GLFW_KEY_KP_MULTIPLY,
-    eNumPadSubtract = GLFW_KEY_KP_SUBTRACT,
-    eNumPadAdd = GLFW_KEY_KP_ADD,
-    eNumPadEnter = GLFW_KEY_KP_ENTER,
-    eNumPadEqual = GLFW_KEY_KP_EQUAL,
-    eLeftShift = GLFW_KEY_LEFT_SHIFT,
-    eLeftControl = GLFW_KEY_LEFT_CONTROL,
-    eLeftAlt = GLFW_KEY_LEFT_ALT,
-    eLeftSuper = GLFW_KEY_LEFT_SUPER,
-    eRightShift = GLFW_KEY_RIGHT_SHIFT,
-    eRightControl = GLFW_KEY_RIGHT_CONTROL,
-    eRightAlt = GLFW_KEY_RIGHT_ALT,
-    eRightSuper = GLFW_KEY_RIGHT_SUPER,
-    eMenu = GLFW_KEY_MENU
+
+    eUnknown = -1,         // GLFW_KEY_UNKNOWN
+    eSpace = 32,           // GLFW_KEY_SPACE
+    eApostrophe = 39,      // GLFW_KEY_APOSTROPHE
+    eComma = 44,           // GLFW_KEY_COMMA
+    eMinus = 45,           // GLFW_KEY_MINUS
+    ePeriod = 46,          // GLFW_KEY_PERIOD
+    eSlash = 47,           // GLFW_KEY_SLASH
+    e0 = 48,               // GLFW_KEY_0
+    e1 = 49,               // GLFW_KEY_1
+    e2 = 50,               // GLFW_KEY_2
+    e3 = 51,               // GLFW_KEY_3
+    e4 = 52,               // GLFW_KEY_4
+    e5 = 53,               // GLFW_KEY_5
+    e6 = 54,               // GLFW_KEY_6
+    e7 = 55,               // GLFW_KEY_7
+    e8 = 56,               // GLFW_KEY_8
+    e9 = 57,               // GLFW_KEY_9
+    eSemicolon = 59,       // GLFW_KEY_SEMICOLON
+    eEqual = 61,           // GLFW_KEY_EQUAL
+    eA = 65,               // GLFW_KEY_A
+    eB = 66,               // GLFW_KEY_B
+    eC = 67,               // GLFW_KEY_C
+    eD = 68,               // GLFW_KEY_D
+    eE = 69,               // GLFW_KEY_E
+    eF = 70,               // GLFW_KEY_F
+    eG = 71,               // GLFW_KEY_G
+    eH = 72,               // GLFW_KEY_H
+    eI = 73,               // GLFW_KEY_I
+    eJ = 74,               // GLFW_KEY_J
+    eK = 75,               // GLFW_KEY_K
+    eL = 76,               // GLFW_KEY_L
+    eM = 77,               // GLFW_KEY_M
+    eN = 78,               // GLFW_KEY_N
+    eO = 79,               // GLFW_KEY_O
+    eP = 80,               // GLFW_KEY_P
+    eQ = 81,               // GLFW_KEY_Q
+    eR = 82,               // GLFW_KEY_R
+    eS = 83,               // GLFW_KEY_S
+    eT = 84,               // GLFW_KEY_T
+    eU = 85,               // GLFW_KEY_U
+    eV = 86,               // GLFW_KEY_V
+    eW = 87,               // GLFW_KEY_W
+    eX = 88,               // GLFW_KEY_X
+    eY = 89,               // GLFW_KEY_Y
+    eZ = 90,               // GLFW_KEY_Z
+    eLeftBracket = 91,     // GLFW_KEY_LEFT_BRACKET
+    eRightBracket = 93,    // GLFW_KEY_RIGHT_BRACKET
+    eGraveAccent = 96,     // GLFW_KEY_GRAVE_ACCENT
+    eWorld1 = 161,         // GLFW_KEY_WORLD_1
+    eWorld2 = 162,         // GLFW_KEY_WORLD_2
+    eEscape = 256,         // GLFW_KEY_ESCAPE
+    eEnter = 257,          // GLFW_KEY_ENTER
+    eTab = 258,            // GLFW_KEY_TAB
+    eBackspace = 259,      // GLFW_KEY_BACKSPACE
+    eInsert = 260,         // GLFW_KEY_INSERT
+    eDelete = 261,         // GLFW_KEY_DELETE
+    eRight = 262,          // GLFW_KEY_RIGHT
+    eLeft = 263,           // GLFW_KEY_LEFT
+    eDown = 264,           // GLFW_KEY_DOWN
+    eUp = 265,             // GLFW_KEY_UP
+    ePageUp = 266,         // GLFW_KEY_PAGE_UP
+    ePageDown = 267,       // GLFW_KEY_PAGE_DOWN
+    eHome = 268,           // GLFW_KEY_HOME
+    eEnd = 269,            // GLFW_KEY_END
+    eCapsLock = 280,       // GLFW_KEY_CAPS_LOCK
+    eScrollLock = 281,     // GLFW_KEY_SCROLL_LOCK
+    eNumLock = 282,        // GLFW_KEY_NUM_LOCK
+    ePrintScreen = 283,    // GLFW_KEY_PRINT_SCREEN
+    ePause = 284,          // GLFW_KEY_PAUSE
+    eF1 = 290,             // GLFW_KEY_F1
+    eF2 = 291,             // GLFW_KEY_F2
+    eF3 = 292,             // GLFW_KEY_F3
+    eF4 = 293,             // GLFW_KEY_F4
+    eF5 = 294,             // GLFW_KEY_F5
+    eF6 = 295,             // GLFW_KEY_F6
+    eF7 = 296,             // GLFW_KEY_F7
+    eF8 = 297,             // GLFW_KEY_F8
+    eF9 = 298,             // GLFW_KEY_F9
+    eF10 = 299,            // GLFW_KEY_F10
+    eF11 = 300,            // GLFW_KEY_F11
+    eF12 = 301,            // GLFW_KEY_F12
+    eF13 = 302,            // GLFW_KEY_F13
+    eF14 = 303,            // GLFW_KEY_F14
+    eF15 = 304,            // GLFW_KEY_F15
+    eF16 = 305,            // GLFW_KEY_F16
+    eF17 = 306,            // GLFW_KEY_F17
+    eF18 = 307,            // GLFW_KEY_F18
+    eF19 = 308,            // GLFW_KEY_F19
+    eF20 = 309,            // GLFW_KEY_F20
+    eF21 = 310,            // GLFW_KEY_F21
+    eF22 = 311,            // GLFW_KEY_F22
+    eF23 = 312,            // GLFW_KEY_F23
+    eF24 = 313,            // GLFW_KEY_F24
+    eF25 = 314,            // GLFW_KEY_F25
+    eNumPad0 = 320,        // GLFW_KEY_KP_0
+    eNumPad1 = 321,        // GLFW_KEY_KP_1
+    eNumPad2 = 322,        // GLFW_KEY_KP_2
+    eNumPad3 = 323,        // GLFW_KEY_KP_3
+    eNumPad4 = 324,        // GLFW_KEY_KP_4
+    eNumPad5 = 325,        // GLFW_KEY_KP_5
+    eNumPad6 = 326,        // GLFW_KEY_KP_6
+    eNumPad7 = 327,        // GLFW_KEY_KP_7
+    eNumPad8 = 328,        // GLFW_KEY_KP_8
+    eNumPad9 = 329,        // GLFW_KEY_KP_9
+    eNumPadDecimal = 330,  // GLFW_KEY_KP_DECIMAL
+    eNumPadDivide = 331,   // GLFW_KEY_KP_DIVIDE
+    eNumPadMultiply = 332, // GLFW_KEY_KP_MULTIPLY
+    eNumPadSubtract = 333, // GLFW_KEY_KP_SUBTRACT
+    eNumPadAdd = 334,      // GLFW_KEY_KP_ADD
+    eNumPadEnter = 335,    // GLFW_KEY_KP_ENTER
+    eNumPadEqual = 336,    // GLFW_KEY_KP_EQUAL
+    eLeftShift = 340,      // GLFW_KEY_LEFT_SHIFT
+    eLeftControl = 341,    // GLFW_KEY_LEFT_CONTROL
+    eLeftAlt = 342,        // GLFW_KEY_LEFT_ALT
+    eLeftSuper = 343,      // GLFW_KEY_LEFT_SUPER
+    eRightShift = 344,     // GLFW_KEY_RIGHT_SHIFT
+    eRightControl = 345,   // GLFW_KEY_RIGHT_CONTROL
+    eRightAlt = 346,       // GLFW_KEY_RIGHT_ALT
+    eRightSuper = 347,     // GLFW_KEY_RIGHT_SUPER
+    eMenu = 348            // GLFW_KEY_MENU
+
     // NOLINTEND
 };
 
 enum struct window_key_action
 {
     // NOLINTBEGIN
-    ePress = GLFW_PRESS,
-    eRelease = GLFW_RELEASE,
-    eRepeat = GLFW_REPEAT
+
+    eRelease = 0, // GLFW_RELEASE
+    ePress = 1,   // GLFW_PRESS
+    eRepeat = 2   // GLFW_REPEAT
+
     // NOLINTEND
 };
 
@@ -827,12 +841,14 @@ struct window_file_drop_event
 enum struct cursor_standard_shape
 {
     // NOLINTBEGIN
+
     eArrow = GLFW_ARROW_CURSOR,
     eIBeam = GLFW_IBEAM_CURSOR,
     eCrossHair = GLFW_CROSSHAIR_CURSOR,
     eHand = GLFW_HAND_CURSOR,
     eHResize = GLFW_HRESIZE_CURSOR,
     eVResize = GLFW_VRESIZE_CURSOR
+
     // NOLINTEND
 };
 
