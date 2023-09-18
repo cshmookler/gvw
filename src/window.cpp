@@ -2,7 +2,10 @@
 #include <iostream>
 
 // Local includes
+#include "gvw.ipp"
+#include "internal.ipp"
 #include "window.hpp"
+#include "impl.hpp"
 
 namespace gvw {
 
@@ -13,10 +16,28 @@ void window::DestroyGlfwWindow(GLFWwindow* Window_Handle) noexcept
     glfwDestroyWindow(Window_Handle);
 }
 
+// NOLINTNEXTLINE
 window::window(const window_info& Window_Info, window* Parent_Window)
     : gvwInstance(internal::global::GVW_INSTANCE)
 {
-    internal::AssertInitialization();
+    /// @todo GVW could be destroyed and then reinitialized between the
+    /// initialization of gvwInstance and this line below. Resolve this by
+    /// initializing the `gvwInstance` variable after locking a GVW specific
+    /// mutex.
+    if (internal::NotInitialized(static_cast<const char*>(__func__))) {
+        return;
+    }
+
+    if (this->gvwInstance->VulkanNotSupported(
+            static_cast<const char*>(__func__)) ||
+        this->gvwInstance->RequiredExtensionsNotSupported(
+            static_cast<const char*>(__func__)) ||
+        this->gvwInstance->SelectedExtensionsNotSupported(
+            static_cast<const char*>(__func__)) ||
+        this->gvwInstance->SelectedLayersNotSupported(
+            static_cast<const char*>(__func__))) {
+        return;
+    }
 
     GLFWmonitor* fullScreenMonitor =
         (Window_Info.fullScreenMonitor != nullptr)
@@ -48,6 +69,9 @@ window::window(const window_info& Window_Info, window* Parent_Window)
                              nullptr); // "We use Vulkan in this household!"
     }
 
+    /// @todo Check which GLFW hints were actually applied (many of them are not
+    /// hard constraints!).
+
     this->glfwWindowDestroyer =
         std::make_unique<internal::terminator<GLFWwindow*>>(DestroyGlfwWindow,
                                                             this->windowHandle);
@@ -76,15 +100,15 @@ window::window(const window_info& Window_Info, window* Parent_Window)
     VkSurfaceKHR tempSurface = nullptr;
     {
         std::scoped_lock lock(internal::global::GLFW_MUTEX);
-        if (glfwCreateWindowSurface(*this->gvwInstance->vulkanInstance,
+        if (glfwCreateWindowSurface(*this->gvwInstance->pImpl->vulkanInstance,
                                     this->windowHandle,
                                     nullptr,
                                     &tempSurface) != VK_SUCCESS) {
             ErrorCallback("Window surface creation failed");
         }
     }
-    this->surface =
-        vk::UniqueSurfaceKHR(tempSurface, *this->gvwInstance->vulkanInstance);
+    this->surface = vk::UniqueSurfaceKHR(
+        tempSurface, *this->gvwInstance->pImpl->vulkanInstance);
 
     // Use an already existing logical device or create a new one.
     if (Window_Info.device != nullptr) {
@@ -870,6 +894,12 @@ coordinate<double> window::GetCursorPosition()
     coordinate<double> cursorPosition = { 0, 0 };
     glfwGetCursorPos(this->windowHandle, &cursorPosition.x, &cursorPosition.y);
     return cursorPosition;
+}
+
+void window::SetCursorPosition(coordinate<double> Position)
+{
+    std::scoped_lock lock(internal::global::GLFW_MUTEX);
+    glfwSetCursorPos(this->windowHandle, Position.x, Position.y);
 }
 
 bool window::ShouldClose()

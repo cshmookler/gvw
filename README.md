@@ -94,12 +94,36 @@ To build this project with Conan 2 without installing it, swap out `conan create
  * [X] Replace namespace-like classes with the types they represent.
  * [X] Add an image loading library for rendering images.
  * [X] Add input mode and key state functions.
+ * [X] Change include structure to resolve undefined template instantiation errors in .ipp files.
+ * [ ] Make utils/ansiec compatible with Windows.
+ * [ ] Remove trailing includes from include structure.
+ * [ ] Reduce the size of class section dividers from three lines to one.
+ * [ ] Recreate the hint class to not contain a constant member variable (it makes it copy constructable but not copy assignable).
+ * [ ] Limit the use of `friend` as much as possible. This is a hack, and may introduce bugs later if allowed to remain.
+ * [ ] Replace gvw/gvw.hpp with src/gvw.hpp. Move interface definition files to gvw/ and keep implementation files in src/.
+ * [ ] Implement a PIMPL class structure for all applicable types (use `std::shared_ptr` to store the implementation within the interface. Avoiding dynamic allocation by using `std::aligned_storage` instead of `std::shared_ptr` won't work because it won't allow shallow copying of interfaces and will allow the instance object to be destroyed before dependent types are destroyed).
+ * [ ] Split large constructors into several helper functions (examples: instance, window, device, etc).
+ * [ ] Completely remove the `GVW_INSTANCE` global variable.
+ * [ ] Change the case style to be more consistent with common practices. Change the case of constants to something else because `ALL_CAPS` may clash with pre-processor macros.
+ * [ ] Make all global variables private non-static members of the instance implementation. Add public functions to access them in a thread-safe way.
+ * [ ] Remove the 'e' prefix from enums and undefine clashing macros (Ex. linux).
+ * [ ] (?) Assign generic values to enums and add conversion functions to their actual GLFW values within the implementation.
+ * [ ] Remove `glfw_types` test (unnecessary once the previous two tasks are completed.
+ * [ ] Hide all GLFW function signatures within the implementation by setting GLFW callbacks declared within the implementation that call public functions passed through the interface.
+ * [ ] Ensure that trivial operators are marked noexcept.
+ * [ ] (?) Always throw an exception if a precondition for a constructor is not met. It should not be possible for objects constructed within a factory function to be used while uninitialized.
+ * [ ] Consider forcing `ErrorCallback` to throw.
+ * [ ] Pass std::string instead of C-style strings for clarity.
+ * [ ] Create a debug mode for compilation.
+ * [ ] Add more compile flags (look up GCC, Clang, and MSVC flags).
+ * [ ] Use CppLint.
+ * [ ] Add concurrency tests and use Clang's Thread Sanitizer (TSAN) to check for data races.
+ * [ ] Remove use of `reinterpret_cast` when loading a SPIR-V shader (if possible).
+ * [ ] ~~Ensure thread-safety for GLFW functions.~~ Unable to thouroughly test thread-safety without testing functionality on MacOS. Meanwhile, add tests for GLFW features in multithreaded environments. Such tests may take a long time, so an "advanced testing mode" may need to be added to the build system.
  * [ ] Render textures with Vulkan.
  * [ ] Add Freetype for rendering text.
- * [ ] Don't force ErrorCallback to throw.
  * [ ] Further compartmentalize Vulkan functions and permit more customization at runtime.
- * [ ] Replace Vulkan-Hpp with Vulkan to improve compiletime (?) (possibly not worth it).
- * [ ] Ensure thread-safety for GLFW functions.
+ * [ ] Replace Vulkan-Hpp with Vulkan to improve compiletime (?) (possibly problematic due to a lack of enums and RAII in C-Vulkan).
 
 ### **Aspirational TODO**
  * [X] Setup CMake.

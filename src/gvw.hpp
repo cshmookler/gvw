@@ -18,6 +18,7 @@
 #define VULKAN_HPP_NAMESPACE vk
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #include <vulkan/vulkan.hpp>
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
@@ -254,6 +255,12 @@ namespace instance_joystick_event_callback_config {
 extern const instance_joystick_event_callback NONE;
 extern const instance_joystick_event_callback APPEND_TO_JOYSTICK_EVENT_BUFFER;
 } // namespace instance_joystick_event_callback_config
+
+/// @brief Returns the joystick event buffer.
+const std::vector<instance_joystick_event>& GetJoystickEvents();
+
+/// @brief Clears the joystick event buffer.
+void ClearJoystickEvents();
 
 /// @brief Initialize GVW with the default configuration.
 /// @remark Immediately returns if GVW is already initialized.
@@ -600,11 +607,3 @@ extern const device_queue_priority HIGH;
 } // namespace device_queue_priority_config
 
 } // namespace gvw
-
-// Local definition includes
-#include "internal.hpp"
-#include "gvw.ipp"
-#include "instance.hpp"
-#include "monitor.hpp"
-#include "window.hpp"
-#include "device.hpp"

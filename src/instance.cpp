@@ -4,11 +4,62 @@
 
 // Local includes
 #include "gvw.hpp"
+#include "gvw.ipp"
+#include "internal.hpp"
+#include "internal.ipp"
+#include "instance.hpp"
+#include "monitor.hpp"
+#include "window.hpp"
+#include "device.hpp"
+#include "impl.hpp"
 
 namespace gvw {
 
+bool instance::GlfwNotInitialized(const std::string& Function_Name) const
+{
+    return internal::NotInitializedTemplate(
+        this->initializedGlfw, "GLFW is not initialized.", Function_Name);
+}
+
+bool instance::VulkanNotSupported(const std::string& Function_Name) const
+{
+    return internal::NotInitializedTemplate(
+        this->vulkanSupported,
+        "Vulkan is not supported on this system.",
+        Function_Name);
+}
+
+bool instance::RequiredExtensionsNotSupported(
+    const std::string& Function_Name) const
+{
+    return internal::NotInitializedTemplate(
+        this->requiredExtensionsSupported,
+        "At least one of the required Vulkan instance extensions is not "
+        "supported on this system.",
+        Function_Name);
+}
+
+bool instance::SelectedExtensionsNotSupported(
+    const std::string& Function_Name) const
+{
+    return internal::NotInitializedTemplate(
+        this->selectedExtensionsSupported,
+        "At least one of the selected Vulkan instance extensions is not "
+        "supported on this system.",
+        Function_Name);
+}
+
+bool instance::SelectedLayersNotSupported(
+    const std::string& Function_Name) const
+{
+    return internal::NotInitializedTemplate(
+        this->selectedLayersSupported,
+        "At least one of the selected Vulkan instance layers is not supported "
+        "on this system.",
+        Function_Name);
+}
+
 instance::instance(const instance_info& Instance_Info)
-    : glfwTerminator(std::make_unique<internal::terminator<>>(TerminateGlfw))
 {
     // Set warning and error callbacks.
     SetVerboseCallback(Instance_Info.verboseCallback);
@@ -39,19 +90,18 @@ instance::instance(const instance_info& Instance_Info)
         Instance_Info.initHints.Apply();
 
         // Initialize the GLFW library.
-        if (glfwInit() == GLFW_FALSE) {
+        if (glfwInit() == GLFW_TRUE) {
+            this->initializedGlfw = true;
+        } else {
             ErrorCallback("GLFW failed to initialize");
-            /// @todo The program should always terminate here.
-            return;
         }
 
         // Check for Vulkan support
-        if (glfwVulkanSupported() == GLFW_FALSE) {
-            ErrorCallback("Failed to find the Vulkan loader and/or a minimally "
-                          "functional "
-                          "ICD (Installable Client Driver)");
-            /// @todo The program should always terminate here.
-            return;
+        if (glfwVulkanSupported() == GLFW_TRUE) {
+            this->vulkanSupported = true;
+        } else {
+            ErrorCallback("Failed to find the Vulkan loader and a minimally "
+                          "functional ICD (Installable Client Driver)");
         }
 
         // Get required instance extensions
@@ -76,7 +126,9 @@ instance::instance(const instance_info& Instance_Info)
             [](const char* Lhs, vk::ExtensionProperties Rhs) {
                 return std::strcmp(Lhs, Rhs.extensionName) == 0;
             });
-    if (!unavailableRequiredInstanceExtensions.empty()) {
+    if (unavailableRequiredInstanceExtensions.empty()) {
+        this->requiredExtensionsSupported = true;
+    } else {
         std::string message =
             "The following Vulkan instance extensions are required for window "
             "surface creation but are not supported on this system:" +
@@ -88,9 +140,6 @@ instance::instance(const instance_info& Instance_Info)
                     return String + "\n\t" + Extension_Name;
                 });
         ErrorCallback(message.c_str());
-        /// @todo The program should always terminate here (or surface
-        /// creation can be made optional).
-        return;
     }
 
     std::vector<const char*> unsupportedSelectedExtensions =
@@ -100,7 +149,9 @@ instance::instance(const instance_info& Instance_Info)
             [](const char* Lhs, vk::ExtensionProperties Rhs) -> bool {
                 return std::strcmp(Lhs, Rhs.extensionName) == 0;
             });
-    if (!unsupportedSelectedExtensions.empty()) {
+    if (unsupportedSelectedExtensions.empty()) {
+        this->selectedExtensionsSupported = true;
+    } else {
         std::string message =
             "The following Vulkan instance extensions were requested but are "
             "not supported on this system:" +
@@ -112,20 +163,16 @@ instance::instance(const instance_info& Instance_Info)
                     return String + "\n\t" + Extension_Name;
                 });
         ErrorCallback(message.c_str());
-        /// @todo The program should always terminate here (or the programmer
-        /// should have some way of checking which extensions were unsupported).
-        return;
     }
 
     // Combine required instance extensions and selected instance extensions.
-    this->vulkanInstanceExtensions = requiredInstanceExtensions;
+    instance_extensions instanceExtensions = requiredInstanceExtensions;
     /// @todo Benchmark the line below (may not need .reserve()).
-    this->vulkanInstanceExtensions.reserve(
-        this->vulkanInstanceExtensions.size() +
-        Instance_Info.extensions.size());
-    this->vulkanInstanceExtensions.insert(this->vulkanInstanceExtensions.end(),
-                                          Instance_Info.extensions.begin(),
-                                          Instance_Info.extensions.end());
+    instanceExtensions.reserve(instanceExtensions.size() +
+                               Instance_Info.extensions.size());
+    instanceExtensions.insert(instanceExtensions.end(),
+                              Instance_Info.extensions.begin(),
+                              Instance_Info.extensions.end());
 
     // Verify that the requested layers are available
     std::vector<vk::LayerProperties> supportedInstanceLayers =
@@ -137,7 +184,9 @@ instance::instance(const instance_info& Instance_Info)
             [](const char* Lhs, vk::LayerProperties Rhs) {
                 return std::strcmp(Lhs, Rhs.layerName) == 0;
             });
-    if (!unsupportedInstanceLayers.empty()) {
+    if (unsupportedInstanceLayers.empty()) {
+        this->selectedLayersSupported = true;
+    } else {
         std::string message =
             "The following Vulkan instance layers were requested but are not "
             "supported on this system: " +
@@ -149,14 +198,11 @@ instance::instance(const instance_info& Instance_Info)
                     return String + "\n\t" + Layer_Name;
                 });
         ErrorCallback(message.c_str());
-        /// @todo The program should always terminate here (or the programmer
-        /// should have some way of checking which layers were unsupported).
-        return;
     }
 
     /// @todo Create required instance layers (like required instance extensions
     /// but for instance layers).
-    this->vulkanInstanceLayers = Instance_Info.layers;
+    instance_layers instanceLayers = Instance_Info.layers;
 
     vk::ApplicationInfo applicationInfo = {
         .pNext = nullptr,
@@ -183,90 +229,103 @@ instance::instance(const instance_info& Instance_Info)
         .pNext = &debugUtilsMessengerCreateInfo,
         .flags = Instance_Info.creationFlags,
         .pApplicationInfo = &applicationInfo,
-        .enabledLayerCount =
-            static_cast<uint32_t>(this->vulkanInstanceLayers.size()),
-        .ppEnabledLayerNames = this->vulkanInstanceLayers.data(),
+        .enabledLayerCount = static_cast<uint32_t>(instanceLayers.size()),
+        .ppEnabledLayerNames = instanceLayers.data(),
         .enabledExtensionCount =
-            static_cast<uint32_t>(this->vulkanInstanceExtensions.size()),
-        .ppEnabledExtensionNames = this->vulkanInstanceExtensions.data()
+            static_cast<uint32_t>(instanceExtensions.size()),
+        .ppEnabledExtensionNames = instanceExtensions.data()
     };
 
     // Create the vulkan instance
-    this->vulkanInstance = vk::createInstanceUnique(instanceInfo);
+    vk::UniqueInstance instance = vk::createInstanceUnique(instanceInfo);
 
+    vk::DispatchLoaderDynamic dispatchLoaderDynamic;
+    vk::UniqueHandle<vk::DebugUtilsMessengerEXT, vk::DispatchLoaderDynamic>
+        debugUtilsMessenger;
 #ifdef GVW_VULKAN_VALIDATION_LAYERS
     // Automatically look up instance extension function addresses
-    this->vulkanDispatchLoaderDynamic = { vulkanInstance.get(),
-                                          vkGetInstanceProcAddr };
+    dispatchLoaderDynamic = { instance.get(), vkGetInstanceProcAddr };
 
     // Debug callback setup
-    this->vulkanDebugUtilsMessenger =
-        this->vulkanInstance->createDebugUtilsMessengerEXTUnique(
-            debugUtilsMessengerCreateInfo,
-            nullptr,
-            this->vulkanDispatchLoaderDynamic);
+    debugUtilsMessenger = instance->createDebugUtilsMessengerEXTUnique(
+        debugUtilsMessengerCreateInfo, nullptr, dispatchLoaderDynamic);
 #endif
+
+    this->pImpl = std::make_unique<impl>(
+        std::make_unique<internal::terminator<>>(TerminateGlfw),
+        std::move(instanceExtensions),
+        std::move(instanceLayers),
+        std::move(instance),
+        dispatchLoaderDynamic,
+        std::move(debugUtilsMessenger));
 }
 
 void instance::TerminateGlfw()
 {
+    // Checking for initialization is unreliable during object destruction, so
+    // don't check for initialization here.
     std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwTerminate();
 }
 
-// NOLINTNEXTLINE
 void instance::SetJoystickEventCallback(
     instance_joystick_event_callback Joystick_Event_Callback)
 {
+    if (this->GlfwNotInitialized(static_cast<const char*>(__func__))) {
+        return;
+    }
     std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwSetJoystickCallback(Joystick_Event_Callback);
 }
 
-// NOLINTNEXTLINE
-const std::vector<instance_joystick_event>& instance::GetJoystickEvents()
-{
-    std::scoped_lock lock(internal::global::JOYSTICK_EVENTS_MUTEX);
-    return internal::global::JOYSTICK_EVENTS;
-}
-
-// NOLINTNEXTLINE
-void instance::ClearJoystickEvents()
-{
-    std::scoped_lock lock(internal::global::JOYSTICK_EVENTS_MUTEX);
-    internal::global::JOYSTICK_EVENTS.clear();
-}
-
-// NOLINTNEXTLINE
 void instance::PollEvents()
 {
+    if (this->GlfwNotInitialized(static_cast<const char*>(__func__))) {
+        return;
+    }
     std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwPollEvents();
 }
 
-// NOLINTNEXTLINE
 void instance::WaitThenPollEvents()
 {
+    if (this->GlfwNotInitialized(static_cast<const char*>(__func__))) {
+        return;
+    }
     std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwWaitEvents();
 }
 
-// NOLINTNEXTLINE
 void instance::WaitThenPollEvents(double Timeout)
 {
+    if (this->GlfwNotInitialized(static_cast<const char*>(__func__))) {
+        return;
+    }
     std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwWaitEventsTimeout(Timeout);
 }
 
-// NOLINTNEXTLINE
 void instance::PostEmptyEvent()
 {
+    if (this->GlfwNotInitialized(static_cast<const char*>(__func__))) {
+        return;
+    }
     std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwPostEmptyEvent();
 }
 
-// NOLINTNEXTLINE
 window_ptr instance::CreateWindow(const window_info& Window_Info)
 {
+    if (this->GlfwNotInitialized(static_cast<const char*>(__func__)) ||
+        this->VulkanNotSupported(static_cast<const char*>(__func__)) ||
+        this->RequiredExtensionsNotSupported(
+            static_cast<const char*>(__func__)) ||
+        this->SelectedExtensionsNotSupported(
+            static_cast<const char*>(__func__)) ||
+        this->SelectedLayersNotSupported(static_cast<const char*>(__func__))) {
+        /// @todo Return something that won't cause a segmentation fault.
+        return nullptr;
+    }
     return std::make_shared<internal::window_public_constructor>(Window_Info);
 }
 
@@ -274,8 +333,17 @@ std::vector<device_ptr> instance::SelectPhysicalDevices(
     const device_selection_info& Device_Info,
     const vk::SurfaceKHR* Window_Surface)
 {
+    if (this->VulkanNotSupported(static_cast<const char*>(__func__)) ||
+        this->RequiredExtensionsNotSupported(
+            static_cast<const char*>(__func__)) ||
+        this->SelectedExtensionsNotSupported(
+            static_cast<const char*>(__func__)) ||
+        this->SelectedLayersNotSupported(static_cast<const char*>(__func__))) {
+        return {};
+    }
+
     std::vector<vk::PhysicalDevice> physicalDevices =
-        this->vulkanInstance->enumeratePhysicalDevices();
+        this->pImpl->vulkanInstance->enumeratePhysicalDevices();
     if (physicalDevices.empty()) {
         ErrorCallback("No physical devices with Vulkan support are available.");
     }
@@ -357,15 +425,19 @@ std::vector<device_ptr> instance::SelectPhysicalDevices(
     return logicalDevices;
 }
 
-// NOLINTNEXTLINE
 monitor_ptr instance::GetMonitor(const monitor_info& Monitor_Info)
 {
+    if (this->GlfwNotInitialized(static_cast<const char*>(__func__))) {
+        return nullptr;
+    }
     return std::make_shared<internal::monitor_public_constructor>(Monitor_Info);
 }
 
-// NOLINTNEXTLINE
 monitor_ptr instance::GetPrimaryMonitor()
 {
+    if (this->GlfwNotInitialized(static_cast<const char*>(__func__))) {
+        return nullptr;
+    }
     GLFWmonitor* primaryMonitor = nullptr;
     {
         std::scoped_lock lock(internal::global::GLFW_MUTEX);
@@ -374,9 +446,11 @@ monitor_ptr instance::GetPrimaryMonitor()
     return this->GetMonitor(primaryMonitor);
 }
 
-// NOLINTNEXTLINE
-std::vector<gvw::monitor_ptr> instance::AllMonitors()
+std::vector<gvw::monitor_ptr> instance::GetAllMonitors()
 {
+    if (this->GlfwNotInitialized(static_cast<const char*>(__func__))) {
+        return {};
+    }
     int monitorCount = 0;
     GLFWmonitor** monitorPointerArray = nullptr;
     {
@@ -391,41 +465,57 @@ std::vector<gvw::monitor_ptr> instance::AllMonitors()
     return monitors;
 }
 
-// NOLINTNEXTLINE
 cursor_ptr instance::CreateCursor(cursor_standard_shape Cursor_Standard_Shape)
 {
+    if (this->GlfwNotInitialized(static_cast<const char*>(__func__))) {
+        return nullptr;
+    }
     return std::make_shared<internal::cursor_public_constructor>(
         Cursor_Standard_Shape);
 }
 
-// NOLINTNEXTLINE
 cursor_ptr instance::CreateCursor(
     const cursor_custom_shape_info& Cursor_Custom_Shape_Info)
 {
+    if (this->GlfwNotInitialized(static_cast<const char*>(__func__))) {
+        return nullptr;
+    }
     return std::make_shared<internal::cursor_public_constructor>(
         Cursor_Custom_Shape_Info);
 }
 
-const char* instance::GetClipboard() // NOLINT
+const char* instance::GetClipboard()
 {
+    if (this->GlfwNotInitialized(static_cast<const char*>(__func__))) {
+        return "";
+    }
     std::scoped_lock lock(internal::global::GLFW_MUTEX);
     return glfwGetClipboardString(nullptr);
 }
 
-void instance::SetClipboard(const char* Data) // NOLINT
+void instance::SetClipboard(const char* Data)
 {
+    if (this->GlfwNotInitialized(static_cast<const char*>(__func__))) {
+        return;
+    }
     std::scoped_lock lock(internal::global::GLFW_MUTEX);
     glfwSetClipboardString(nullptr, Data);
 }
 
-int instance::GetKeyScancode(window_key Key) // NOLINT
+int instance::GetKeyScancode(window_key Key)
 {
+    if (this->GlfwNotInitialized(static_cast<const char*>(__func__))) {
+        return 0;
+    }
     std::scoped_lock lock(internal::global::GLFW_MUTEX);
     return glfwGetKeyScancode(static_cast<int>(Key));
 }
 
-const char* instance::GetKeyName(window_key Key, int Scancode) // NOLINT
+const char* instance::GetKeyName(window_key Key, int Scancode)
 {
+    if (this->GlfwNotInitialized(static_cast<const char*>(__func__))) {
+        return "";
+    }
     std::scoped_lock lock(internal::global::GLFW_MUTEX);
     return glfwGetKeyName(static_cast<int>(Key), Scancode);
 }

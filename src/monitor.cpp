@@ -3,6 +3,7 @@
 
 // Local includes
 #include "gvw.hpp"
+#include "impl.hpp"
 
 namespace gvw {
 
@@ -10,7 +11,13 @@ monitor::monitor(GLFWmonitor* Monitor_Handle)
     : gvwInstance(internal::global::GVW_INSTANCE)
     , monitorHandle(Monitor_Handle)
 {
-    internal::AssertInitialization();
+    /// @todo GVW could be destroyed and then reinitialized between the
+    /// initialization of gvwInstance and this line below. Resolve this by
+    /// initializing the `gvwInstance` variable after locking a GVW specific
+    /// mutex.
+    if (internal::NotInitialized(static_cast<const char*>(__func__))) {
+        return;
+    }
 }
 
 GLFWmonitor* monitor::GetHandle() const noexcept

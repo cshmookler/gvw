@@ -8,7 +8,7 @@
  */
 
 // Local includes
-#include "gvw.hpp"
+#include "gvw.ipp"
 
 namespace gvw {
 
@@ -374,12 +374,14 @@ class window : public internal::uncopyable_unmovable // NOLINT
     /// @brief Returns the state of a key.
     [[nodiscard]] window_key_action GetKeyState(window_key Key);
 
+    /// @todo Write functions for getting the mouse button states.
+
     [[nodiscard]] bool IsKeyPressed(window_key Key);
     [[nodiscard]] bool IsKeyReleased(window_key Key);
     [[nodiscard]] bool IsKeyRepeating(window_key Key);
 
-    /// @brief Returns the position of the cursor.
     [[nodiscard]] coordinate<double> GetCursorPosition();
+    void SetCursorPosition(coordinate<double> Position);
 
     /// @brief Returns the state of the 'close' flag.
     [[nodiscard]] bool ShouldClose();

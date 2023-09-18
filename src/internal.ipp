@@ -5,6 +5,8 @@
 
 // Local includes
 #include "gvw.hpp"
+#include "internal.hpp"
+#include "internal.ipp"
 #include "../utils/ansiec/ansiec.hpp"
 
 namespace gvw::internal {

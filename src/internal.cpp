@@ -1,26 +1,36 @@
 // Local includes
-#include "gvw.hpp"
+#include "gvw.ipp"
 
 namespace gvw::internal {
 
-/*****************************    GVW Instance    *****************************/
-void AssertInitialization()
+bool NotInitializedTemplate(bool Condition,
+                            const std::string& If_False,
+                            const std::string& Function_Name)
 {
-    if (global::GVW_INSTANCE != nullptr) {
-        return;
+    if (Condition) {
+        return false;
     }
-    const char* error = "GVW is not initialized.";
-    if (global::ERROR_CALLBACK != nullptr) {
-        ErrorCallback(error);
-        return;
-    }
-    instance_error_callback_config::CERR(error);
+
+    std::string message =
+        "Error in function: \"" + Function_Name + "\". " + If_False;
+    ErrorCallback(message.c_str());
+
+    return true;
+}
+
+/*****************************    GVW Instance    *****************************/
+bool NotInitialized(const std::string& Function_Name)
+{
+    return NotInitializedTemplate(global::GVW_INSTANCE != nullptr,
+                                  "GVW is not initialized",
+                                  Function_Name);
 }
 
 /********************************    Window    ********************************/
 
 void* GetUserPointer(GLFWwindow* Window)
 {
+    /// @todo Verify that GVW and GLFW are initialized.
     return glfwGetWindowUserPointer(Window);
 }
 

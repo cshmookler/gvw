@@ -10,7 +10,7 @@
 // Standard includes
 #include <concepts>
 
-// Leading local includes
+// Local includes
 #include "gvw.hpp"
 
 namespace gvw::internal {
@@ -57,6 +57,10 @@ std::vector<Type1> GetUncommonElementsInArr1(
     const std::vector<Type2>& Arr_2,
     CallableIdentical Identical) requires
     std::is_invocable_r_v<bool, CallableIdentical, Type1, Type2>;
+
+bool NotInitializedTemplate(bool Condition,
+                            const std::string& If_False,
+                            const std::string& Function_Name);
 
 /*********************************    Hints    ********************************/
 /// @brief GLFW hint ID and default value.
@@ -110,7 +114,7 @@ template<callback_print_function PrintFunction>
 void GlfwErrorCallbackTemplate(int Error_Code, const char* Message);
 
 /// @brief Pass a message to the GVW error callback if GVW is not initialized.
-void AssertInitialization();
+bool NotInitialized(const std::string& Function_Name);
 
 /********************************    Monitor    *******************************/
 using monitor_public_constructor = public_constructor<monitor>;
@@ -172,6 +176,3 @@ extern std::mutex JOYSTICK_EVENTS_MUTEX;
 } // namespace global
 
 } // namespace gvw::internal
-
-// Trailing local includes
-#include "internal.ipp"

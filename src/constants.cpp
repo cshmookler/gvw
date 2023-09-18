@@ -3,7 +3,10 @@
 #include <stdexcept>
 
 // Local includes
-#include "gvw.hpp"
+#include "gvw.ipp"
+#include "window.hpp"
+
+/// @todo Split this file into `constants.cpp` and `internal_constants.cpp`.
 
 namespace gvw {
 

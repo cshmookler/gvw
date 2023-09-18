@@ -12,6 +12,8 @@
 
 // Local includes
 #include "gvw.hpp"
+#include "internal.hpp"
+#include "internal.ipp"
 
 namespace gvw {
 
@@ -386,7 +388,6 @@ std::vector<T> ReadFile(const char* Absolute_Path)
     file.read(charBuffer.data(),
               static_cast<std::streamsize>(charBuffer.size()));
     file.close();
-
     return charBuffer;
 }
 

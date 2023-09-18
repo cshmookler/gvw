@@ -6,7 +6,8 @@
 #include <stb_image.h>
 
 // Local includes
-#include "gvw.hpp"
+#include "../gvw/gvw.hpp"
+#include "impl.hpp"
 
 namespace gvw {
 
@@ -206,7 +207,10 @@ void SetVerboseCallback(instance_verbose_callback Verbose_Callback)
 }
 void VerboseCallback(const char* Message)
 {
-    internal::global::VERBOSE_CALLBACK(Message);
+    std::scoped_lock lock(internal::global::VERBOSE_CALLBACK_MUTEX);
+    if (internal::global::VERBOSE_CALLBACK != nullptr) {
+        internal::global::VERBOSE_CALLBACK(Message);
+    }
 }
 
 void SetInfoCallback(instance_info_callback Info_Callback)
@@ -216,7 +220,10 @@ void SetInfoCallback(instance_info_callback Info_Callback)
 }
 void InfoCallback(const char* Message)
 {
-    internal::global::INFO_CALLBACK(Message);
+    std::scoped_lock lock(internal::global::INFO_CALLBACK_MUTEX);
+    if (internal::global::INFO_CALLBACK != nullptr) {
+        internal::global::INFO_CALLBACK(Message);
+    }
 }
 
 void SetWarningCallback(instance_warning_callback Warning_Callback)
@@ -226,7 +233,10 @@ void SetWarningCallback(instance_warning_callback Warning_Callback)
 }
 void WarningCallback(const char* Message)
 {
-    internal::global::WARNING_CALLBACK(Message);
+    std::scoped_lock lock(internal::global::WARNING_CALLBACK_MUTEX);
+    if (internal::global::WARNING_CALLBACK != nullptr) {
+        internal::global::WARNING_CALLBACK(Message);
+    }
 }
 
 void SetErrorCallback(instance_error_callback Error_Callback)
@@ -236,7 +246,10 @@ void SetErrorCallback(instance_error_callback Error_Callback)
 }
 void ErrorCallback(const char* Message)
 {
-    internal::global::ERROR_CALLBACK(Message);
+    std::scoped_lock lock(internal::global::ERROR_CALLBACK_MUTEX);
+    if (internal::global::ERROR_CALLBACK != nullptr) {
+        internal::global::ERROR_CALLBACK(Message);
+    }
 }
 
 void SetGlfwCallback(instance_glfw_error_callback GLFW_Error_Callback)
@@ -248,6 +261,18 @@ void SetGlfwCallback(instance_glfw_error_callback GLFW_Error_Callback)
 void GlfwErrorCallback(int Error_Code, const char* Message)
 {
     internal::global::GLFW_ERROR_CALLBACK(Error_Code, Message);
+}
+
+const std::vector<instance_joystick_event>& GetJoystickEvents()
+{
+    std::scoped_lock lock(internal::global::JOYSTICK_EVENTS_MUTEX);
+    return internal::global::JOYSTICK_EVENTS;
+}
+
+void ClearJoystickEvents()
+{
+    std::scoped_lock lock(internal::global::JOYSTICK_EVENTS_MUTEX);
+    internal::global::JOYSTICK_EVENTS.clear();
 }
 
 instance_ptr CreateInstance()

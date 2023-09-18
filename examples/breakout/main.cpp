@@ -42,14 +42,18 @@ int main() // NOLINT
     // std::cout << isCLeftOfLineAB({ 1, 1 }, { 0, 0 }, { -1, 0 }) << std::endl;
     // std::cout << isCLeftOfLineAB({ 1, 1 }, { 0, 0 }, { 0, -1 }) << std::endl;
 
+    std::cout << "GOT HERE -3" << std::endl;
     gvw::instance_ptr gvw = gvw::CreateInstance(
         { .applicationInfo = { .pApplicationName = "breakout",
                                .applicationVersion =
                                    VK_MAKE_VERSION(1, 0, 0) } });
+    std::cout << "GOT HERE -2" << std::endl;
     gvw::monitor_ptr primaryMonitor = gvw->GetPrimaryMonitor();
+    std::cout << "GOT HERE -1" << std::endl;
 
     const gvw::area<int> PRIMARY_MONITOR_SIZE =
         primaryMonitor->GetWorkAreaSize();
+    std::cout << "GOT HERE --" << std::endl;
     const std::vector<gvw::xy_rgb> WHITE_VERTICES = {
         { { -1.0F, -1.0F }, { 1.0F, 1.0F, 1.0F } },
         { { 1.0F, -1.0F }, { 1.0F, 1.0F, 1.0F } },
@@ -106,6 +110,7 @@ int main() // NOLINT
         { { 1.0F, 1.0F }, { 0.0F, 0.0F, 1.0F } }
     };
 
+    std::cout << "GOT HERE 0" << std::endl;
     gvw::window_ptr plat = gvw->CreateWindow(
         { .position = PLAT_WINDOW_POSITION,
           .size = PLAT_WINDOW_SIZE,
@@ -115,7 +120,9 @@ int main() // NOLINT
           .staticVertices = WHITE_VERTICES,
           .sizeOfDynamicDataVerticesInBytes =
               (sizeof(gvw::xy_rgb) * WHITE_VERTICES.size()) });
+    std::cout << "GOT HERE 1" << std::endl;
     plat->DrawFrame(WHITE_VERTICES);
+    std::cout << "GOT HERE 2" << std::endl;
 
     gvw::image_file_info imageInfo = { .path = "pointer.png" };
     auto cursorImage = gvw::CreateImage(imageInfo);

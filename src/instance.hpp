@@ -7,8 +7,17 @@
  * @date 2023-08-27
  */
 
+// Standard includes
+#include <atomic>
+
 // Local includes
 #include "gvw.hpp"
+#include "gvw.ipp"
+#include "internal.hpp"
+#include "internal.ipp"
+#include "monitor.hpp"
+#include "window.hpp"
+#include "device.hpp"
 
 namespace gvw {
 
@@ -19,6 +28,10 @@ class instance : internal::uncopyable_unmovable // NOLINT
     friend class monitor;
     friend class window;
     friend class device;
+
+    struct impl;
+    /// @todo Consider wrapping this within std::experimental::propagate_const.
+    std::shared_ptr<impl> pImpl;
 
     ////////////////////////////////////////////////////////////////////////////
     ///                Constructors, Operators, and Destructor               ///
@@ -34,6 +47,21 @@ class instance : internal::uncopyable_unmovable // NOLINT
     // The destructor is public to allow explicit destruction.
     ~instance() = default;
 
+  private:
+    ////////////////////////////////////////////////////////////////////////////
+    ///                           Private Variables                          ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    /// @todo Create flag enum for tracking initialization success.
+
+    // Constant after object construction, so these don't have to be atomic.
+    bool initializedGlfw = false;
+    bool vulkanSupported = false;
+    bool requiredExtensionsSupported = false;
+    bool selectedExtensionsSupported = false;
+    bool selectedLayersSupported = false;
+
+  public:
     ////////////////////////////////////////////////////////////////////////////
     ///                        Public Static Functions                       ///
     ////////////////////////////////////////////////////////////////////////////
@@ -43,20 +71,19 @@ class instance : internal::uncopyable_unmovable // NOLINT
 
   private:
     ////////////////////////////////////////////////////////////////////////////
-    ///                           Private Variables                          ///
+    ///                        Private Member Functions                      ///
     ////////////////////////////////////////////////////////////////////////////
-    /// @todo Determine if these Vulkan related variables need to be
-    /// thread-safe.
 
-    std::unique_ptr<internal::terminator<>> glfwTerminator;
-
-    instance_extensions vulkanInstanceExtensions;
-    instance_layers vulkanInstanceLayers;
-
-    vk::UniqueInstance vulkanInstance;
-    vk::DispatchLoaderDynamic vulkanDispatchLoaderDynamic;
-    vk::UniqueHandle<vk::DebugUtilsMessengerEXT, vk::DispatchLoaderDynamic>
-        vulkanDebugUtilsMessenger;
+    [[nodiscard]] bool GlfwNotInitialized(
+        const std::string& Function_Name) const;
+    [[nodiscard]] bool VulkanNotSupported(
+        const std::string& Function_Name) const;
+    [[nodiscard]] bool RequiredExtensionsNotSupported(
+        const std::string& Function_Name) const;
+    [[nodiscard]] bool SelectedExtensionsNotSupported(
+        const std::string& Function_Name) const;
+    [[nodiscard]] bool SelectedLayersNotSupported(
+        const std::string& Function_Name) const;
 
   public:
     ////////////////////////////////////////////////////////////////////////////
@@ -67,12 +94,6 @@ class instance : internal::uncopyable_unmovable // NOLINT
     void SetJoystickEventCallback(
         instance_joystick_event_callback Joystick_Event_Callback =
             instance_joystick_event_callback_config::NONE);
-
-    /// @brief Returns the joystick event buffer.
-    const std::vector<instance_joystick_event>& GetJoystickEvents();
-
-    /// @brief Clears the joystick event buffer.
-    void ClearJoystickEvents();
 
     /// @brief Polls events for all windows.
     void PollEvents();
@@ -108,7 +129,7 @@ class instance : internal::uncopyable_unmovable // NOLINT
     [[nodiscard]] monitor_ptr GetPrimaryMonitor();
 
     /// @brief Returns all monitors.
-    [[nodiscard]] std::vector<monitor_ptr> AllMonitors();
+    [[nodiscard]] std::vector<monitor_ptr> GetAllMonitors();
 
     [[nodiscard]] cursor_ptr CreateCursor(
         cursor_standard_shape Cursor_Standard_Shape =

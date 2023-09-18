@@ -8,7 +8,7 @@
  */
 
 // Local includes
-#include "gvw.hpp"
+#include "gvw.ipp"
 
 namespace gvw {
 

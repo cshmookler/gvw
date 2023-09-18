@@ -3,7 +3,11 @@
 #include <fstream>
 
 // Local includes
+#include "gvw.ipp"
+#include "instance.hpp"
+#include "window.hpp"
 #include "device.hpp"
+#include "impl.hpp"
 
 namespace gvw {
 
@@ -14,7 +18,24 @@ device::device(const device_info& Device_Info)
     , presentMode(Device_Info.presentMode)
     , queueFamilyInfos(Device_Info.queueFamilyInfos)
 {
-    internal::AssertInitialization();
+    /// @todo GVW could be destroyed and then reinitialized between the
+    /// initialization of gvwInstance and this line below. Resolve this by
+    /// initializing the `gvwInstance` variable after locking a GVW specific
+    /// mutex.
+    if (internal::NotInitialized(static_cast<const char*>(__func__))) {
+        return;
+    }
+
+    if (this->gvwInstance->VulkanNotSupported(
+            static_cast<const char*>(__func__)) ||
+        this->gvwInstance->RequiredExtensionsNotSupported(
+            static_cast<const char*>(__func__)) ||
+        this->gvwInstance->SelectedExtensionsNotSupported(
+            static_cast<const char*>(__func__)) ||
+        this->gvwInstance->SelectedLayersNotSupported(
+            static_cast<const char*>(__func__))) {
+        return;
+    }
 
     /// @todo Get queue create infos out of selection::queue_family_info
     /// without copying the data here.
@@ -32,8 +53,9 @@ device::device(const device_info& Device_Info)
         .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),
         .pQueueCreateInfos = queueCreateInfos.data(),
         .enabledLayerCount = static_cast<uint32_t>(
-            this->gvwInstance->vulkanInstanceLayers.size()),
-        .ppEnabledLayerNames = this->gvwInstance->vulkanInstanceLayers.data(),
+            this->gvwInstance->pImpl->vulkanInstanceLayers.size()),
+        .ppEnabledLayerNames =
+            this->gvwInstance->pImpl->vulkanInstanceLayers.data(),
         .enabledExtensionCount =
             static_cast<uint32_t>(Device_Info.logicalDeviceExtensions.size()),
         .ppEnabledExtensionNames = Device_Info.logicalDeviceExtensions.data(),

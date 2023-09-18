@@ -9,6 +9,8 @@
 
 // Local includes
 #include "gvw.hpp"
+#include "internal.hpp"
+#include "internal.ipp"
 
 namespace gvw {
 
