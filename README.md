@@ -1,6 +1,8 @@
 # **GLFW and Vulkan Wrapper**
 A C++ library for creating cross-platform desktop applications with GLFW and Vulkan. Started development on November 24th, 2022.
 
+> NOTE: This project is incomplete. Key features may be missing or broken.
+
 ### **Build from source and install using Conan 2 (for Unix-like systems using X11)**
 **1.** Install a C++ compiler (Example: g++), Git, Python 3.6+, and the Python Virtual Environment using the system package manager (Example: apt).
 ```bash
